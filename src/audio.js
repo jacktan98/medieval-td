@@ -2150,6 +2150,9 @@ export function selectionCue(sel) {
   //
   // AND ONE WHO IS A SOLDIER IN THE MAKING speaks as the soldier he will be: stage
   // 12's villager who becomes a musketeer (`voice`, set by his board's script).
+  // AND ONE WHO IS NOT A MAN AT ALL — stage 16's crows on the battlements — says
+  // nothing: his answer is his wings as he takes off (`alone`, src/villagers.js).
+  if (sel.kind === 'villager' && sel.ref && sel.ref.voice === 'silent') return null;
   if (sel.kind === 'villager') return (sel.ref && sel.ref.voice && CUE[sel.ref.voice]) || CUE.villager;
   return familyCue(sel.ref.fam.id, sel.ref.def);
 }

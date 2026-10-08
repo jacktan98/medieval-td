@@ -512,6 +512,8 @@ export const paths = {
   crow_flap1:      'assets/enemies/Enemies_Dark_Crow_Flying_1.png',
   crow_flap2:      'assets/enemies/Enemies_Dark_Crow_Flying_2.png',
   crow_falling:    'assets/enemies/Enemies_Dark_Crow_Falling.png',
+  // On stage 16's battlements, before it is tapped and takes off. See drawPerchedCrow.
+  crow_perch:      'assets/enemies/Enemies_Dark_Crow_Perching.png',
   // --- THE BOSS ----------------------------------------------------------------
   //
   // ELEVEN DRAWINGS FOR ONE CREATURE, where the Dark Priest's five was the record.
@@ -919,6 +921,7 @@ export const paths = {
   map15:       'assets/map/Stage_13_Map_base.svg',
   map16:       'assets/map/Stage_14_Map_base.svg',
   map17:       'assets/map/Stage_15_Map_base.svg',
+  map18:       'assets/map/Stage_16_Map_base.svg',
   // THE THINGS ON EACH BOARD THAT STAND UP, on their own transparent sheet so the
   // renderer can draw them at the right depth instead of under everything. Derived
   // and committed by tools/split-map.mjs, like the bases beside them. See `front`
@@ -938,6 +941,7 @@ export const paths = {
   front15:     'assets/map/Stage_13_Map_front.svg',
   front16:     'assets/map/Stage_14_Map_front.svg',
   front17:     'assets/map/Stage_15_Map_front.svg',
+  front18:     'assets/map/Stage_16_Map_front.svg',
   // AND THE ONE THING THAT IS IN FRONT OF EVERYTHING. Stage 5's bridge has a near
   // railing between the camera and its deck, so a figure crossing belongs BEHIND it
   // — which no box on the sheet above can say, because a box sorts by its foot and

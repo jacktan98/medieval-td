@@ -1084,8 +1084,13 @@ console.log('\nThe map dropdown\n');
   const numbers = waveTabs(busiest);
   const under = numbers.filter(covered);
   const beside = numbers.filter(w => !covered(w));
-  ok(under.length > 0 && beside.length > 0,
-    'the open list covers part of the wave row and not the rest',
+  // NINETEEN BOARDS TAKE THREE COLUMNS, and three columns are wider than the longest
+  // wave row: since Dark Hollow Citadel the open list covers the whole of it. So the
+  // row has buttons under the list always, and beside it only while the list is two
+  // columns wide; the tap "beside" below lands on bare panel to the list's right when
+  // there is no button there.
+  ok(under.length > 0,
+    'the open list covers part of the wave row, or all of it',
     `${under.length} under it, ${beside.length} beside it`);
 
   // Pressing wave button N is the only thing that sets the wave to N, so a wave that
@@ -1101,7 +1106,9 @@ console.log('\nThe map dropdown\n');
   // list is an action of its own; passing the same tap through would move the player
   // to a wave they were not looking at on their way out of a menu.
   set(2);
-  const far = beside[beside.length - 1];
+  const box = mapList();
+  const far = beside.length ? beside[beside.length - 1]
+    : { x: box.x + box.w + 8, y: numbers[0].y, w: 8, h: numbers[0].h, i: null };
   tap(st, mapSelect());
   tap(st, far);
   ok(!st.admin.mapOpen && st.admin.wave === 2,
@@ -1109,9 +1116,15 @@ console.log('\nThe map dropdown\n');
     `open ${st.admin.mapOpen}, wave ${st.admin.wave + 1}`);
   // The same button DOES work once the list is shut, or the check above would pass
   // on a wave row that had simply stopped responding.
-  tap(st, far);
-  ok(st.admin.wave === far.i, 'while the same tap with the list shut selects that wave',
-    `wave ${st.admin.wave + 1}`);
+  if (far.i !== null) {
+    tap(st, far);
+    ok(st.admin.wave === far.i, 'while the same tap with the list shut selects that wave',
+      `wave ${st.admin.wave + 1}`);
+  } else {
+    tap(st, buried);
+    ok(st.admin.wave === buried.i, 'while a wave button tapped with the list shut selects that wave',
+      `wave ${st.admin.wave + 1}`);
+  }
 
   // AND SO DOES CLOSE, which is the one that would have been a bug worth having.
   // The top tabs and the Close button are handled before the waves branch, so a

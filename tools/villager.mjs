@@ -78,7 +78,14 @@ console.log('\nWho lives here\n');
   //
   // ONE PAINTED FIGURE IS NOT A VILLAGER: the robed priest at his lectern on
   // Dawnford Church, who is drawn as nobody else on any board is.
-  const NOT_VILLAGERS = { m10: [{ x: 189, y: 303 }] };
+  //
+  // AND ONE SHAPE THAT ONLY LOOKS LIKE A SHADOW: the brim of the Crow Harbinger's hat on
+  // Dark Hollow Citadel's balcony, the same size and colour — he is listed, at his own
+  // shadow on the planks below it.
+  const NOT_VILLAGERS = { m10: [{ x: 189, y: 303 }], m18: [{ x: 161, y: 208 }] };
+  // AND TWO ON THE LIST WHO STAND ON NO SHADOW: Dark Hollow Citadel's crows, perched
+  // on the battlements — a bird on a merlon stands on stone, and the artist drew none.
+  const PERCHED = { m18: [{ x: 57, y: 155.5 }, { x: 157.25, y: 133 }] };
   const missing = [], stray = [];
   for (const l of campaign) {
     const feet = shapesByFill(readArtwork(l.src))
@@ -96,6 +103,7 @@ console.log('\nWho lives here\n');
       if (!near(l.villagers, f, 3)) missing.push(`${l.name} (${f.x.toFixed(0)},${f.y.toFixed(0)})`);
     }
     for (const v of l.villagers || []) {
+      if (near(PERCHED[l.id], v, 1)) continue;
       if (!near(feet, v, 3)) stray.push(`${l.name} (${v.x},${v.y})`);
     }
   }

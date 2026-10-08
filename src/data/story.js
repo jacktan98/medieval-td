@@ -49,5 +49,8 @@ export const STORY = {
     'wave war banners that make their friends hit harder. Cut them down first.',
   m17: 'The thugs\' lair, and the Captain who has led them from the start. Shield, bow and sword, ' +
     'and when he is wounded he fights on with a magic blade. Bring him down, and peace returns ' +
-    'to every town.'
+    'to every town.',
+  m18: 'Behind the lair stands the citadel of the Crow Harbinger, the sorcerer who sent the crows. ' +
+    'From his balcony he blinds your towers and calls the flock down on the road. Hold out, and ' +
+    'he will come down to face you himself.'
 };

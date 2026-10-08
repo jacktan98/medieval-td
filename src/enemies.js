@@ -651,6 +651,63 @@ function crowWork(state, e, dt) {
   r.dist = (r.dist || 0) + Math.max(Math.hypot(r.x - was.x, r.y - was.y), (flyer ? flyer.speed : 80) * dt);
 }
 
+// --- A BOSS ON A BALCONY: stage 16's Crow Harbinger -------------------------------
+//
+// He stands on the citadel's balcony all game and casts from there — Point Tower and
+// Call Crows on a timetable the board sets, wave by wave (`balcony` under `citadel` in
+// src/villagers.js, which decides WHEN) — and nothing can touch him: he is not in
+// `state.enemies` at all, so no tower aims at him, no soldier goes for him, no splash
+// finds him and no wave waits on him. He is `state.perched`, drawn by render.js like
+// any enemy, and these three are everything that happens to him up there. When the
+// last wave is done he walks in, comes down and out at the door, and on the road he
+// is spawned as the real boss.
+
+// Made the way spawn makes a creature, so render.js finds every field it reads on
+// him, and then taken back off the road — standing at (x, y), facing `face`.
+export function makePerched(state, type, x, y, face) {
+  const e = spawn(state, type, { route: 0, s: 0, quiet: true });
+  state.enemies.pop();
+  return Object.assign(e, { x, y, face, perched: true, halted: true });
+}
+
+// One of his two powers, now, if he can: 'point' at a RANDOM archery, monastery or
+// artillery tower that is not already blinded — anywhere on the board, at the owner's
+// word, not the nearest in reach as he does on the road — or 'call' the flock. False
+// if he is mid-cast, his crow is still out, or there is no tower to point at.
+export function perchCast(state, e, act) {
+  if (e.act) return false;
+  const d = e.def;
+  if (act === 'point') {
+    if (e.raven || !d.point) return false;
+    const pool = (state.towers || []).filter(t =>
+      t.def.cooldown && !t.blinded && t.fam && d.point.families.includes(t.fam.id));
+    if (!pool.length) return false;
+    const tower = pool[(Math.random() * pool.length) | 0];
+    e.pointAt = tower;
+    begin(e, 'point');
+    turnTo(e, tower.x);
+    return true;
+  }
+  if (act === 'call' && d.call) {
+    begin(e, 'call');
+    e.flock = { left: d.call.count, t: 0 };
+    return true;
+  }
+  return false;
+}
+
+// Every frame he is up there: his crow and his flock (crowWork), and the clock of the
+// pose he is in — the crow leaving his arm `launch` seconds into pointing, as on the
+// road.
+export function perchTick(state, e, dt) {
+  crowWork(state, e, dt);
+  if (!e.act) return;
+  const d = e.def;
+  if (e.act === 'point' && !e.raven && d.point.seconds - e.actT >= d.point.launch) launchCrow(state, e);
+  e.actT -= dt;
+  if (e.actT <= 0) land(state, e);
+}
+
 // One frame of the script. Returns true when it has owned the frame, which is
 // every frame he is in a beat: a boss standing still does not walk, shoot, swing,
 // guard or heal, and returning true is how this file says so exactly once instead

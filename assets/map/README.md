@@ -727,18 +727,20 @@ hand:
   `Stage_4_Map_base.svg`, `Stage_5_Map_base.svg`, `Stage_6_Map_base.svg`,
   `Stage_7_Map_base.svg`, `Stage_8_Map_base.svg`, `Stage_9_Map_base.svg`,
   `Stage_10_Map_base.svg`, `Stage_11_Map_base.svg`, `Stage_12_Map_base.svg`,
-  `Stage_13_Map_base.svg`, `Stage_14_Map_base.svg` and `Stage_15_Map_base.svg` —
-  the fifteen drawn boards
+  `Stage_13_Map_base.svg`, `Stage_14_Map_base.svg`, `Stage_15_Map_base.svg` and
+  `Stage_16_Map_base.svg` —
+  the sixteen drawn boards
   with their plot markers cut out, written by
   `node tools/split-map.mjs assets/map/Stage_1_Map` and the same for the others.
-  Note the **stem**: all fifteen are drawn in layers, so the command
+  Note the **stem**: all sixteen are drawn in layers, so the command
   names `Stage_1_Map` rather than a file. Same pipeline as `Map_N_base.svg`
   otherwise.
 - `Stage_1_Map_front.svg`, `Stage_2_Map_front.svg`, `Stage_3_Map_front.svg`,
   `Stage_4_Map_front.svg`, `Stage_5_Map_front.svg`, `Stage_6_Map_front.svg`,
   `Stage_7_Map_front.svg`, `Stage_8_Map_front.svg`, `Stage_9_Map_front.svg`,
   `Stage_10_Map_front.svg`, `Stage_11_Map_front.svg`, `Stage_12_Map_front.svg`,
-  `Stage_13_Map_front.svg`, `Stage_14_Map_front.svg` and `Stage_15_Map_front.svg` —
+  `Stage_13_Map_front.svg`, `Stage_14_Map_front.svg`, `Stage_15_Map_front.svg` and
+  `Stage_16_Map_front.svg` —
   **the things on those
   boards that stand up**, on a
   transparent sheet of the same artboard. The same command writes them. See "What a figure can walk behind" below.

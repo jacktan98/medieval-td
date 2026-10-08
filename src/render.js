@@ -665,6 +665,31 @@ function drawFigures(ctx, state) {
     add(metal.g, 1, () => drawMetalSparks(ctx, metal, state.villagerPlay.t, state.villagerPlay.heat));
   }
   for (const e of state.enemies) add(e.y, 1, () => drawEnemy(ctx, e));
+  // STAGE 16'S CROW HARBINGER ON HIS BALCONY (`state.perched`, src/villagers.js): an
+  // enemy drawn as one, at the depth the level gives him up there (`g`) — in front of
+  // the citadel's wall — and faded as he goes in at its door and out at the other; and
+  // then the one line of the stonework the artist drew across him, over him again.
+  const perched = state.perched;
+  if (perched && !perched.hidden) {
+    add(perched.g ?? perched.y, 1, () => {
+      ctx.save();
+      if (perched.alpha !== undefined) ctx.globalAlpha *= perched.alpha;
+      drawEnemy(ctx, perched);
+      ctx.restore();
+      const line = level.balcony && level.balcony.line;
+      if (line && perched.g !== undefined) {
+        ctx.save();
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = line.w;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(...line.from);
+        ctx.lineTo(...line.to);
+        ctx.stroke();
+        ctx.restore();
+      }
+    });
+  }
   // `hp > 0` as well as the respawn clock, and it is the explicit half of a pair
   // that used to be one. A soldier waiting to muster has `respawn > 0` and is not
   // drawn; a soldier who has fallen for good — stage 8's church paladins — is
@@ -1830,6 +1855,9 @@ function drawVillager(ctx, state, v, layer = null) {
   // DARK HOLLOW'S THUGS, as the creature they are: its own drawing, turned the way he
   // faces. See `look` in hollowRound, src/villagers.js.
   if (v.look === 'thug') { drawLookingThug(ctx, v); return; }
+  // STAGE 16'S CROWS on the battlements: perched, and then in the air on the way to
+  // the road. See perchRound in src/villagers.js.
+  if (v.look === 'perch' || v.look === 'flying') { drawPerchedCrow(ctx, v); return; }
   const key = villagerKey(v);
   // A LIT POLE BURNS: its painted flame is taken off the drawing and a live one
   // burns where it was — stage 12's torch-lighter. See POLE_FIRE.
@@ -1872,6 +1900,41 @@ function drawVillager(ctx, state, v, layer = null) {
       (state.anim || 0) * 1.3 + v.n, POLE_FIRE.s, true, { smoke: 0.5 });
     ctx.restore();
   }
+}
+
+// A DARK CROW OFF THE ROAD, stage 16's: on its merlon in the owner's Perching drawing,
+// stood on the merlon's top (its feet at the villager's anchor), or in the air in the
+// Dark Crow's own flying drawings — the bird alone, cut off above the shadow those
+// carry, its body at the anchor and beating its wings by how far it has flown, as the
+// Harbinger's crow is drawn (drawRavens). Mirrored when it faces right.
+// `trim` is the drawing's (tools/trim.mjs); `k` the scale it is painted at on the
+// battlements — the artist's crows there are 9.5 px across, two thirds of a crow on
+// the road — growing to the road's own size as it takes off (`v.grow`, villagers.js).
+export const PERCH = { key: 'crow_perch', trim: [219, 219, 74, 75], foot: [0.5, 1], k: 9.5 / 74 };
+function drawPerchedCrow(ctx, v) {
+  ctx.save();
+  if (v.alpha !== undefined) ctx.globalAlpha *= v.alpha;
+  ctx.translate(v.x, v.y);
+  if (v.flip) ctx.scale(-1, 1);
+  if (v.look === 'perch') {
+    const img = art[PERCH.key];
+    if (img) {
+      const [tx, ty, tw, th] = PERCH.trim, k = PERCH.k;
+      ctx.drawImage(img, tx, ty, tw, th, -PERCH.foot[0] * tw * k, -PERCH.foot[1] * th * k, tw * k, th * k);
+    }
+  } else {
+    if (v.grow !== undefined) ctx.scale(v.grow, v.grow);
+    const f = enemyTypes.crow.flying;
+    const fr = crowFrame(f, v.flyDist || 0);
+    const img = art[fr.sprite];
+    if (img) {
+      const [tx, ty, tw, th] = fr.trim;
+      const cut = Math.min(th, f.shadow[1] - ty);
+      const ax = tx + fr.pivot[0] * tw, ay = ty + fr.pivot[1] * th - fr.lift;
+      ctx.drawImage(img, tx, ty, tw, cut, (tx - ax) * SCALE, (ty - ay) * SCALE, tw * SCALE, cut * SCALE);
+    }
+  }
+  ctx.restore();
 }
 
 // A THUG STANDING ABOUT OR MARCHING TO THE ROAD, before he is one of the creatures on
@@ -3644,7 +3707,8 @@ function weaponHop(e) {
 // body holds still and the wings move round it. The drawings face left, so a crow
 // heading right is mirrored.
 function drawRavens(ctx, state) {
-  for (const e of state.enemies) {
+  // The balcony Harbinger's crow flies too (`state.perched`, stage 16).
+  for (const e of state.perched ? [...state.enemies, state.perched] : state.enemies) {
     const r = e.raven;
     const flyer = r && e.def.call && enemyTypes[e.def.call.type];
     const f = flyer && flyer.flying;

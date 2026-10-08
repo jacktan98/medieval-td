@@ -3391,6 +3391,57 @@ export const stage15Waves = [
                        { type: 'rally_inf', count: 2, gap: 1.8 }] }
 ];
 
+// STAGE 16: Dark Hollow Citadel. "Similar to Stage 15", at the owner's word — so
+// stage 15's list, wave for wave, as a second array of its own, so the first retune of
+// either lands on one board. THE CROW HARBINGER IS NOT IN IT: he stands on the
+// citadel's balcony all game, casting, and comes down to the road once the last wave
+// is dead — see `balcony` under `citadel` in src/villagers.js.
+export const stage16Waves = [
+  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'crow', count: 4, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
+                       { type: 'blocker_inf', count: 2, gap: 1.7 },
+                       { type: 'crow', count: 6, gap: 1.2 },
+                       { type: 'bomb_inf', count: 2, gap: 1.9 }] },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
+                       { type: 'crow', count: 8, gap: 1.1 },
+                       { type: 'bomb_inf', count: 4, gap: 1.9 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 10, gap: 1.0 },
+                       { type: 'heavy_inf', count: 1, gap: 2.0 },
+                       { type: 'boulder_giant', count: 1, gap: 2.0 },
+                       { type: 'bomb_inf', count: 6, gap: 1.8 },
+                       { type: 'plague_inf', count: 2, gap: 2.0 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 12, gap: 0.9 },
+                       { type: 'shadow_inf', count: 1, gap: 1.7 },
+                       { type: 'heavy_inf', count: 1, gap: 1.9 },
+                       { type: 'boulder_giant', count: 1, gap: 1.9 },
+                       { type: 'bomb_inf', count: 8, gap: 1.7 },
+                       { type: 'plague_inf', count: 2, gap: 1.9 },
+                       { type: 'dark_priest', count: 2, gap: 1.8 },
+                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 14, gap: 0.8 },
+                       { type: 'shadow_inf', count: 2, gap: 1.6 },
+                       { type: 'heavy_inf', count: 2, gap: 1.8 },
+                       { type: 'boulder_giant', count: 2, gap: 1.8 },
+                       { type: 'bomb_inf', count: 10, gap: 1.5 },
+                       { type: 'plague_inf', count: 4, gap: 1.9 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 2, gap: 1.8 }] },
+  { rest: 10, groups: [{ type: 'crow', count: 16, gap: 0.8 },
+                       { type: 'shadow_inf', count: 2, gap: 1.5 },
+                       { type: 'heavy_inf', count: 3, gap: 1.7 },
+                       { type: 'boulder_giant', count: 3, gap: 1.7 },
+                       { type: 'bomb_inf', count: 10, gap: 1.4 },
+                       { type: 'plague_inf', count: 4, gap: 1.8 },
+                       { type: 'dark_priest', count: 4, gap: 1.8 },
+                       { type: 'rally_inf', count: 2, gap: 1.8 }] }
+];
+
 export const waveClearBonus = 40;
 
 // Seconds before the first enemy appears. It was 2, which is not enough time to

@@ -1050,8 +1050,8 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // board was drawn; stages 11 and 12 were drawn for boards still to come. So the
   // campaign a player walks is the drawn boards, and these three stay loaded.
   const play = levels.map(l => l.id);
-  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m1,m2,m3',
-    'the game loads the fifteen boards, then the three testing ones',
+  ok(play.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18,m1,m2,m3',
+    'the game loads the sixteen boards, then the three testing ones',
     play.join(' -> '));
   // And the stages carry them in that same order, as far as the markers go — which
   // is now ALL THIRTEEN, the road having grown a marker in the same batch as the
@@ -1069,9 +1069,10 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // stay where they are: loaded, editable from the dashboard, off the map.
   // AND DARK HOLLOW WOODS AFTER IT, on the medallion the owner drew for it below
   // Ironforge, and DARK HOLLOW QUARTERS on the next one, with one more locked
-  // beyond them waiting for a board.
-  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17',
-    '  ending at Dark Hollow Quarters, with the testing maps behind it and off the road',
+  // beyond them waiting for a board — DARK HOLLOW CITADEL, stage 16, the Crow
+  // Harbinger's keep, the owner's next board.
+  ok(filled.join(',') === 'm0,m4,m5,m6,m7,m8,m9,m10,m11,m12,m13,m14,m15,m16,m17,m18',
+    '  ending at Dark Hollow Citadel, with the testing maps behind it and off the road',
     filled.join(' -> '));
 
   // AND WHAT AN EMPTY MARKER COSTS, which depends entirely on WHERE it is.
@@ -2540,10 +2541,11 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
     // AND DARK HOLLOW WOODS AFTER IT, at the owner's word: "Towers are not restricted
     // anymore." So the uncapped boards are the END of the road — asked as a tail, so
     // an earlier board quietly uncapped still fails here. Dark Hollow Quarters, the
-    // same words again, makes it three.
+    // same words again, makes it three — and Dark Hollow Citadel, "No tower
+    // restrictions", four.
     const free = tailOfCampaign(l => l.maxTier === undefined);
-    ok(free.ok && free.hit.includes(peak) && free.hit.length === 3,
-      '  and the boards that do are the last three on the road',
+    ok(free.ok && free.hit.includes(peak) && free.hit.length === 4,
+      '  and the boards that do are the last four on the road',
       free.hit.map(l => l.name).join(', ') || 'none');
 
     // THE RUNG NO OTHER BOARD OPENS, measured off the ladders rather than named.

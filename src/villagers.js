@@ -18,12 +18,13 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, ANVIL,
+import { solo, play, slice, alone, WINGS_RATE, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, ANVIL,
          BOSS_ENTERS, BOSS_LEADS, BOSS_BATTLE } from './audio.js';
 import { starsFor } from './score.js';
 import { level } from './level.js';
-import { nearestOn } from './route.js';
+import { nearestOn, at as pointOn, laneOf } from './route.js';
 import { enemyTypes } from './data/waves.js';
+import { makePerched, perchCast, perchTick } from './enemies.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
 // a figure to be: `pickFigure` reads `def.r` and `def.spriteTrim`, and the info
@@ -65,6 +66,9 @@ export const VILLAGER_H = VILLAGER.spriteTrim[3] * SCALE;
 // wrong about a man who does not move.
 export function makeVillagers(state, level) {
   const play = level.villagerPlay && PLAYS[level.villagerPlay];
+  // Nobody on a balcony until stage 16's script puts him there (balconyRound) — and
+  // never one left over from the last game.
+  state.perched = null;
   state.villagers = (level.villagers || []).map((v, i) => {
     if (!play) return { def: VILLAGER, x: v.x, y: v.y };
     // ON A BOARD THAT LETS THEM MOVE, each carries what it is doing. See PLAYS.
@@ -648,6 +652,51 @@ const PLAYS = {
     // musterRound).
     cries: { runnn: false, nooo: false, wave: null }
   },
+  // STAGE 16, Dark Hollow Citadel, as the level lists them: 1-5 the two Thugs and three
+  // Tough Thugs standing about, 6-7 the two dark crows perched on the battlements, 8 the
+  // Crow Harbinger on the balcony. Nobody here is on your side either.
+  citadel: {
+    work: true,
+    // The Harbinger's own figure is never drawn as a villager: he is `state.perched`,
+    // an enemy, drawn as one (see `balcony`).
+    before: [{}, {}, {}, {}, {}, {}, {}, { hidden: true }],
+    after: [], run: [], hops: [],
+    voice: 'enemy_villager',
+    // THE FIVE, as stage 14's two thugs: they turn left and right where they stand,
+    // and tapped, each stands `still` seconds and then walks down onto the nearest road
+    // and is that creature there (`type`, a Thug where none is named). Each `road` is
+    // the point he walks to before stepping onto it.
+    still: 2, walk: 14,
+    thugs: [
+      { who: 0, road: [[397, 140]] },
+      { who: 1, type: 'tough_inf', road: [[447, 148]] },
+      { who: 2, road: [[303, 378]] },
+      { who: 3, type: 'tough_inf', road: [[385, 388]] },
+      { who: 4, type: 'tough_inf', road: [[44, 462]] }
+    ],
+    hideouts: [],
+    // THE TWO CROWS ON THE BATTLEMENTS, at the owner's word: perched (the Dark Crow's
+    // Perching drawing), turning now and then; tapped, each takes off and flies to its
+    // road — the left one to the BOTTOM road, the right one to the TOP — and is a Dark
+    // Crow there like any other. `route` is the road; `at` how far along it (game px)
+    // he joins it.
+    perch: [{ who: 5, route: 2, at: 230 }, { who: 6, route: 0, at: 175 }],
+    // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
+    // he casts what that wave says, `n` times, `every` seconds apart; a cast not yet
+    // made when the wave ends is skipped. Once the last wave is over and the board is
+    // clear he says his entrance line, waits `pause` seconds, walks in at the
+    // balcony's door, is gone `inside` seconds, and comes out at the ground floor's
+    // and down to the bottom road (`route`), where he is the boss.
+    balcony: {
+      who: 7, delay: 10,
+      waves: { 3: { act: 'point', n: 1 }, 4: { act: 'point', n: 1 },
+               5: { act: 'point', n: 2, every: 20 }, 6: { act: 'point', n: 2, every: 20 },
+               7: { act: 'call', n: 1 }, 8: { act: 'call', n: 2, every: 20 } },
+      pause: 2, inside: 2, walk: 14, route: 2
+    },
+    // NO SHOUT AS THE FIRST WAVE COMES: the Harbinger speaks for this keep.
+    cries: { runnn: false, nooo: false, wave: null }
+  },
   // STAGE 9, Sandshroud Settlement, left to right: 1 by the left-hand houses, 2 below
   // him, 3 at the middle house.
   sandshroud: {
@@ -911,6 +960,9 @@ function work(state, vp, dt) {
   if (vp.plan.thugs) hollowRound(state, vp, dt);
   // STAGE 15'S CAMP behind the long wall, mustering and charging wave by wave.
   if (vp.plan.muster) musterRound(state, vp, vp.plan.muster, dt);
+  // STAGE 16'S CROWS on the battlements, and the Crow Harbinger on his balcony.
+  if (vp.plan.perch) perchRound(state, vp, dt);
+  if (vp.plan.balcony) balconyRound(state, vp, vp.plan.balcony, dt);
 
   // STAGE 11'S TWO CARRIERS, each on a loop of his own.
   if (vp.plan.porter) porterLoop(state, vp, vp.plan.porter, dt);
@@ -1234,12 +1286,14 @@ function hollowRound(state, vp, dt) {
     if (!v || !v.live) continue;
     v.work = true; v.voice = plan.voice;
     const c = vp.hollow[th.who] || (vp.hollow[th.who] = { phase: 'idle' });
+    // A Thug unless the board names another — stage 16's three Tough Thugs.
+    const type = th.type || 'light_inf';
     if (c.phase === 'idle') {
-      v.look = 'thug'; v.lookType = 'light_inf'; v.card = cardOf('light_inf');
+      v.look = 'thug'; v.lookType = type; v.card = cardOf(type);
       fidget(v, c);
       if (c.tapped) { c.phase = 'still'; c.at = vp.t; }
     }
-    if (c.phase === 'still' && vp.t - c.at >= plan.still) march(v, c, 'light_inf', th.road);
+    if (c.phase === 'still' && vp.t - c.at >= plan.still) march(v, c, type, th.road);
     if (c.phase === 'march') marching(v, c);
   }
 
@@ -1483,6 +1537,180 @@ function musterRound(state, vp, m, dt) {
     }
     if (who === m.captain) v.lookPose = c.phase === 'stand' && c.idle ? 'idle' : null;
   }
+}
+
+// STAGE 16'S TWO CROWS on the citadel's battlements. Each is in one of these, in
+// `vp.hollow[who].phase`, so a tap reaches him the way it reaches the thugs (hollowTap):
+//   idle — perched, in the Dark Crow's Perching drawing, turning now and then;
+//   fly  — tapped: off the merlon in his flying drawings, beating his wings, in a
+//          rising arc to his road, where he arrives at a crow's flying height over
+//          the spot he joins it — and is a Dark Crow there (`vp.turned`).
+// His drawing is `v.look`: 'perch', then 'flying' — see drawVillager in render.js.
+const PERCH_K = (9.5 / 74) / SCALE;     // the painted crow's size, as a share of a road crow's
+function perchRound(state, vp, dt) {
+  vp.hollow = vp.hollow || {};
+  const crow = enemyTypes.crow;
+  const fr = crow.flying.frames[0];
+  const lift = fr.lift * SCALE;
+  for (const p of vp.plan.perch) {
+    const v = state.villagers[p.who];
+    if (!v || !v.live) continue;
+    v.work = true; v.voice = 'silent';
+    v.card = { title: crow.name, sprite: crow.sprite, trim: crow.spriteTrim };
+    const c = vp.hollow[p.who] || (vp.hollow[p.who] = { phase: 'idle' });
+    if (c.phase === 'idle') {
+      v.look = 'perch';
+      if (c.turn === undefined) c.turn = vp.t + 2.5 + Math.random() * 4;
+      if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + 2.5 + Math.random() * 4; }
+      if (c.tapped) {
+        // Where he joins the road, and where his body is when he gets there: a crow's
+        // flying height above it, as every crow on the road is drawn.
+        const j = joinAt(p.route, p.at);
+        Object.assign(c, { phase: 'fly', t: 0, fx: v.x, fy: v.y - 4, tx: j.x, ty: j.y - lift, j, dist: 0,
+                           dur: Math.max(0.6, Math.hypot(j.x - v.x, j.y - v.y) / crow.speed) });
+        v.look = 'flying'; v.g = 900;
+        // His wings as he goes — the whole recording, one at a time, as a crow's on the
+        // road (see `alone` in src/audio.js).
+        alone('wings_flap', 1, WINGS_RATE);
+      }
+    }
+    if (c.phase === 'fly') {
+      c.t += dt;
+      const k = Math.min(1, c.t / c.dur), ease = k * k * (3 - 2 * k);
+      const was = { x: v.x, y: v.y };
+      v.x = c.fx + (c.tx - c.fx) * ease;
+      v.y = c.fy + (c.ty - c.fy) * ease - Math.sin(Math.PI * k) * 26;
+      // Facing the way he flies: the drawings face left, so heading right is mirrored.
+      if (Math.abs(v.x - was.x) > 0.01) v.flip = v.x > was.x;
+      c.dist += Math.max(Math.hypot(v.x - was.x, v.y - was.y), crow.speed * dt);
+      v.flyDist = c.dist;
+      // From the size he is painted at on the merlon up to a road crow's, over the
+      // first third of the flight. See PERCH in src/render.js.
+      v.grow = PERCH_K + (1 - PERCH_K) * Math.min(1, k * 3);
+      if (k >= 1) {
+        c.phase = 'done';
+        v.hidden = true; v.live = false;
+        (vp.turned = vp.turned || []).push({ who: p.who, type: 'crow', route: p.route, s: c.j.s });
+      }
+    }
+  }
+}
+
+// A spot `s` px along route `ri` — on its middle lane, where a creature placed on the
+// road by a script stands (see spawn in src/enemies.js) — as a point with its `s`.
+function joinAt(ri, s) {
+  const q = pointOn(laneOf(level.routes[ri], 1), s);
+  return { x: q.x, y: q.y, s };
+}
+
+// STAGE 16, THE CROW HARBINGER ON HIS BALCONY. He is an enemy rather than a villager
+// — `state.perched`, made here on the first frame, standing where the level's villager
+// `who` is painted, facing right as he is drawn — but nothing on the road can reach
+// him, and this decides what he does (src/enemies.js does it):
+//   perch  — casting on the board's timetable (`waves`): `delay` seconds after a wave
+//            begins, `n` casts `every` seconds apart, each Point Tower (a random
+//            archery, monastery or artillery tower) or Call Crows. A cast that cannot
+//            be made yet — no tower to point at, his crow still out — is tried again
+//            a second later; one not made by the time the wave ends is skipped.
+//   speak  — the last wave over and the board clear: his entrance line, and `pause`
+//            seconds standing there;
+//   indoor — along the balcony to its door, and faded out into it;
+//   inside — gone, `inside` seconds;
+//   down   — out of the ground floor's door, faded in, and down to the bottom road,
+//            where he is spawned as the boss (`vp.turned`, quietly — he has spoken).
+// Until he has, the board cannot be won (`vp.holdWin`, read by src/waves.js).
+const PERCH_RETRY = 1;
+function balconyRound(state, vp, b, dt) {
+  const at = (level.villagers || [])[b.who];
+  const spot = level.balcony;
+  if (!at || !spot) return;
+  if (!vp.balcony) {
+    vp.balcony = { phase: 'perch', begun: 0, plan: null };
+    state.perched = makePerched(state, 'crow_harbinger', at.x, at.y, 1);
+    // Drawn at the depth the level gives him up there — in front of the citadel's wall.
+    state.perched.g = at.g;
+    vp.holdWin = true;
+  }
+  const B = vp.balcony, e = state.perched;
+  if (!e) return;
+
+  // HIS LINES MUST BE HEARD, as the Captain's are: asked for again every frame for a
+  // few seconds rather than lost to whatever else is speaking.
+  if (vp.say) {
+    if (solo(vp.say.cue, true, true, true) || vp.t > vp.say.until) vp.say = null;
+  }
+
+  // WHICH WAVES HAVE BEGUN — the first enemy of a wave on the board — and the cast
+  // each one asks for.
+  const waves = state.waves || [];
+  const begun = Math.min(waves.length, state.waveIndex + (state.spawned > 0 ? 1 : 0));
+  while (B.begun < begun) {
+    B.begun++;
+    const ev = b.waves[B.begun];
+    B.plan = ev ? { wave: B.begun, act: ev.act, left: ev.n, every: ev.every || 0, next: vp.t + b.delay } : null;
+  }
+  // THE WAVE IS OVER once it has spawned everything and the field is clear (it rests)
+  // or the next one has begun: what is left of its casts goes with it.
+  const running = B.plan && state.waveIndex === B.plan.wave - 1 && !state.resting;
+  if (B.plan && !running) B.plan = null;
+
+  if (B.phase === 'perch') {
+    perchTick(state, e, dt);
+    const P = B.plan;
+    if (P && P.left > 0 && vp.t >= P.next) {
+      if (perchCast(state, e, P.act)) { P.left--; P.next = vp.t + P.every; }
+      else P.next = vp.t + PERCH_RETRY;
+    }
+    // EVERY WAVE OVER, THE BOARD CLEAR, nobody on his way to the road and nothing of
+    // his still out — and then he says so, and goes.
+    const over = state.waveIndex >= waves.length ||
+      (state.waveIndex === waves.length - 1 && state.resting);
+    const coming = Object.values(vp.hollow || {}).some(c => ['still', 'march', 'fly'].includes(c.phase));
+    if (over && state.enemies.length === 0 && !coming && !e.act && !e.raven && !e.flock) {
+      B.phase = 'speak'; B.at = vp.t;
+      const lines = e.def.lines && e.def.lines.enters;
+      if (lines) vp.say = { cue: lines, until: vp.t + 4 };
+    }
+  } else if (B.phase === 'speak') {
+    if (vp.t - B.at >= b.pause) { B.phase = 'indoor'; B.leg = 0; B.at = vp.t; }
+  } else if (B.phase === 'indoor') {
+    if (!B.fading) {
+      if (walkFig(e, spot.door, b.walk, dt, B)) { B.fading = true; B.at = vp.t; }
+    } else {
+      e.alpha = Math.max(0, 1 - (vp.t - B.at) / DOOR_FADE);
+      if (e.alpha <= 0) { B.phase = 'inside'; B.at = vp.t; e.hidden = true; }
+    }
+  } else if (B.phase === 'inside') {
+    if (vp.t - B.at >= b.inside) {
+      // OUT AT THE GROUND FLOOR'S DOOR, and down to the bottom road.
+      const g = spot.gate, last = g.way[g.way.length - 1];
+      const j = nearestOn([level.routes[b.route]], last[0], last[1]);
+      Object.assign(e, { x: g.at[0], y: g.at[1], hidden: false, alpha: 0, g: undefined, face: 1 });
+      Object.assign(B, { phase: 'down', at: vp.t, leg: 0, way: [...g.way, [j.x, j.y]], join: j });
+    }
+  } else if (B.phase === 'down') {
+    e.alpha = Math.min(1, (vp.t - B.at) / DOOR_FADE);
+    if (walkFig(e, B.way, b.walk, dt, B)) {
+      B.phase = 'gone';
+      state.perched = null;
+      vp.holdWin = false;
+      (vp.turned = vp.turned || []).push({ who: b.who, type: 'crow_harbinger', route: b.route, s: B.join.s, quiet: true });
+    }
+  }
+}
+
+// An ENEMY walking a list of points, `B.leg` the one he is making for — walkTo for a
+// figure that faces by `face` rather than `flip`.
+function walkFig(e, pts, speed, dt, B) {
+  let step = speed * dt;
+  while (step > 0 && B.leg < pts.length) {
+    const [tx, ty] = pts[B.leg];
+    const dx = tx - e.x, dy = ty - e.y, d = Math.hypot(dx, dy);
+    if (Math.abs(dx) > 0.5) e.face = dx > 0 ? 1 : -1;
+    if (d <= step) { e.x = tx; e.y = ty; B.leg++; step -= d; continue; }
+    e.x += dx / d * step; e.y += dy / d * step; step = 0;
+  }
+  return B.leg >= pts.length;
 }
 
 const BOX_DROP = 0.3;         // seconds for a dropped box to reach the ground

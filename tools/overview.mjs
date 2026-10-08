@@ -563,7 +563,7 @@ const ORDER = [2, 3, 4, 6, 5, 7, 9, 8, 1, 10, 12, 11, 0, 13, 14, 15];
 // FOURTEEN BOARDS ON SIXTEEN STAGES now: Dark Hollow Woods is stage 14 on its own
 // medallion, and stages 15 and 16 are drawn with nothing behind them yet — locked at
 // the end of the road, which costs nothing.
-const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14 };
+const LEVEL_OF = { 0: 0, 1: 1, 2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15 };
 
 // WHAT AN EMPTY STAGE COSTS, printed rather than asserted. A stage with no board is
 // LOCKED and the road runs through it, so every board behind one is unreachable from
