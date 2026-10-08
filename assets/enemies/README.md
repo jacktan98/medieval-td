@@ -111,7 +111,7 @@ tap box measures him from it, exactly as a man is measured from his feet.
 | `Enemies_Dark_Crow_Flying_1.png`  | `crow_flap1`   | wings level — the second and fourth beats         |
 | `Enemies_Dark_Crow_Flying_2.png`  | `crow_flap2`   | wings down — the third beat                       |
 | `Enemies_Dark_Crow_Falling.png`   | `crow_falling` | half a second of dropping, once he is shot        |
-| `Enemies_Dark_Crow_Perching.png`  | `crow_perch`   | stage 16: perched on the citadel's battlements, before he is tapped and flies to the road (drawn at the painted crows' size, 9.5px across). `.svg` beside it is the artist's source |
+| `Enemies_Dark_Crow_Perching.png`  | `crow_perch`   | stage 16: perched on the citadel's battlements and in its dead trees, before he is tapped and flies to the road (drawn at the painted crows' size, 12px across). `.svg` beside it is the artist's source |
 
 The body is `Enemies_Dark_Crow_Dead.png` in `assets/dead/`, lying on its own
 shadow like every other corpse.

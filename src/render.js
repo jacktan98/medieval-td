@@ -1908,9 +1908,10 @@ function drawVillager(ctx, state, v, layer = null) {
 // carry, its body at the anchor and beating its wings by how far it has flown, as the
 // Harbinger's crow is drawn (drawRavens). Mirrored when it faces right.
 // `trim` is the drawing's (tools/trim.mjs); `k` the scale it is painted at on the
-// battlements — the artist's crows there are 9.5 px across, two thirds of a crow on
-// the road — growing to the road's own size as it takes off (`v.grow`, villagers.js).
-export const PERCH = { key: 'crow_perch', trim: [219, 219, 74, 75], foot: [0.5, 1], k: 9.5 / 74 };
+// battlements and in the trees — the artist's crows there are 12 px across, the
+// drawing redone at the owner's word to the same size — growing to the road's own size
+// as it takes off (`v.grow`, villagers.js).
+export const PERCH = { key: 'crow_perch', trim: [223, 223, 66, 66], foot: [0.5, 1], k: 12 / 66 };
 function drawPerchedCrow(ctx, v) {
   ctx.save();
   if (v.alpha !== undefined) ctx.globalAlpha *= v.alpha;

@@ -661,28 +661,30 @@ const PLAYS = {
     work: true,
     // The Harbinger's own figure is never drawn as a villager: he is `state.perched`,
     // an enemy, drawn as one (see `balcony`).
-    before: [{}, {}, {}, {}, {}, {}, {}, { hidden: true }],
+    before: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, { hidden: true }],
     after: [], run: [], hops: [],
     voice: 'enemy_villager',
-    // THE FIVE, as stage 14's two thugs: they turn left and right where they stand,
+    // THE FOUR, as stage 14's two thugs: they turn left and right where they stand,
     // and tapped, each stands `still` seconds and then walks down onto the nearest road
-    // and is that creature there (`type`, a Thug where none is named). Each `road` is
-    // the point he walks to before stepping onto it.
+    // and is that creature there (`type`, a Thug where none is named) — the Rally Thug
+    // with his war cry, as every Rally Thug walks on. Each `road` is the point he walks
+    // to before stepping onto it.
     still: 2, walk: 14,
     thugs: [
-      { who: 0, road: [[397, 140]] },
-      { who: 1, type: 'tough_inf', road: [[447, 148]] },
-      { who: 2, road: [[303, 378]] },
-      { who: 3, type: 'tough_inf', road: [[385, 388]] },
-      { who: 4, type: 'tough_inf', road: [[44, 462]] }
+      { who: 0, road: [[483, 140]] },
+      { who: 1, type: 'tough_inf', road: [[543, 145]] },
+      { who: 2, type: 'rally_inf', road: [[294, 375]] },
+      { who: 3, type: 'tough_inf', road: [[42, 462]] }
     ],
     hideouts: [],
-    // THE TWO CROWS ON THE BATTLEMENTS, at the owner's word: perched (the Dark Crow's
-    // Perching drawing), turning now and then; tapped, each takes off and flies to its
-    // road — the left one to the BOTTOM road, the right one to the TOP — and is a Dark
-    // Crow there like any other. `route` is the road; `at` how far along it (game px)
-    // he joins it.
-    perch: [{ who: 5, route: 2, at: 230 }, { who: 6, route: 0, at: 175 }],
+    // THE SIX CROWS, at the owner's word: three on the citadel's battlements and three
+    // in the dead trees, perched (the Dark Crow's Perching drawing), turning now and
+    // then; tapped, each takes off and flies to its road and is a Dark Crow there like
+    // any other — the battlements' left two to the BOTTOM road and the right one to the
+    // TOP, and each tree's to the road beside it. `route` is the road; he joins it at
+    // the point of it nearest him.
+    perch: [{ who: 4, route: 2 }, { who: 5, route: 2 }, { who: 6, route: 0 },
+            { who: 7, route: 0 }, { who: 8, route: 0 }, { who: 9, route: 2 }],
     // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
     // he casts what that wave says, `n` times, `every` seconds apart; a cast not yet
     // made when the wave ends is skipped. Once the last wave is over and the board has
@@ -691,7 +693,7 @@ const PLAYS = {
     // and comes out at the ground floor's and down to the bottom road (`route`), where
     // he is the boss.
     balcony: {
-      who: 7, delay: 10,
+      who: 10, delay: 10,
       waves: { 3: { act: 'point', n: 1 }, 4: { act: 'point', n: 1 },
                5: { act: 'point', n: 2, every: 20 }, 6: { act: 'point', n: 2, every: 20 },
                7: { act: 'call', n: 1 }, 8: { act: 'call', n: 2, every: 20 } },
@@ -1552,7 +1554,7 @@ function musterRound(state, vp, m, dt) {
 //          rising arc to his road, where he arrives at a crow's flying height over
 //          the spot he joins it — and is a Dark Crow there (`vp.turned`).
 // His drawing is `v.look`: 'perch', then 'flying' — see drawVillager in render.js.
-const PERCH_K = (9.5 / 74) / SCALE;     // the painted crow's size, as a share of a road crow's
+const PERCH_K = (12 / 66) / SCALE;      // the painted crow's size, as a share of a road crow's
 const PERCH_TURN = [1.5, 4];            // seconds between a perched crow's turns, low and high
 function perchRound(state, vp, dt) {
   vp.hollow = vp.hollow || {};
@@ -1575,7 +1577,7 @@ function perchRound(state, vp, dt) {
       if (c.tapped) {
         // Where he joins the road, and where his body is when he gets there: a crow's
         // flying height above it, as every crow on the road is drawn.
-        const j = joinAt(p.route, p.at);
+        const j = joinAt(p.route, nearestOn([level.routes[p.route]], v.x, v.y).s);
         Object.assign(c, { phase: 'fly', t: 0, fx: v.x, fy: v.y - 4, tx: j.x, ty: j.y - lift, j,
                            dur: Math.max(0.6, Math.hypot(j.x - v.x, j.y - v.y) / crow.speed) });
         v.look = 'flying'; v.g = 900;

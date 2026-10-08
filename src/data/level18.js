@@ -115,20 +115,29 @@ export const level18 = {
   // side. Cut out of the board and drawn by the game — see `citadel` in
   // src/villagers.js.
   villagers: [
-    // 1-5 (Layer 3b), standing about, each made for the road when tapped: 1 the Thug
-    // above the top road, 2 the Tough Thug beside him, 3 the Thug and 4 the Tough
-    // Thug on the middle island, 5 the Tough Thug by the bottom road's mouth.
-    { x: 397, y: 111 },
-    { x: 447.5, y: 120 },
-    { x: 303, y: 341 },
-    { x: 384.5, y: 350.5 },
-    { x: 43.5, y: 427.5 },
-    // 6-7 (Layer 3a), the two dark crows perched on the citadel's battlements — 6 on
-    // the left merlon, 7 on the right corner one — each standing on the merlon's top,
-    // with a window cut to a bird. Drawn in front of the citadel (`g`).
-    { x: 57, y: 155.5, w: 7, up: 11, down: 1, g: 352 },
-    { x: 157.25, y: 133, w: 7, up: 11, down: 1, g: 352 },
-    // 8, the Crow Harbinger on the balcony, facing right — at his shadow on its
+    // 1-4 (Layer 3b), standing about, each made for the road when tapped: 1 the Thug
+    // and 2 the Tough Thug above the top road, 3 the Rally Thug on the middle island
+    // (a Rally Thug's window: his banner is wider and taller than a man), 4 the Tough
+    // Thug by the bottom road's mouth.
+    { x: 483, y: 109 },
+    { x: 542.75, y: 119.5 },
+    { x: 294.25, y: 337, w: 18, up: 30 },
+    { x: 41.5, y: 427.5 },
+    // 5-7 (Layer 3a), the three dark crows perched on the citadel's battlements — 5 on
+    // the left merlon, 6 on the one beside it, 7 on the right corner one — each
+    // standing on the merlon's top, with a window cut to a bird. Drawn in front of the
+    // citadel (`g`).
+    { x: 56.5, y: 155.5, w: 8, up: 13, down: 1, g: 352 },
+    { x: 76, y: 159, w: 8, up: 13, down: 1, g: 352 },
+    { x: 158, y: 133, w: 8, up: 13, down: 1, g: 352 },
+    // 8-10 (Layer 3b), three more, each in the branches of a dead tree — 8 the tree
+    // beside the citadel, 9 the one above the top road, 10 the one below the bottom
+    // road — drawn in front of its tree (`g`, just past the tree's own foot; the tree
+    // beside the citadel stands inside the citadel's own front box, so past that).
+    { x: 235, y: 207.5, w: 8, up: 13, down: 1, g: 352 },
+    { x: 415, y: 59, w: 8, up: 13, down: 1, g: 97 },
+    { x: 439.5, y: 471.5, w: 8, up: 13, down: 1, g: 521 },
+    // 11, the Crow Harbinger on the balcony, facing right — at his shadow on its
     // planks, in front of the citadel's wall (`g`) and behind the one line of the
     // stonework that is drawn across him (`balcony.line` below).
     { x: 161.25, y: 234, w: 16, up: 35, down: 3, g: 352 }
@@ -173,9 +182,12 @@ export const level18 = {
   startGold: 300,
   startLives: 20,
 
-  // WHAT A FIGURE CAN WALK BEHIND: the citadel, torches and all.
+  // WHAT A FIGURE CAN WALK BEHIND: the citadel, torches and all (and the dead tree
+  // beside it, inside its box), and the two other trees the crows perch in.
   frontArt: 'front18',
   front: [
-    { x: 0, y: 144, w: 257, h: 254, g: 351 }    // stands on y 351 — the citadel
+    { x: 389, y:  35, w:  53, h:  71, g:  97 },   // stands on y 97  — the tree above the top road
+    { x:   0, y: 144, w: 257, h: 254, g: 351 },   // stands on y 351 — the citadel
+    { x: 400, y: 450, w:  60, h:  82, g: 521 }    // stands on y 521 — the tree below the bottom road
   ]
 };
