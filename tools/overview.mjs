@@ -318,7 +318,8 @@ function shapesIn(body) {
 // A LITTLE DARKER AGAIN, at the owner's word — #363636 for one build, and the trees'
 // shadows grown 1.8x for one more; the owner has since drawn a big shadow of their own
 // over the region, so the size is as drawn and only the colour is changed here.
-const DARKEN = { files: /_Layer_7[ab]\.svg$/, from: '#595959', to: '#2b2b2b' };
+// And then halfway back, at the owner's word: between #2b2b2b and #363636.
+const DARKEN = { files: /_Layer_7[ab]\.svg$/, from: '#595959', to: '#313131' };
 const parts = LAYERS.map(file => {
   let svg = readFileSync(file, 'utf8');
   if (DARKEN.files.test(file)) svg = svg.split(DARKEN.from).join(DARKEN.to);
