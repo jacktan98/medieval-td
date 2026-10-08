@@ -1911,6 +1911,14 @@ export function alone(key, level = 1, rate = 1) {
 
 let holdUntil = 0;
 
+// IS A HELD LINE STILL BEING SPOKEN — a boss's, or a village's cry? For a script that
+// waits on a line to FINISH rather than on a clock from when it began: the two bosses
+// stand a beat after their last line before they move (src/villagers.js). False with
+// no sound at all, so a silent game (or the sim) simply goes on the clock.
+export function talking() {
+  return !!ctx && ctx.state === 'running' && ctx.currentTime < holdUntil;
+}
+
 // TRUE IF IT PLAYED. Almost every caller lets a dropped line go — that is the gate
 // doing its job — but a line that must be heard can ask again: stage 15's Captain,
 // whose entrance falls on the very first frame of the stage, when a phone may not

@@ -406,13 +406,18 @@ console.log('\nStage 15, the Captain at the camp wall\n');
   for (let i = 0; i < 57; i++) updateVillagers(state, 1 / 30);
   ok(vp.muster[10].phase === 'stand', '  the field clear, he waits two seconds first', `still ${vp.muster[10].phase} at 1.9s`);
   for (let i = 0; i < 6; i++) updateVillagers(state, 1 / 30);
-  // THEN HIS LINE, AND TWO SECONDS MORE STANDING THERE before he goes — at the owner's
-  // word, as the Crow Harbinger does on stage 16.
+  // THEN HIS LINE, AND A SECOND MORE STANDING THERE ONCE IT HAS FINISHED before he goes
+  // — at the owner's word, as the Crow Harbinger does on stage 16. There is no sound
+  // here, so the line "finishes" when its asking gives up (SAY_WAIT); the second is
+  // counted from then.
   ok(vp.muster[10].phase === 'ready', '  and then says his line where he stands', `${vp.muster[10].phase} at 2.1s`);
-  for (let i = 0; i < 57; i++) updateVillagers(state, 1 / 30);
-  ok(vp.muster[10].phase === 'ready', '  and stands two seconds more', `still ${vp.muster[10].phase} at 4.0s`);
-  for (let i = 0; i < 6; i++) updateVillagers(state, 1 / 30);
-  ok(vp.muster[10].phase === 'charge', '  and then sets off', `${vp.muster[10].phase} at 4.2s`);
+  let t = 0, doneAt = null;
+  while (vp.muster[10].phase === 'ready' && t < 15) {
+    updateVillagers(state, 1 / 30); t += 1 / 30;
+    if (doneAt === null && !vp.say) doneAt = t;
+  }
+  ok(vp.muster[10].phase === 'charge' && doneAt !== null && t - doneAt > 0.95 && t - doneAt < 1.1,
+    '  and sets off a second after it has finished', `${vp.muster[10].phase}, ${(t - (doneAt ?? t)).toFixed(2)}s after`);
   let turned = null;
   for (let i = 0; i < 60 * 30 && !turned; i++) {
     updateVillagers(state, 1 / 30);

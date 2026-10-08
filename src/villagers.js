@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, alone, WINGS_RATE, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, ANVIL,
+import { solo, play, slice, alone, talking, WINGS_RATE, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, ANVIL,
          BOSS_ENTERS, BOSS_LEADS, BOSS_BATTLE } from './audio.js';
 import { starsFor } from './score.js';
 import { level } from './level.js';
@@ -644,9 +644,9 @@ const PLAYS = {
       // door — the boss fight that ends the board.
       watch: [4, 8], idle: [2.5, 4],
       // And he waits `pause` seconds once the board is clear, says his line, and stands
-      // `after` seconds more before he sets off — at the owner's word, as the Crow
-      // Harbinger does on stage 16.
-      pause: 2, after: 2,
+      // `after` seconds more once it has FINISHED before he sets off — at the owner's
+      // word, as the Crow Harbinger does on stage 16.
+      pause: 2, after: 1,
       captainWay: [[92, 318], [88, 214]], captainRoute: 1
     },
     // NO SHOUT AS THE FIRST WAVE COMES: the Captain speaks for this camp instead —
@@ -686,15 +686,16 @@ const PLAYS = {
     // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
     // he casts what that wave says, `n` times, `every` seconds apart; a cast not yet
     // made when the wave ends is skipped. Once the last wave is over and the board has
-    // been clear for `quiet` seconds he says his entrance line, waits `pause` seconds,
-    // walks in at the balcony's door, is gone `inside` seconds, and comes out at the
-    // ground floor's and down to the bottom road (`route`), where he is the boss.
+    // been clear for `quiet` seconds he says his entrance line, waits `pause` seconds
+    // once it has finished, walks in at the balcony's door, is gone `inside` seconds,
+    // and comes out at the ground floor's and down to the bottom road (`route`), where
+    // he is the boss.
     balcony: {
       who: 7, delay: 10,
       waves: { 3: { act: 'point', n: 1 }, 4: { act: 'point', n: 1 },
                5: { act: 'point', n: 2, every: 20 }, 6: { act: 'point', n: 2, every: 20 },
                7: { act: 'call', n: 1 }, 8: { act: 'call', n: 2, every: 20 } },
-      quiet: 2, pause: 2, inside: 2, walk: 14, route: 2
+      quiet: 2, pause: 1, inside: 2, walk: 14, route: 2
     },
     // NO SHOUT AS THE FIRST WAVE COMES: the Harbinger speaks for this keep.
     cries: { runnn: false, nooo: false, wave: null }
@@ -1486,7 +1487,7 @@ function musterRound(state, vp, m, dt) {
     Object.assign(cap, { phase: 'ready', at: vp.t, idle: false });
     say(BOSS_BATTLE);
   }
-  if (cap.phase === 'ready' && vp.t - cap.at >= m.after) {
+  if (cap.phase === 'ready' && lineDone(vp, cap) && vp.t - cap.doneAt >= m.after) {
     const v = state.villagers[m.captain], last = m.captainWay[m.captainWay.length - 1];
     const j = nearestOn([level.routes[m.captainRoute]], last[0], last[1]);
     Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s, way: [...m.captainWay, [j.x, j.y]] });
@@ -1623,7 +1624,7 @@ function joinAt(ri, s) {
 //            be made yet — no tower to point at, his crow still out — is tried again
 //            a second later; one not made by the time the wave ends is skipped.
 //   speak  — the last wave over and the board clear for `quiet` seconds: his entrance
-//            line, and `pause` seconds standing there;
+//            line, and `pause` seconds standing there once it has finished;
 //   indoor — along the balcony to its door, and faded out into it;
 //   inside — gone, `inside` seconds;
 //   down   — out of the ground floor's door, faded in, and down to the bottom road,
@@ -1688,7 +1689,7 @@ function balconyRound(state, vp, b, dt) {
       if (lines) vp.say = { cue: lines, until: vp.t + 4 };
     }
   } else if (B.phase === 'speak') {
-    if (vp.t - B.at >= b.pause) { B.phase = 'indoor'; B.leg = 0; B.at = vp.t; }
+    if (lineDone(vp, B) && vp.t - B.doneAt >= b.pause) { B.phase = 'indoor'; B.leg = 0; B.at = vp.t; }
   } else if (B.phase === 'indoor') {
     if (!B.fading) {
       if (walkFig(e, spot.door, b.walk, dt, B)) { B.fading = true; B.at = vp.t; }
@@ -1727,6 +1728,15 @@ function walkFig(e, pts, speed, dt, B) {
     e.x += dx / d * step; e.y += dy / d * step; step = 0;
   }
   return B.leg >= pts.length;
+}
+
+// HAS A BOSS'S LAST LINE FINISHED? Asked for (`vp.say` gone — spoken, or given up on)
+// and nothing held still speaking (`talking` in src/audio.js). The moment it first is,
+// is kept on `c.doneAt`, so the wait after it is counted from the END of the line.
+function lineDone(vp, c) {
+  if (vp.say || talking()) { c.doneAt = null; return false; }
+  if (c.doneAt == null) c.doneAt = vp.t;
+  return true;
 }
 
 const BOX_DROP = 0.3;         // seconds for a dropped box to reach the ground
