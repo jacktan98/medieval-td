@@ -683,16 +683,16 @@ const PLAYS = {
     perch: [{ who: 5, route: 2, at: 230 }, { who: 6, route: 0, at: 175 }],
     // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
     // he casts what that wave says, `n` times, `every` seconds apart; a cast not yet
-    // made when the wave ends is skipped. Once the last wave is over and the board is
-    // clear he says his entrance line, waits `pause` seconds, walks in at the
-    // balcony's door, is gone `inside` seconds, and comes out at the ground floor's
-    // and down to the bottom road (`route`), where he is the boss.
+    // made when the wave ends is skipped. Once the last wave is over and the board has
+    // been clear for `quiet` seconds he says his entrance line, waits `pause` seconds,
+    // walks in at the balcony's door, is gone `inside` seconds, and comes out at the
+    // ground floor's and down to the bottom road (`route`), where he is the boss.
     balcony: {
       who: 7, delay: 10,
       waves: { 3: { act: 'point', n: 1 }, 4: { act: 'point', n: 1 },
                5: { act: 'point', n: 2, every: 20 }, 6: { act: 'point', n: 2, every: 20 },
                7: { act: 'call', n: 1 }, 8: { act: 'call', n: 2, every: 20 } },
-      pause: 2, inside: 2, walk: 14, route: 2
+      quiet: 2, pause: 2, inside: 2, walk: 14, route: 2
     },
     // NO SHOUT AS THE FIRST WAVE COMES: the Harbinger speaks for this keep.
     cries: { runnn: false, nooo: false, wave: null }
@@ -1617,8 +1617,8 @@ function joinAt(ri, s) {
 //            archery, monastery or artillery tower) or Call Crows. A cast that cannot
 //            be made yet — no tower to point at, his crow still out — is tried again
 //            a second later; one not made by the time the wave ends is skipped.
-//   speak  — the last wave over and the board clear: his entrance line, and `pause`
-//            seconds standing there;
+//   speak  — the last wave over and the board clear for `quiet` seconds: his entrance
+//            line, and `pause` seconds standing there;
 //   indoor — along the balcony to its door, and faded out into it;
 //   inside — gone, `inside` seconds;
 //   down   — out of the ground floor's door, faded in, and down to the bottom road,
@@ -1671,7 +1671,13 @@ function balconyRound(state, vp, b, dt) {
     const over = state.waveIndex >= waves.length ||
       (state.waveIndex === waves.length - 1 && state.resting);
     const coming = Object.values(vp.hollow || {}).some(c => ['still', 'march', 'fly'].includes(c.phase));
-    if (over && state.enemies.length === 0 && !coming && !e.act && !e.raven && !e.flock) {
+    // AND HE WAITS `quiet` SECONDS FIRST, at the owner's word, as the Captain does — the
+    // last enemy down, a beat of quiet, and then his line. The wait starts again if
+    // anything comes back onto the board in the meantime.
+    const clear = over && state.enemies.length === 0 && !coming && !e.act && !e.raven && !e.flock;
+    if (!clear) B.clearAt = null;
+    else if (B.clearAt == null) B.clearAt = vp.t;
+    if (clear && vp.t - B.clearAt >= b.quiet) {
       B.phase = 'speak'; B.at = vp.t;
       const lines = e.def.lines && e.def.lines.enters;
       if (lines) vp.say = { cue: lines, until: vp.t + 4 };
