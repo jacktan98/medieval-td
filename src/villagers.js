@@ -643,8 +643,10 @@ const PLAYS = {
       // the wall, up to the top road, and down the LINK (`captainRoute`) to the bottom
       // door — the boss fight that ends the board.
       watch: [4, 8], idle: [2.5, 4],
-      // And he waits `pause` seconds once the board is clear before he sets off.
-      pause: 2,
+      // And he waits `pause` seconds once the board is clear, says his line, and stands
+      // `after` seconds more before he sets off — at the owner's word, as the Crow
+      // Harbinger does on stage 16.
+      pause: 2, after: 2,
       captainWay: [[92, 318], [88, 214]], captainRoute: 1
     },
     // NO SHOUT AS THE FIRST WAVE COMES: the Captain speaks for this camp instead —
@@ -1479,13 +1481,16 @@ function musterRound(state, vp, m, dt) {
   if (!clear) cap.clearAt = null;
   else if (cap.clearAt == null) cap.clearAt = vp.t;
   if (clear && vp.t - cap.clearAt >= m.pause) {
+    // HE SAYS SO, standing at the wall in his Default drawing — and goes `after`
+    // seconds later (`ready`, below).
+    Object.assign(cap, { phase: 'ready', at: vp.t, idle: false });
+    say(BOSS_BATTLE);
+  }
+  if (cap.phase === 'ready' && vp.t - cap.at >= m.after) {
     const v = state.villagers[m.captain], last = m.captainWay[m.captainWay.length - 1];
     const j = nearestOn([level.routes[m.captainRoute]], last[0], last[1]);
-    Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s, way: [...m.captainWay, [j.x, j.y]],
-                         idle: false });
+    Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s, way: [...m.captainWay, [j.x, j.y]] });
     v.leg = 0;
-    // AND HE SAYS SO as he sets off for the road.
-    say(BOSS_BATTLE);
   }
 
   for (const who of [...slots, m.captain]) {
@@ -1511,11 +1516,11 @@ function musterRound(state, vp, m, dt) {
         // as his drawing is, towards his men.
         v.flip = who !== m.captain;
       }
-    } else if (c.phase === 'stand') {
+    } else if (c.phase === 'stand' || c.phase === 'ready') {
       v.hidden = false; v.x = at.x; v.y = at.y;
       v.flip = who !== m.captain;
       // THE CAPTAIN'S WATCH: Default for a while, then Idle for a while, and again.
-      if (who === m.captain) {
+      if (who === m.captain && c.phase === 'stand') {
         const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
         if (c.next === undefined) c.next = vp.t + span(m.watch);
         if (vp.t >= c.next) { c.idle = !c.idle; c.next = vp.t + span(c.idle ? m.idle : m.watch); }

@@ -406,7 +406,13 @@ console.log('\nStage 15, the Captain at the camp wall\n');
   for (let i = 0; i < 57; i++) updateVillagers(state, 1 / 30);
   ok(vp.muster[10].phase === 'stand', '  the field clear, he waits two seconds first', `still ${vp.muster[10].phase} at 1.9s`);
   for (let i = 0; i < 6; i++) updateVillagers(state, 1 / 30);
-  ok(vp.muster[10].phase === 'charge', '  and then sets off', `${vp.muster[10].phase} at 2.1s`);
+  // THEN HIS LINE, AND TWO SECONDS MORE STANDING THERE before he goes — at the owner's
+  // word, as the Crow Harbinger does on stage 16.
+  ok(vp.muster[10].phase === 'ready', '  and then says his line where he stands', `${vp.muster[10].phase} at 2.1s`);
+  for (let i = 0; i < 57; i++) updateVillagers(state, 1 / 30);
+  ok(vp.muster[10].phase === 'ready', '  and stands two seconds more', `still ${vp.muster[10].phase} at 4.0s`);
+  for (let i = 0; i < 6; i++) updateVillagers(state, 1 / 30);
+  ok(vp.muster[10].phase === 'charge', '  and then sets off', `${vp.muster[10].phase} at 4.2s`);
   let turned = null;
   for (let i = 0; i < 60 * 30 && !turned; i++) {
     updateVillagers(state, 1 / 30);
