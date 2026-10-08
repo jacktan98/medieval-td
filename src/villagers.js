@@ -1555,7 +1555,7 @@ function perchRound(state, vp, dt) {
   for (const p of vp.plan.perch) {
     const v = state.villagers[p.who];
     if (!v || !v.live) continue;
-    v.work = true; v.voice = 'silent';
+    v.work = true; v.voice = 'perched_crow';
     v.card = { title: crow.name, sprite: crow.sprite, trim: crow.spriteTrim };
     const c = vp.hollow[p.who] || (vp.hollow[p.who] = { phase: 'idle' });
     if (c.phase === 'idle') {

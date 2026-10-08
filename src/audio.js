@@ -306,7 +306,7 @@ const paths = {
   // out: played on its own the recording is three flaps and then quiet, and a loop
   // runs from the third straight back into the first. So it plays through, stops,
   // and waits for the next wingbeat.
-  crow_dies:       'assets/audio/sfx/Crow_dies.mp3',
+  dark_crow_dies:  'assets/audio/sfx/Dark_crow_dies.mp3',
   wings_flap:      'assets/audio/sfx/Wings_flap.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
@@ -351,7 +351,7 @@ const paths = {
   // the other: the wind as he calls (with the call line), and his crow as it reaches
   // the tower and starts to circle it. See `sounds` on his def.
   harbinger_wind:   'assets/audio/sfx/Crow_Harbinger_Call_Crows_Wind.mp3',
-  harbinger_circle: 'assets/audio/sfx/Crow_Harbinger_Point_Tower_Encircling.mp3',
+  dark_crow_caw:    'assets/audio/sfx/Dark_crow_caw.mp3',
   // The sixth is not a set piece — it is a running tally, every fifth man he
   // kills — so it is Category B and does not duck anything.
   captain_kills:    'assets/audio/sfx/Captain_Thug_kill_soldier.mp3',
@@ -954,6 +954,8 @@ export const CUE = {
   villager:     ['villager_selected_1', 'villager_selected_2', 'villager_selected_3'],
   // And Dark Hollow's, who are nobody's friend — see `voice` on the `hollow` play.
   enemy_villager: ['villager_enemy_selected_1', 'villager_enemy_selected_2'],
+  // And stage 16's dark crows perched on the citadel, at the owner's word: a caw.
+  perched_crow: ['dark_crow_caw'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],
   artillery:    ['artillery_1', 'artillery_2', 'artillery_3', 'artillery_4', 'artillery_5'],
   monastery:    ['monastery_1', 'monastery_2', 'monastery_3', 'monastery_4', 'monastery_5'],
@@ -1041,7 +1043,7 @@ export const CUE = {
   // weapon would have said — see `cry` on his def in data/waves.js. Category B:
   // played through `play`, not `solo`, at the owner's word, though it sits in this
   // table because it is keyed by the def rather than exported on its own.
-  crowDies:     ['crow_dies'],
+  crowDies:     ['dark_crow_dies'],
   // Selling. Category A and always played with priority, which puts it in the
   // same bracket as a build and an upgrade rather than with the battle: all
   // three are the player pressing a button and moving gold, and the reply to a
@@ -2150,9 +2152,6 @@ export function selectionCue(sel) {
   //
   // AND ONE WHO IS A SOLDIER IN THE MAKING speaks as the soldier he will be: stage
   // 12's villager who becomes a musketeer (`voice`, set by his board's script).
-  // AND ONE WHO IS NOT A MAN AT ALL — stage 16's crows on the battlements — says
-  // nothing: his answer is his wings as he takes off (`alone`, src/villagers.js).
-  if (sel.kind === 'villager' && sel.ref && sel.ref.voice === 'silent') return null;
   if (sel.kind === 'villager') return (sel.ref && sel.ref.voice && CUE[sel.ref.voice]) || CUE.villager;
   return familyCue(sel.ref.fam.id, sel.ref.def);
 }

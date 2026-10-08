@@ -344,8 +344,8 @@ console.log('\n--- his cry and his wings ---\n');
   // Category B at the owner's word. His def names the cue, and the death path plays
   // the def's cry through `play` in place of the weapon's line.
   const cue = CUE[CROW.cry];
-  ok(cue && cue.length === 1 && CLIPS[cue[0]] === 'assets/audio/sfx/Crow_dies.mp3',
-    'he has his own cry, and it is Crow_dies', cue ? `${CROW.cry} -> ${cue.join(', ')}` : 'no cue');
+  ok(cue && cue.length === 1 && CLIPS[cue[0]] === 'assets/audio/sfx/Dark_crow_dies.mp3',
+    'he has his own cry, and it is Dark_crow_dies', cue ? `${CROW.cry} -> ${cue.join(', ')}` : 'no cue');
   const death = readFileSync(new URL('../src/enemies.js', import.meta.url), 'utf8');
   ok(/if \(e\.def\.cry\) play\(CUE\[e\.def\.cry\]\);\s*else solo\(/.test(death),
     '  played through play — Category B — in place of the kill line', 'the death path in src/enemies.js');

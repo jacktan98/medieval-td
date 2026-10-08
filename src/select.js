@@ -65,7 +65,11 @@ export function pickFigure(state, x, y) {
   // this game's figures at all — they stay painted into the board — so what is
   // listed for them is a point to test a tap against and nothing more. See
   // src/villagers.js.
-  for (const [kind, list] of [['unit', state.units], ['enemy', state.enemies],
+  // AND STAGE 16'S CROW HARBINGER ON HIS BALCONY (`state.perched`), at the owner's
+  // word: he can be tapped and his card read like any enemy's — nothing can attack
+  // him up there, because he is not on the road (src/enemies.js).
+  const perched = state.perched && !state.perched.hidden ? [state.perched] : [];
+  for (const [kind, list] of [['unit', state.units], ['enemy', [...state.enemies, ...perched]],
                               ['villager', state.villagers || []]]) {
     for (const f of list) {
       // A soldier waiting to respawn is a muster ring, not a man. There is
@@ -110,7 +114,7 @@ export function validate(state) {
   if (!s) return;
 
   const list = s.kind === 'unit' ? state.units
-             : s.kind === 'enemy' ? state.enemies
+             : s.kind === 'enemy' ? (state.perched && !state.perched.hidden ? [...state.enemies, state.perched] : state.enemies)
              : s.kind === 'villager' ? (state.villagers || [])
              : state.towers;
 

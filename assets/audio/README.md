@@ -24,7 +24,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Flask_Break.mp3,
                       Defend_while_walking.mp3, Enemies_heal.mp3,
                       War_cry.mp3, Bomb_sound.mp3, Boulder_hit.mp3,
-                      Crow_dies.mp3, Wings_flap.mp3,
+                      Dark_crow_dies.mp3, Wings_flap.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
@@ -32,7 +32,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
                       Captain_Thug_enters_battle.mp3,
                       Crow_Harbinger_enters.mp3, Crow_Harbinger_Point_Tower.mp3,
-                      Crow_Harbinger_Point_Tower_Encircling.mp3,
+                      Dark_crow_caw.mp3,
                       Crow_Harbinger_Call_Crows.mp3, Crow_Harbinger_Call_Crows_Wind.mp3,
                       Crow_Harbinger_before_dying.mp3, Crow_Harbinger_kill_soldier.mp3
 
@@ -257,14 +257,15 @@ and it now means "how long a lull has to be before the game forgets".
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
 | **a Boulder Giant's boulder hits** — thrown and landing, or brought down on a man's head in melee — Category B, twice as loud as the rest of the battle's (90% of a voice) | `Boulder_hit` |
-| **a dark crow is shot down**, whatever shot him — Category B | `Crow_dies` |
+| **a dark crow is shot down**, whatever shot him — Category B | `Dark_crow_dies` |
 | **a dark crow's wings come down**, if the last play has finished — whole, one at a time, 1.25x speed, soft at 0.35 | `Wings_flap` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a dark priest looses one** — Category B | `Arcane_shot` |
 | **a projectile hits a blocker thug or the captain while his shield is up** — Category B, a little under the shots | `Defend_while_walking` |
 | **a dark priest starts a heal, or the captain mends himself** — Category B | `Enemies_heal` |
-| **the Crow Harbinger's crow reaches a tower and starts to circle it** — Category B | `Crow_Harbinger_Point_Tower_Encircling` |
+| **the Crow Harbinger's crow reaches a tower and starts to circle it** — Category B | `Dark_crow_caw` |
+| stage 16: a **dark crow perched on the citadel** is tapped | `Dark_crow_caw` |
 | **the Crow Harbinger calls the flock**, the wind rising round him — Category B, with his call line | `Crow_Harbinger_Call_Crows_Wind` |
 | **a musketeer fires** — Category B | `Musketeer_shot` |
 | **a ballista looses** — Category B | `Ballista_Bolt_shot` |

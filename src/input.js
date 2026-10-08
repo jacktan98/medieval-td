@@ -407,7 +407,10 @@ export function tap(state, x, y, restart) {
   // WITH PRIORITY for Dark Hollow's thugs and enemy villagers, at the owner's word: the
   // tap is what sets them on the road, so what they say has to be heard.
   const sel = state.selected;
-  solo(selectionCue(sel), !!(sel && sel.kind === 'villager' && sel.ref.voice === 'enemy_villager'));
+  // And stage 16's perched crows, whose caw is the same kind of answer: the tap is
+  // what sends them to the road.
+  solo(selectionCue(sel), !!(sel && sel.kind === 'villager' &&
+    (sel.ref.voice === 'enemy_villager' || sel.ref.voice === 'perched_crow')));
   // A tapped villager stops to greet the player — see src/villagers.js.
   if (state.selected && state.selected.kind === 'villager') greetVillager(state, state.selected.ref);
   // Picking somebody up is an action and so is putting them down; tapping bare

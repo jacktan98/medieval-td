@@ -2057,7 +2057,7 @@ export const enemyTypes = {
     },
     // AND THE NOISE OF HIS ABILITIES, under the voice: the wind with the call, and his
     // crow's as it reaches the tower and starts to circle it.
-    sounds: { call: ['harbinger_wind'], circle: ['harbinger_circle'] },
+    sounds: { call: ['harbinger_wind'], circle: ['dark_crow_caw'] },
     r: 14,
     colour: '#4A3A52'
   }
