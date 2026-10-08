@@ -309,8 +309,16 @@ function shapesIn(body) {
 // than tidiness: a layer is classified as lettering when EVERY shape in it is in the
 // lettering colour, and half a layer is much likelier to be all of one colour than a
 // whole one is.
+// DARK HOLLOW'S SHADOWS, DARKER, at the owner's word: "make it darker so that it shows
+// the darkness in this region for all the shadows except the mountains". The region
+// is Layer 7a and 7b, and #595959 there is only ever a shadow — under its dead trees,
+// its huts and its citadel; the mountains are drawn in their own colours in other
+// layers and are left alone. Swapped before anything else reads the layer, so the
+// sepia ramp browns the darker grey like any other.
+const DARKEN = { files: /_Layer_7[ab]\.svg$/, from: '#595959', to: '#363636' };
 const parts = LAYERS.map(file => {
-  const svg = readFileSync(file, 'utf8');
+  let svg = readFileSync(file, 'utf8');
+  if (DARKEN.files.test(file)) svg = svg.split(DARKEN.from).join(DARKEN.to);
   const { clip, body } = contentOf(svg, file);
   return { n: +/_Layer_(\d+)/.exec(file)[1], file, clip, body,
            background: bgOf(svg), shapes: shapesIn(body) };
