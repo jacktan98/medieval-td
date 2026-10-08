@@ -437,7 +437,16 @@ function begin(e, act) {
   // the Dark Priest's cast already follows: the sound covers the beat rather than
   // marking its end. Category B for the mend, because it is the shared enemy heal
   // and two creatures could be casting; Category A for the two death beats.
-  const cue = beatCue(e.def, act);
+  let cue = beatCue(e.def, act);
+  // A LINE WITH TWO TAKES TAKES THEM IN TURN, at the owner's word — the Crow
+  // Harbinger's Point Tower and Call Crows — rather than at random: each beat keeps
+  // its own count on him.
+  if (cue && cue.length > 1) {
+    e.takes = e.takes || {};
+    const n = e.takes[act] || 0;
+    e.takes[act] = n + 1;
+    cue = [cue[n % cue.length]];
+  }
   // Category B for the mend — it is the shared enemy heal and two creatures could
   // be casting — and Category A WITH PRIORITY for the two death beats, on the same
   // argument the entrance is: the gate is a queue, and a boss dying should not lose

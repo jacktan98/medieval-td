@@ -183,7 +183,8 @@ const LOUDER = new Set([
   'captain_enters', 'captain_leads', 'captain_battle', 'captain_pause', 'captain_healed',
   'captain_dying', 'boss_fallen', 'captain_kills', 'captain_picked',
   // And the Crow Harbinger's voice, a boss's like the captain's.
-  'harbinger_battle', 'harbinger_point', 'harbinger_call', 'harbinger_dying', 'harbinger_kills'
+  'harbinger_battle', 'harbinger_point', 'harbinger_call', 'harbinger_dying', 'harbinger_kills',
+  'harbinger_point_2', 'harbinger_call_2', 'harbinger_enters', 'harbinger_picked'
 ]);
 
 // Anything quieter than this counts as silence when finding where a clip really
@@ -343,8 +344,14 @@ const paths = {
   // flock, as he is beaten and standing, and every fifth man he kills. See `lines`
   // on his def.
   harbinger_battle: 'assets/audio/sfx/Crow_Harbinger_enters_battle.mp3',
-  harbinger_point:  'assets/audio/sfx/Crow_Harbinger_Point_Tower.mp3',
-  harbinger_call:   'assets/audio/sfx/Crow_Harbinger_Call_Crows.mp3',
+  // TWO TAKES EACH of Point Tower and Call Crows, taken in turn (see begin in
+  // src/enemies.js); his line as stage 16 begins; and when he is tapped.
+  harbinger_point:  'assets/audio/sfx/Crow_Harbinger_Point_Tower_1.mp3',
+  harbinger_point_2: 'assets/audio/sfx/Crow_Harbinger_Point_Tower_2.mp3',
+  harbinger_call:   'assets/audio/sfx/Crow_Harbinger_Call_Crows_1.mp3',
+  harbinger_call_2: 'assets/audio/sfx/Crow_Harbinger_Call_Crows_2.mp3',
+  harbinger_enters: 'assets/audio/sfx/Crow_Harbinger_enters.mp3',
+  harbinger_picked: 'assets/audio/sfx/Crow_Harbinger_selected.mp3',
   harbinger_dying:  'assets/audio/sfx/Crow_Harbinger_before_dying.mp3',
   harbinger_kills:  'assets/audio/sfx/Crow_Harbinger_kill_soldier.mp3',
   // AND THE NOISE OF HIS TWO ABILITIES, Category B under the voice so neither drops
@@ -919,6 +926,11 @@ export const GAIN = {
   harbinger_battle: 0.891,
   harbinger_point: 1.169,
   harbinger_call: 0.854,
+  // His second takes, his stage-start line and his selected line: the same 300.
+  harbinger_point_2: 0.806,
+  harbinger_call_2: 0.765,
+  harbinger_enters: 0.844,
+  harbinger_picked: 0.785,
   harbinger_dying: 0.732,
   harbinger_kills: 0.859,
   // And his wind, 60 against a voice's 100 — on the background bus, so 0.12 at the
@@ -990,6 +1002,8 @@ export const CUE = {
   // reached, which is a DEF lookup rather than a kind check — the shape the note
   // there always said the second enemy voice would need.
   captainPicked: ['captain_picked'],
+  // And the Crow Harbinger's.
+  harbingerPicked: ['harbinger_picked'],
   arrowKill:    ['arrow_kill_unit'],
   // A rock killing a man is its own event with its own clip now — it used to
   // borrow the arrow's, which was the better of two wrongs while nothing else

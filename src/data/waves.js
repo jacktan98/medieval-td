@@ -2061,10 +2061,16 @@ export const enemyTypes = {
     // Tower and Call Crows as each pose comes up, beaten and standing, every fifth man
     // he kills — and the captain's fall, renamed Boss_fall_dead so either boss can use
     // it, as he hits the ground.
+    // TWO TAKES of Point Tower and of Call Crows, at the owner's word, taken in turn —
+    // first, second, first (see begin in src/enemies.js). `start` is his line as stage
+    // 16 begins, on the balcony (balconyRound in src/villagers.js).
     lines: {
-      enters: ['harbinger_battle'], point: ['harbinger_point'], call: ['harbinger_call'],
+      enters: ['harbinger_battle'], start: ['harbinger_enters'],
+      point: ['harbinger_point', 'harbinger_point_2'], call: ['harbinger_call', 'harbinger_call_2'],
       fall: ['harbinger_dying'], rest: ['boss_fallen'], kills: ['harbinger_kills']
     },
+    // AND WHAT HE SAYS WHEN TAPPED, as the Captain has his own.
+    voice: 'harbingerPicked',
     // AND THE NOISE OF HIS ABILITIES, under the voice: the wind with the call, and his
     // crow's as it reaches the tower and starts to circle it.
     sounds: { call: ['harbinger_wind'], circle: ['dark_crow_caw'] },

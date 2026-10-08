@@ -31,9 +31,12 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_before_dying.mp3, Boss_fall_dead.mp3,
                       Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
                       Captain_Thug_enters_battle.mp3,
-                      Crow_Harbinger_enters_battle.mp3, Crow_Harbinger_Point_Tower.mp3,
+                      Crow_Harbinger_enters_battle.mp3, Crow_Harbinger_enters.mp3,
+                      Crow_Harbinger_selected.mp3,
+                      Crow_Harbinger_Point_Tower_1.mp3, Crow_Harbinger_Point_Tower_2.mp3,
                       Dark_crow_caw.mp3,
-                      Crow_Harbinger_Call_Crows.mp3, Crow_Harbinger_Call_Crows_Wind.mp3,
+                      Crow_Harbinger_Call_Crows_1.mp3, Crow_Harbinger_Call_Crows_2.mp3,
+                      Crow_Harbinger_Call_Crows_Wind.mp3,
                       Crow_Harbinger_before_dying.mp3, Crow_Harbinger_kill_soldier.mp3
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
@@ -282,8 +285,10 @@ and it now means "how long a lull has to be before the game forgets".
 | the **captain** is beaten and standing | `Captain_Thug_before_dying` |
 | a **boss** goes down — the captain, and the Crow Harbinger | `Boss_fall_dead` |
 | the **Crow Harbinger** walks on to the road — on stage 16, as he leaves the balcony after the last wave | `Crow_Harbinger_enters_battle` |
-| the **Crow Harbinger** points his crow at a tower | `Crow_Harbinger_Point_Tower` |
-| the **Crow Harbinger** calls the flock | `Crow_Harbinger_Call_Crows` |
+| stage 16 begins, the **Crow Harbinger** on his balcony | `Crow_Harbinger_enters` |
+| the **Crow Harbinger** is tapped | `Crow_Harbinger_selected` |
+| the **Crow Harbinger** points his crow at a tower — the two takes in turn | `Crow_Harbinger_Point_Tower_1`, `_2` |
+| the **Crow Harbinger** calls the flock — the two takes in turn | `Crow_Harbinger_Call_Crows_1`, `_2` |
 | the **Crow Harbinger** is beaten and standing | `Crow_Harbinger_before_dying` |
 | the **Crow Harbinger** kills his 5th, 10th, 15th man | `Crow_Harbinger_kill_soldier` |
 | an ability is **unlocked** | that tower's own voice — `Musketeer_1..3` or `Paladin_1..3` |

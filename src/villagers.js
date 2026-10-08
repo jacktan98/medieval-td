@@ -1640,6 +1640,9 @@ function balconyRound(state, vp, b, dt) {
     state.perched = makePerched(state, 'crow_harbinger', at.x, at.y, 1);
     // Drawn at the depth the level gives him up there — in front of the citadel's wall.
     state.perched.g = at.g;
+    // AND HIS LINE AS THE STAGE BEGINS, at the owner's word, asked for until it is heard.
+    const start = state.perched.def.lines && state.perched.def.lines.start;
+    if (start) vp.say = { cue: start, until: vp.t + 4 };
     vp.holdWin = true;
   }
   const B = vp.balcony, e = state.perched;
