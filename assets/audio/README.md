@@ -31,7 +31,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Captain_Thug_before_dying.mp3, Boss_fall_dead.mp3,
                       Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
                       Captain_Thug_enters_battle.mp3,
-                      Crow_Harbinger_enters.mp3, Crow_Harbinger_Point_Tower.mp3,
+                      Crow_Harbinger_enters_battle.mp3, Crow_Harbinger_Point_Tower.mp3,
                       Dark_crow_caw.mp3,
                       Crow_Harbinger_Call_Crows.mp3, Crow_Harbinger_Call_Crows_Wind.mp3,
                       Crow_Harbinger_before_dying.mp3, Crow_Harbinger_kill_soldier.mp3
@@ -281,7 +281,7 @@ and it now means "how long a lull has to be before the game forgets".
 | the **captain** finishes mending himself | `Captain_Thug_heal` |
 | the **captain** is beaten and standing | `Captain_Thug_before_dying` |
 | a **boss** goes down — the captain, and the Crow Harbinger | `Boss_fall_dead` |
-| the **Crow Harbinger** walks on | `Crow_Harbinger_enters` |
+| the **Crow Harbinger** walks on to the road — on stage 16, as he leaves the balcony after the last wave | `Crow_Harbinger_enters_battle` |
 | the **Crow Harbinger** points his crow at a tower | `Crow_Harbinger_Point_Tower` |
 | the **Crow Harbinger** calls the flock | `Crow_Harbinger_Call_Crows` |
 | the **Crow Harbinger** is beaten and standing | `Crow_Harbinger_before_dying` |

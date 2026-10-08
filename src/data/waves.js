@@ -2062,7 +2062,7 @@ export const enemyTypes = {
     // he kills — and the captain's fall, renamed Boss_fall_dead so either boss can use
     // it, as he hits the ground.
     lines: {
-      enters: ['harbinger_enters'], point: ['harbinger_point'], call: ['harbinger_call'],
+      enters: ['harbinger_battle'], point: ['harbinger_point'], call: ['harbinger_call'],
       fall: ['harbinger_dying'], rest: ['boss_fallen'], kills: ['harbinger_kills']
     },
     // AND THE NOISE OF HIS ABILITIES, under the voice: the wind with the call, and his

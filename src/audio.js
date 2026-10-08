@@ -183,7 +183,7 @@ const LOUDER = new Set([
   'captain_enters', 'captain_leads', 'captain_battle', 'captain_pause', 'captain_healed',
   'captain_dying', 'boss_fallen', 'captain_kills', 'captain_picked',
   // And the Crow Harbinger's voice, a boss's like the captain's.
-  'harbinger_enters', 'harbinger_point', 'harbinger_call', 'harbinger_dying', 'harbinger_kills'
+  'harbinger_battle', 'harbinger_point', 'harbinger_call', 'harbinger_dying', 'harbinger_kills'
 ]);
 
 // Anything quieter than this counts as silence when finding where a clip really
@@ -342,7 +342,7 @@ const paths = {
   // captain's: as he walks on, as he points his crow at a tower, as he calls the
   // flock, as he is beaten and standing, and every fifth man he kills. See `lines`
   // on his def.
-  harbinger_enters: 'assets/audio/sfx/Crow_Harbinger_enters.mp3',
+  harbinger_battle: 'assets/audio/sfx/Crow_Harbinger_enters_battle.mp3',
   harbinger_point:  'assets/audio/sfx/Crow_Harbinger_Point_Tower.mp3',
   harbinger_call:   'assets/audio/sfx/Crow_Harbinger_Call_Crows.mp3',
   harbinger_dying:  'assets/audio/sfx/Crow_Harbinger_before_dying.mp3',
@@ -916,7 +916,7 @@ export const GAIN = {
   // The Crow Harbinger's, at the owner's word, the same as the Captain's: 300 against
   // a voice's 100, his kill line 400. Measured the same way. Point Tower is a quiet
   // recording that GAIN_MAX holds back, so its trim is over 1, as the entrance's is.
-  harbinger_enters: 0.891,
+  harbinger_battle: 0.891,
   harbinger_point: 1.169,
   harbinger_call: 0.854,
   harbinger_dying: 0.732,
