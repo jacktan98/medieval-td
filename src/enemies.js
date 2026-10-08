@@ -532,8 +532,10 @@ function crowPowers(state, e) {
   if (d.call && (e.callCd || 0) <= 0 && e.hp < e.maxHp * d.call.below) {
     e.callCd = d.call.cooldown;
     begin(e, 'call');
-    // The flock comes in over the next few seconds, one every `gap` — see crowWork.
-    e.flock = { left: d.call.count, t: 0 };
+    // The flock comes in over the next few seconds, one every `gap` — see crowWork —
+    // and `grow` more of them for every call he has made on the road before this one.
+    e.flock = { left: d.call.count + (d.call.grow || 0) * (e.calls || 0), t: 0 };
+    e.calls = (e.calls || 0) + 1;
     return true;
   }
   if (d.point && !e.raven && (e.pointCd || 0) <= 0 && e.hp > e.maxHp * d.point.above) {

@@ -2031,6 +2031,11 @@ export const enemyTypes = {
       below: 0.5,
       cooldown: 20,
       count: 20,
+      // AND THE FLOCK GROWS, at the owner's word: on the road, each call brings `grow`
+      // more crows than the one before — 20, 22, 24 and on — "to ensure that he is to
+      // be defeated quickly or else over time crows will overwhelm the player". Not
+      // from stage 16's balcony, where he calls on the board's timetable instead.
+      grow: 2,
       gap: 0.4,
       type: 'crow'
     },
@@ -2182,7 +2187,8 @@ export const FOE_NOTES = {
   captain_thug: 'The bandit captain, with shield, bow and sword. Wounded badly, he throws down ' +
     'his shield and fights on with a magic blade. If he reaches the end, the battle is lost.',
   crow_harbinger: 'A sorcerer whose crow blinds one of your towers for 10 seconds. Badly hurt, he ' +
-    'calls 20 crows down the road and heals while he calls, so keep archers and monasteries ready.'
+    'calls 20 crows down the road and heals while he calls, and 2 more crows with every call after. ' +
+    'Bring him down fast, and keep archers and monasteries ready.'
 };
 
 // HOW FAST THEY COME when nobody has said, which is what a creature placed into a
