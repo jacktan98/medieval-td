@@ -316,9 +316,31 @@ function shapesIn(body) {
 // layers and are left alone. Swapped before anything else reads the layer, so the
 // sepia ramp browns the darker grey like any other.
 const DARKEN = { files: /_Layer_7[ab]\.svg$/, from: '#595959', to: '#363636' };
+// AND THE DEAD TREES' SHADOWS BIGGER, at the owner's word, "so that it shows more
+// darkness": each little ellipse under a tree — a shadow-coloured path no bigger than
+// `small` (map units, as drawn, before any group transform) — grown `k` times about
+// its own middle. The huts' and the citadel's are bigger than that and stay as drawn.
+const TREE_SHADOW = { small: [25, 10], k: 1.8 };
+function growTreeShadows(svg) {
+  return svg.replace(/<path d="([^"]*)"([^>]*?)\/>/g, (all, d, attrs) => {
+    const fill = / fill="(#[0-9a-fA-F]{6})"/.exec(attrs);
+    if (!fill || fill[1].toLowerCase() !== DARKEN.to) return all;
+    const nums = (d.match(/-?\d+\.?\d*(?:[eE][-+]?\d+)?/g) || []).map(Number);
+    const xs = nums.filter((_, i) => i % 2 === 0), ys = nums.filter((_, i) => i % 2 === 1);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+    if (x1 - x0 > TREE_SHADOW.small[0] || y1 - y0 > TREE_SHADOW.small[1]) return all;
+    // About its own middle, in its own coordinates — so after any transform the path
+    // already carries, which applies on top of this one.
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, k = TREE_SHADOW.k;
+    const grow = `translate(${cx} ${cy}) scale(${k}) translate(${-cx} ${-cy})`;
+    const had = / transform="([^"]*)"/.exec(attrs);
+    const next = had ? attrs.replace(had[0], ` transform="${had[1]} ${grow}"`) : `${attrs} transform="${grow}"`;
+    return `<path d="${d}"${next}/>`;
+  });
+}
 const parts = LAYERS.map(file => {
   let svg = readFileSync(file, 'utf8');
-  if (DARKEN.files.test(file)) svg = svg.split(DARKEN.from).join(DARKEN.to);
+  if (DARKEN.files.test(file)) svg = growTreeShadows(svg.split(DARKEN.from).join(DARKEN.to));
   const { clip, body } = contentOf(svg, file);
   return { n: +/_Layer_(\d+)/.exec(file)[1], file, clip, body,
            background: bgOf(svg), shapes: shapesIn(body) };
