@@ -22,6 +22,9 @@
 //   node tools/split-map.mjs assets/map/Stage_16_Map
 //
 // (The top road's mouth is on the TOP edge, at x 222; the bottom road's on the left.)
+//
+// THE CITADEL IS LAYER 3b, drawn last, and the trees and figures Layer 3a under it —
+// the owner swapped the two so the dead tree beside the citadel stands behind it.
 import { stage16Waves } from './waves.js';
 
 // THE TOP ROAD, in from the top edge and out at the TOP door. 912px.
@@ -115,7 +118,7 @@ export const level18 = {
   // side. Cut out of the board and drawn by the game — see `citadel` in
   // src/villagers.js.
   villagers: [
-    // 1-4 (Layer 3b), standing about, each made for the road when tapped: 1 the Thug
+    // 1-4 (Layer 3a), standing about, each made for the road when tapped: 1 the Thug
     // and 2 the Tough Thug above the top road, 3 the Rally Thug on the middle island
     // (a Rally Thug's window: his banner is wider and taller than a man), 4 the Tough
     // Thug by the bottom road's mouth.
@@ -123,14 +126,14 @@ export const level18 = {
     { x: 542.75, y: 119.5 },
     { x: 294.25, y: 337, w: 18, up: 30 },
     { x: 41.5, y: 427.5 },
-    // 5-7 (Layer 3a), the three dark crows perched on the citadel's battlements — 5 on
+    // 5-7 (Layer 3b), the three dark crows perched on the citadel's battlements — 5 on
     // the left merlon, 6 on the one beside it, 7 on the right corner one — each
     // standing on the merlon's top, with a window cut to a bird. Drawn in front of the
     // citadel (`g`).
     { x: 56.5, y: 155.5, w: 8, up: 13, down: 1, g: 352 },
     { x: 76, y: 159, w: 8, up: 13, down: 1, g: 352 },
     { x: 158, y: 133, w: 8, up: 13, down: 1, g: 352 },
-    // 8-10 (Layer 3b), three more, each in the branches of a dead tree — 8 the tree
+    // 8-10 (Layer 3a), three more, each in the branches of a dead tree — 8 the tree
     // beside the citadel, 9 the one above the top road, 10 the one below the bottom
     // road — drawn in front of its tree (`g`, just past the tree's own foot; the tree
     // beside the citadel stands inside the citadel's own front box, so past that).
@@ -144,7 +147,7 @@ export const level18 = {
   ],
   villagerPlay: 'citadel',
   // THE CROW HARBINGER'S BALCONY. `line` is the one black line of the citadel drawn
-  // over him in the artwork (Layer 3a), holding up the balcony, at the owner's word:
+  // over him in the artwork (Layer 3b), holding up the balcony, at the owner's word:
   // drawn again over him by the game — from, to, in game px, and its width. `door` is
   // the balcony's doorway he walks back into and `gate` the citadel's ground-floor
   // door he comes out of — see `balcony` in src/villagers.js.
