@@ -141,7 +141,9 @@ export const level18 = {
   // door he comes out of — see `balcony` in src/villagers.js.
   balcony: {
     line: { from: [129.53, 203.77], to: [162.68, 241.44], w: 1 },
-    door: [[148, 228], [143, 226]],
+    // A STEP INTO THE DOORWAY and no further, at the owner's word — he used to cross
+    // the whole of it to the far post before he faded.
+    door: [[154, 231]],
     gate: { at: [186, 362], way: [[196, 380], [204, 404]] }
   },
   // THE PAINTED FLAMES of the two torches at the citadel's door are taken out of the
