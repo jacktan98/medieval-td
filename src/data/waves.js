@@ -656,7 +656,7 @@ export const enemyTypes = {
     damageType: 'physical',
     armour: { physical: 'none', magic: 'high' },
     speed: 80,
-    bounty: 20,
+    bounty: 15,     // 15, from 20, at the owner's word
     leak: 1,
     damage: 0,
     r: 8,
