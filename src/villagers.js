@@ -24,7 +24,7 @@ import { starsFor } from './score.js';
 import { level } from './level.js';
 import { nearestOn, at as pointOn, laneOf } from './route.js';
 import { enemyTypes } from './data/waves.js';
-import { makePerched, perchCast, perchTick } from './enemies.js';
+import { makePerched, perchCast, perchTick, glideDist } from './enemies.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
 // a figure to be: `pickFigure` reads `def.r` and `def.spriteTrim`, and the info
@@ -1547,7 +1547,7 @@ function musterRound(state, vp, m, dt) {
 //          the spot he joins it — and is a Dark Crow there (`vp.turned`).
 // His drawing is `v.look`: 'perch', then 'flying' — see drawVillager in render.js.
 const PERCH_K = (9.5 / 74) / SCALE;     // the painted crow's size, as a share of a road crow's
-const CROW_FLAP = 0.5, CROW_GLIDE = 0.8;  // seconds of one wingbeat, and of the glide after it
+const PERCH_TURN = [1.5, 4];            // seconds between a perched crow's turns, low and high
 function perchRound(state, vp, dt) {
   vp.hollow = vp.hollow || {};
   const crow = enemyTypes.crow;
@@ -1561,8 +1561,11 @@ function perchRound(state, vp, dt) {
     const c = vp.hollow[p.who] || (vp.hollow[p.who] = { phase: 'idle' });
     if (c.phase === 'idle') {
       v.look = 'perch';
-      if (c.turn === undefined) c.turn = vp.t + 2.5 + Math.random() * 4;
-      if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + 2.5 + Math.random() * 4; }
+      // TURNING LEFT AND RIGHT on the merlon, at the owner's word — a little more often
+      // than the thugs (`PERCH_TURN`), since a bird this size turning is easy to miss.
+      const span = () => PERCH_TURN[0] + Math.random() * (PERCH_TURN[1] - PERCH_TURN[0]);
+      if (c.turn === undefined) c.turn = vp.t + span();
+      if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + span(); }
       if (c.tapped) {
         // Where he joins the road, and where his body is when he gets there: a crow's
         // flying height above it, as every crow on the road is drawn.
@@ -1584,10 +1587,8 @@ function perchRound(state, vp, dt) {
       // Facing the way he flies: the drawings face left, so heading right is mirrored.
       if (Math.abs(v.x - was.x) > 0.01) v.flip = v.x > was.x;
       // ONE WINGBEAT, THEN A GLIDE, at the owner's word — flapping all the way, his head
-      // bobbed with every stroke. A beat is the four flying drawings in `FLAP` seconds;
-      // the glide holds the wings level (the second drawing) for `GLIDE`, and again.
-      const cyc = c.t % (CROW_FLAP + CROW_GLIDE), stride = crow.flying.stride;
-      v.flyDist = cyc < CROW_FLAP ? (cyc / CROW_FLAP) * 4 * stride : stride;
+      // bobbed with every stroke. See glideDist in src/enemies.js.
+      v.flyDist = glideDist(c.t, crow.flying.stride);
       // From the size he is painted at on the merlon up to a road crow's, over the
       // first third of the flight. See PERCH in src/render.js.
       v.grow = PERCH_K + (1 - PERCH_K) * Math.min(1, k * 3);

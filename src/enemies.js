@@ -653,7 +653,23 @@ function crowWork(state, e, dt) {
   // HOW FAR IT HAS FLOWN, for its wingbeat — but never slower than a Dark Crow beats
   // his wings, so a crow circling slowly still flaps rather than gliding.
   const flyer = enemyTypes[d.call ? d.call.type : 'crow'];
-  r.dist = (r.dist || 0) + Math.max(Math.hypot(r.x - was.x, r.y - was.y), (flyer ? flyer.speed : 80) * dt);
+  if (r.phase === 'circle') {
+    r.dist = (r.dist || 0) + Math.max(Math.hypot(r.x - was.x, r.y - was.y), (flyer ? flyer.speed : 80) * dt);
+  } else {
+    // ON ITS WAY TO THE TOWER AND BACK, A WINGBEAT AND A GLIDE, at the owner's word —
+    // as stage 16's perched crows fly to the road. See glideDist.
+    r.dist = glideDist(r.t, flyer ? flyer.flying.stride : 13);
+  }
+}
+
+// A CROW FLYING SOMEWHERE, NOT FLAPPING ALL THE WAY: one wingbeat — the four flying
+// drawings — in GLIDE.flap seconds, then its wings held level (the second drawing) for
+// GLIDE.glide, and again; flapping all the way bobbed its head with every stroke.
+// Given seconds since it set off and the drawings' stride, the distance crowFrame reads.
+export const GLIDE = { flap: 0.5, glide: 0.8 };
+export function glideDist(t, stride) {
+  const cyc = t % (GLIDE.flap + GLIDE.glide);
+  return cyc < GLIDE.flap ? (cyc / GLIDE.flap) * 4 * stride : stride;
 }
 
 // --- A BOSS ON A BALCONY: stage 16's Crow Harbinger -------------------------------
