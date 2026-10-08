@@ -1258,8 +1258,8 @@ const NAMES_AS_TEXT = true;
 // Each name's centre, measured off the artist's layer 9 (half its 1920 x 1080).
 const NAME_TEXT = [
   ['Oakhaven', 119, 120], ['Winchester', 378, 149], ['Serene Peak', 729, 83],
-  ['Dawnford', 427, 256], ['Ironforge', 804, 302], ['Fernshadow', 528, 402],
-  ['Sandshroud', 216, 449]
+  ['Dawnford', 657, 238], ['Ironforge', 804, 302], ['Fernshadow', 488, 400],
+  ['Sandshroud', 216, 449], ['Dark Hollow', 713, 416]
 ];
 // LOBSTER, as a second test at the owner's word: "can you use lobster font style for
 // the text in overview map. Want to see how it looks like". It has one weight, so no
