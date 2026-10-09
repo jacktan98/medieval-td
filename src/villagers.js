@@ -671,10 +671,12 @@ const PLAYS = {
     // to before stepping onto it.
     still: 2, walk: 14,
     thugs: [
-      { who: 0, road: [[483, 140]] },
-      { who: 1, type: 'tough_inf', road: [[543, 145]] },
-      { who: 2, type: 'rally_inf', road: [[294, 375]] },
-      { who: 3, type: 'tough_inf', road: [[42, 462]] }
+      // A GOOD WAY DOWN AND ALONG, at the owner's word (the lines they drew): each
+      // makes for a spot well along his road toward its exit, not straight down onto it.
+      { who: 0, road: [[548, 150], [605, 168]] },
+      { who: 1, type: 'tough_inf', road: [[602, 147], [652, 161]] },
+      { who: 2, type: 'rally_inf', road: [[378, 396], [457, 428]] },
+      { who: 3, type: 'tough_inf', road: [[82, 465], [134, 473]] }
     ],
     hideouts: [],
     // THE SIX CROWS, at the owner's word: three on the citadel's battlements and three
@@ -688,7 +690,7 @@ const PLAYS = {
     // owner's word: the trees stand right by the road, and dropping onto the nearest
     // spot looked like a hop out of the tree; this way he flies a little way along it.
     perch: [{ who: 4, route: 2, ground: 351 }, { who: 5, route: 2, ground: 351 },
-            { who: 6, route: 0, ground: 351 }, { who: 7, route: 0, ground: 262, ahead: 160 },
+            { who: 6, route: 0, ground: 351, to: [402, 186] }, { who: 7, route: 0, ground: 262, ahead: 160 },
             { who: 8, route: 0, ground: 97, ahead: 160 }, { who: 9, route: 2, ground: 521, ahead: 160 }],
     // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
     // he casts what that wave says, `n` times, `every` seconds apart; a cast not yet
@@ -702,7 +704,7 @@ const PLAYS = {
       waves: { 3: { act: 'point', n: 1 }, 4: { act: 'point', n: 1 },
                5: { act: 'point', n: 2, every: 20 }, 6: { act: 'point', n: 2, every: 20 },
                7: { act: 'call', n: 1 }, 8: { act: 'call', n: 2, every: 20 } },
-      quiet: 2, pause: 1, inside: 2, walk: 14, route: 2
+      quiet: 2, pause: 1, inside: 2, walk: 14, march: 22, route: 2
     },
     // NO SHOUT AS THE FIRST WAVE COMES: the Harbinger speaks for this keep.
     cries: { runnn: false, nooo: false, wave: null }
@@ -1593,7 +1595,9 @@ function perchRound(state, vp, dt) {
         // Where he joins the road, and where his body is when he gets there: a crow's
         // flying height above it, as every crow on the road is drawn.
         const road = level.routes[p.route];
-        const near = nearestOn([road], v.x, v.y).s;
+        // Or where the board says (`to`, a spot on the road): the right-hand
+        // battlement crow's, out along the top road, at the owner's word.
+        const near = nearestOn([road], ...(p.to || [v.x, v.y])).s;
         const j = joinAt(p.route, Math.min(near + (p.ahead || 0), road.total - 40));
         Object.assign(c, { phase: 'fly', t: 0, fx: v.x, fy: v.y - 4, tx: j.x, ty: j.y - lift, j,
                            dur: Math.max(0.6, Math.hypot(j.x - v.x, j.y - v.y) / crow.speed) });
@@ -1741,7 +1745,8 @@ function balconyRound(state, vp, b, dt) {
     }
   } else if (B.phase === 'down') {
     e.alpha = Math.min(1, (vp.t - B.at) / DOOR_FADE);
-    if (walkFig(e, B.way, b.walk, dt, B)) {
+    // A GOOD WAY TO THE ROAD now (the level's `gate.way`), so at `march` pace.
+    if (walkFig(e, B.way, b.march || b.walk, dt, B)) {
       B.phase = 'gone';
       state.perched = null;
       vp.holdWin = false;

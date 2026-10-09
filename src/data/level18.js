@@ -156,7 +156,8 @@ export const level18 = {
     // A STEP INTO THE DOORWAY and no further, at the owner's word — he used to cross
     // the whole of it to the far post before he faded.
     door: [[154, 231]],
-    gate: { at: [186, 362], way: [[196, 380], [204, 404]] }
+    // A GOOD WAY DOWN AND ALONG the bottom road from the door, at the owner's word.
+    gate: { at: [186, 362], way: [[196, 380], [236, 400], [305, 413]] }
   },
   // THE CITADEL'S WALLS as one outline on the board, in game px — its two faces, off
   // Layer 3b, from the top of the walls to their foot. A crow flying off the
