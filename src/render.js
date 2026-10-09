@@ -616,6 +616,11 @@ function drawFigures(ctx, state) {
   // `ride`: a villager drawn in someone else's drawing — stage 4's front-end plank
   // carrier, who is in the back-end man's picture while they carry and throw.
   for (const v of state.villagers || []) if (v.live && !v.hidden && !v.ride) add(raised(v), 1, () => drawVillager(ctx, state, v));
+  // STAGE 16'S CROWS FLYING TO THE ROAD cast a shadow on the ground under them, at the
+  // depth of the ground it is on — see `shadow` in perchRound, src/villagers.js.
+  for (const v of state.villagers || []) {
+    if (v.live && !v.hidden && v.look === 'flying' && v.shadow) add(v.shadow.y, 0, () => drawCrowShadow(ctx, v.shadow));
+  }
   // SANDSHROUD'S TUMBLEWEEDS, rolling across among everything else — see src/desert.js.
   if (level.desert) for (const w of weeds(state.anim || 0)) add(w.y, 1, () => drawWeed(ctx, w));
   // A PLANK IN THE AIR, thrown onto the stack, sorted at the depth of the men who
@@ -1935,6 +1940,24 @@ function drawPerchedCrow(ctx, v) {
       ctx.drawImage(img, tx, ty, tw, cut, (tx - ax) * SCALE, (ty - ay) * SCALE, tw * SCALE, cut * SCALE);
     }
   }
+  ctx.restore();
+}
+
+// A DARK CROW'S SHADOW ON ITS OWN, where `sh` says — the one a crow on the road is
+// drawn with, cut out of his Default drawing (`flying.shadow`) and laid with the same
+// pivot, so it lands on exactly the spot the road crow's has. `k` its size, `a` how
+// strong.
+function drawCrowShadow(ctx, sh) {
+  const d = enemyTypes.crow, f = d.flying, img = art[d.sprite];
+  if (!img) return;
+  const [tx, ty, tw, th] = d.spriteTrim;
+  const [sx, sy, sw, swh] = f.shadow;
+  const px = tx + d.pivot[0] * tw, py = ty + d.pivot[1] * th;
+  ctx.save();
+  ctx.globalAlpha *= sh.a;
+  ctx.translate(sh.x, sh.y);
+  ctx.scale(sh.k, sh.k);
+  ctx.drawImage(img, sx, sy, sw, swh, (sx - px) * SCALE, (sy - py) * SCALE, sw * SCALE, swh * SCALE);
   ctx.restore();
 }
 

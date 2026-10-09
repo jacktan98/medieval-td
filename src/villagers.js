@@ -682,9 +682,11 @@ const PLAYS = {
     // then; tapped, each takes off and flies to its road and is a Dark Crow there like
     // any other — the battlements' left two to the BOTTOM road and the right one to the
     // TOP, and each tree's to the road beside it. `route` is the road; he joins it at
-    // the point of it nearest him.
-    perch: [{ who: 4, route: 2 }, { who: 5, route: 2 }, { who: 6, route: 0 },
-            { who: 7, route: 0 }, { who: 8, route: 0 }, { who: 9, route: 2 }],
+    // the point of it nearest him. `ground` is the ground under his perch — the
+    // citadel's foot, or his tree's — where his shadow starts as he takes off.
+    perch: [{ who: 4, route: 2, ground: 351 }, { who: 5, route: 2, ground: 351 },
+            { who: 6, route: 0, ground: 351 }, { who: 7, route: 0, ground: 262 },
+            { who: 8, route: 0, ground: 97 }, { who: 9, route: 2, ground: 521 }],
     // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
     // he casts what that wave says, `n` times, `every` seconds apart; a cast not yet
     // made when the wave ends is skipped. Once the last wave is over and the board has
@@ -1600,6 +1602,12 @@ function perchRound(state, vp, dt) {
       // From the size he is painted at on the merlon up to a road crow's, over the
       // first third of the flight. See PERCH in src/render.js.
       v.grow = PERCH_K + (1 - PERCH_K) * Math.min(1, k * 3);
+      // AND HIS SHADOW ON THE GROUND UNDER HIM, at the owner's word: from the ground
+      // under his perch to the spot on the road he lands on, moving with him, faded in
+      // over the first part of the flight so it does not appear from nowhere at the
+      // foot of the citadel — and arriving exactly where a road crow's shadow is.
+      const g0 = p.ground ?? c.fy;
+      v.shadow = { x: v.x, y: g0 + (c.j.y - g0) * ease, k: v.grow, a: Math.min(1, k / 0.4) };
       if (k >= 1) {
         c.phase = 'done';
         v.hidden = true; v.live = false;
