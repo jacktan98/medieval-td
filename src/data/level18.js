@@ -158,6 +158,11 @@ export const level18 = {
     door: [[154, 231]],
     gate: { at: [186, 362], way: [[196, 380], [204, 404]] }
   },
+  // THE CITADEL'S WALLS as one outline on the board, in game px — its two faces, off
+  // Layer 3b, from the top of the walls to their foot. A crow flying off the
+  // battlements casts no shadow while it would fall on these, at the owner's word: it
+  // shows once it is on the ground (perchRound, src/villagers.js).
+  solid: [[[-38, 156.7], [83.5, 173.6], [166.6, 144.5], [248.2, 340.7], [128.5, 390.1], [-38, 361.7]]],
   // THE PAINTED FLAMES of the two torches at the citadel's door are taken out of the
   // board by tools/split-map.mjs and burn live instead: see `fires`.
   unpaint: [

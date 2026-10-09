@@ -1558,6 +1558,16 @@ function musterRound(state, vp, m, dt) {
 // His drawing is `v.look`: 'perch', then 'flying' — see drawVillager in render.js.
 const PERCH_K = (12 / 66) / SCALE;      // the painted crow's size, as a share of a road crow's
 const PERCH_TURN = [1.5, 4];            // seconds between a perched crow's turns, low and high
+const SHADOW_IN = 0.2;                  // seconds for a flying crow's shadow to fade in on the ground
+// Is (x, y) inside a polygon of [x, y] points? Even-odd.
+function inside(poly, x, y) {
+  let hit = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i], [xj, yj] = poly[j];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) hit = !hit;
+  }
+  return hit;
+}
 function perchRound(state, vp, dt) {
   vp.hollow = vp.hollow || {};
   const crow = enemyTypes.crow;
@@ -1606,8 +1616,14 @@ function perchRound(state, vp, dt) {
       // under his perch to the spot on the road he lands on, moving with him, faded in
       // over the first part of the flight so it does not appear from nowhere at the
       // foot of the citadel — and arriving exactly where a road crow's shadow is.
+      // NOT ON THE CITADEL, at the owner's word: while the spot under him is on its
+      // walls (`solid` on the level) there is no shadow, and once it is on the ground
+      // it fades in over SHADOW_IN seconds.
       const g0 = p.ground ?? c.fy;
-      v.shadow = { x: v.x, y: g0 + (c.j.y - g0) * ease, k: v.grow, a: Math.min(1, k / 0.4) };
+      const sy = g0 + (c.j.y - g0) * ease;
+      const onWall = (level.solid || []).some(poly => inside(poly, v.x, sy));
+      c.shadowA = onWall ? 0 : Math.min(1, (c.shadowA || 0) + dt / SHADOW_IN);
+      v.shadow = { x: v.x, y: sy, k: v.grow, a: c.shadowA };
       if (k >= 1) {
         c.phase = 'done';
         v.hidden = true; v.live = false;
