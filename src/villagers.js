@@ -660,7 +660,9 @@ const PLAYS = {
       // `after` seconds more once it has FINISHED before he sets off — at the owner's
       // word, as the Crow Harbinger does on stage 16.
       pause: 2, after: 1,
-      captainWay: [[92, 318], [88, 214]], captainRoute: 1
+      // OUT ROUND THE LEFT OF THE WALL, at the owner's word: a wide curve left from his
+      // corner, up past the upper torch and round onto the top road (then the link).
+      captainWay: [[96, 320], [68, 296], [52, 262], [60, 226], [88, 199], [128, 186]], captainRoute: 1
     },
     // NO SHOUT AS THE FIRST WAVE COMES: the Captain speaks for this camp instead —
     // as he walks in, as he sends his men out, and as he walks out himself (see
@@ -702,7 +704,7 @@ const PLAYS = {
     // A TREE'S CROW JOINS IT `ahead` px further on than the point nearest him, at the
     // owner's word: the trees stand right by the road, and dropping onto the nearest
     // spot looked like a hop out of the tree; this way he flies a little way along it.
-    perch: [{ who: 4, route: 2, ground: 351 }, { who: 5, route: 2, ground: 351 },
+    perch: [{ who: 4, route: 2, ground: 351, to: [398, 432] }, { who: 5, route: 2, ground: 351, to: [402, 419] },
             { who: 6, route: 0, ground: 351, to: [402, 186] }, { who: 7, route: 0, ground: 262, ahead: 160 },
             { who: 8, route: 0, ground: 97, ahead: 160 }, { who: 9, route: 2, ground: 521, ahead: 160 }],
     // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
@@ -1271,7 +1273,7 @@ function hollowRound(state, vp, dt) {
   const march = (v, c, type, road) => {
     const last = road[road.length - 1];
     const j = nearestOn(level.routes, last[0], last[1]);
-    Object.assign(c, { phase: 'march', type, join: j, way: [...road, [j.x, j.y]] });
+    Object.assign(c, { phase: 'march', type, join: j, way: smoothWay([[v.x, v.y], ...road, [j.x, j.y]]) });
     v.leg = 0; v.look = 'thug'; v.lookType = type; v.card = cardOf(type);
   };
   // SLOWLY UP TO THE ROAD, AND UP TO SPEED ACROSS IT: from its edge (`ROAD_EDGE` from
@@ -1468,7 +1470,7 @@ function musterRound(state, vp, m, dt) {
         const go = (who, way, route) => {
           const v = state.villagers[who], last = way[way.length - 1];
           const j = nearestOn([level.routes[route]], last[0], last[1]);
-          Object.assign(M[who], { phase: 'charge', route, s: j.s, way: [...way, [j.x, j.y]] });
+          Object.assign(M[who], { phase: 'charge', route, s: j.s, way: smoothWay([[v.x, v.y], ...way, [j.x, j.y]]) });
           v.leg = 0;
         };
         let top = 0;
@@ -1512,7 +1514,8 @@ function musterRound(state, vp, m, dt) {
   if (cap.phase === 'ready' && lineDone(vp, cap) && vp.t - cap.doneAt >= m.after) {
     const v = state.villagers[m.captain], last = m.captainWay[m.captainWay.length - 1];
     const j = nearestOn([level.routes[m.captainRoute]], last[0], last[1]);
-    Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s, way: [...m.captainWay, [j.x, j.y]] });
+    Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s,
+                         way: smoothWay([[v.x, v.y], ...m.captainWay, [j.x, j.y]]) });
     v.leg = 0;
   }
 
@@ -1754,7 +1757,7 @@ function balconyRound(state, vp, b, dt) {
       const g = spot.gate, last = g.way[g.way.length - 1];
       const j = nearestOn([level.routes[b.route]], last[0], last[1]);
       Object.assign(e, { x: g.at[0], y: g.at[1], hidden: false, alpha: 0, g: undefined, face: 1 });
-      Object.assign(B, { phase: 'down', at: vp.t, leg: 0, way: [...g.way, [j.x, j.y]], join: j });
+      Object.assign(B, { phase: 'down', at: vp.t, leg: 0, way: smoothWay([g.at, ...g.way, [j.x, j.y]]), join: j });
     }
   } else if (B.phase === 'down') {
     e.alpha = Math.min(1, (vp.t - B.at) / DOOR_FADE);
@@ -1789,6 +1792,28 @@ function lineDone(vp, c) {
   if (vp.say || talking()) { c.doneAt = null; return false; }
   if (c.doneAt == null) c.doneAt = vp.t;
   return true;
+}
+
+// A WALKING ROUTE WITH ITS CORNERS ROUNDED, at the owner's word — "ensure units that
+// are clickable have smooth pathways": the board's way-points are a guide, and a man
+// following them turns through a curve rather than on a corner. Chaikin's cutting,
+// `SMOOTH` times over: each leg's inner quarters kept and its corners cut, the two
+// ends where they were. `pts` starts where he stands; the result leaves that out,
+// since he is already there.
+const SMOOTH = 3;
+function smoothWay(pts) {
+  let p = pts;
+  for (let n = 0; n < SMOOTH && p.length > 2; n++) {
+    const q = [p[0]];
+    for (let i = 0; i < p.length - 1; i++) {
+      const [ax, ay] = p[i], [bx, by] = p[i + 1];
+      if (i > 0) q.push([ax * 0.75 + bx * 0.25, ay * 0.75 + by * 0.25]);
+      if (i < p.length - 2) q.push([ax * 0.25 + bx * 0.75, ay * 0.25 + by * 0.75]);
+    }
+    q.push(p[p.length - 1]);
+    p = q;
+  }
+  return p.slice(1);
 }
 
 const BOX_DROP = 0.3;         // seconds for a dropped box to reach the ground
