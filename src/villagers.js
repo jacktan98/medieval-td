@@ -1272,8 +1272,8 @@ function hollowRound(state, vp, dt) {
   // Off to the road: along `road`, and on to the nearest point of it — where he joins.
   const march = (v, c, type, road) => {
     const last = road[road.length - 1];
-    const j = nearestOn(level.routes, last[0], last[1]);
-    Object.assign(c, { phase: 'march', type, join: j, way: smoothWay([[v.x, v.y], ...road, [j.x, j.y]]) });
+    const j = mergeOnto(nearestOn(level.routes, last[0], last[1]).route, last);
+    Object.assign(c, { phase: 'march', type, join: j, way: smoothWay([[v.x, v.y], ...road, ...j.tail]) });
     v.leg = 0; v.look = 'thug'; v.lookType = type; v.card = cardOf(type);
   };
   // SLOWLY UP TO THE ROAD, AND UP TO SPEED ACROSS IT: from its edge (`ROAD_EDGE` from
@@ -1469,8 +1469,8 @@ function musterRound(state, vp, m, dt) {
       if (ev.always || standing.length === slots.length) {
         const go = (who, way, route) => {
           const v = state.villagers[who], last = way[way.length - 1];
-          const j = nearestOn([level.routes[route]], last[0], last[1]);
-          Object.assign(M[who], { phase: 'charge', route, s: j.s, way: smoothWay([[v.x, v.y], ...way, [j.x, j.y]]) });
+          const j = mergeOnto(route, last);
+          Object.assign(M[who], { phase: 'charge', route, s: j.s, way: smoothWay([[v.x, v.y], ...way, ...j.tail]) });
           v.leg = 0;
         };
         let top = 0;
@@ -1513,9 +1513,9 @@ function musterRound(state, vp, m, dt) {
   }
   if (cap.phase === 'ready' && lineDone(vp, cap) && vp.t - cap.doneAt >= m.after) {
     const v = state.villagers[m.captain], last = m.captainWay[m.captainWay.length - 1];
-    const j = nearestOn([level.routes[m.captainRoute]], last[0], last[1]);
+    const j = mergeOnto(m.captainRoute, last);
     Object.assign(cap, { phase: 'charge', route: m.captainRoute, s: j.s,
-                         way: smoothWay([[v.x, v.y], ...m.captainWay, [j.x, j.y]]) });
+                         way: smoothWay([[v.x, v.y], ...m.captainWay, ...j.tail]) });
     v.leg = 0;
   }
 
@@ -1616,7 +1616,7 @@ function perchRound(state, vp, dt) {
         const near = nearestOn([road], ...(p.to || [v.x, v.y])).s;
         const j = joinAt(p.route, Math.min(near + (p.ahead || 0), road.total - 40));
         Object.assign(c, { phase: 'fly', t: 0, fx: v.x, fy: v.y - 4, tx: j.x, ty: j.y - lift, j,
-                           dur: Math.max(0.6, Math.hypot(j.x - v.x, j.y - v.y) / crow.speed) });
+                           flight: crowFlight([v.x, v.y - 4], [j.x, j.y - lift], j) });
         v.look = 'flying'; v.g = 900;
         // His wings as he goes — the whole recording, one at a time, as a crow's on the
         // road (see `alone` in src/audio.js).
@@ -1625,10 +1625,20 @@ function perchRound(state, vp, dt) {
     }
     if (c.phase === 'fly') {
       c.t += dt;
-      const k = Math.min(1, c.t / c.dur), ease = k * k * (3 - 2 * k);
+      // ONTO THE ROAD AT A ROAD CROW'S PACE AND HEADING, at the owner's word — he used to
+      // slow to a stop over the road and set off along it at once, a jolt half-way
+      // across. Up to speed off the perch (`TAKE_OFF` s), then at it the rest of the way
+      // down a curve whose last stretch runs along the road (crowFlight), so the
+      // creature he becomes goes on exactly as he was going.
+      const f = c.flight;
+      const run = c.t < TAKE_OFF ? crow.speed * c.t * c.t / (2 * TAKE_OFF)
+                                 : crow.speed * (c.t - TAKE_OFF / 2);
+      const k = Math.min(1, run / f.len), ease = k * k * (3 - 2 * k);
       const was = { x: v.x, y: v.y };
-      v.x = c.fx + (c.tx - c.fx) * ease;
-      v.y = c.fy + (c.ty - c.fy) * ease - Math.sin(Math.PI * k) * 26;
+      const q = alongFlight(f, k * f.len);
+      // Up off the merlon and settling to a road crow's height, level as he arrives.
+      v.x = q[0];
+      v.y = q[1] - Math.sin(Math.PI * k) * (1 - k) * HOP;
       // Facing the way he flies: the drawings face left, so heading right is mirrored.
       if (Math.abs(v.x - was.x) > 0.01) v.flip = v.x > was.x;
       // ONE WINGBEAT, THEN A GLIDE, at the owner's word — flapping all the way, his head
@@ -1645,7 +1655,7 @@ function perchRound(state, vp, dt) {
       // walls (`solid` on the level) there is no shadow, and once it is on the ground
       // it fades in over SHADOW_IN seconds.
       const g0 = p.ground ?? c.fy;
-      const sy = g0 + (c.j.y - g0) * ease;
+      const sy = q[1] + (g0 - c.fy) * (1 - ease) + lift * ease;
       const onWall = (level.solid || []).some(poly => inside(poly, v.x, sy));
       c.shadowA = onWall ? 0 : Math.min(1, (c.shadowA || 0) + dt / SHADOW_IN);
       v.shadow = { x: v.x, y: sy, k: v.grow, a: c.shadowA };
@@ -1658,11 +1668,38 @@ function perchRound(state, vp, dt) {
   }
 }
 
+// A PERCHED CROW'S WAY DOWN TO THE ROAD: a curve from `a` (his perch) to `b` (the
+// spot on the road `j`, at a flying crow's height), its last stretch along the road's
+// own heading there — sampled and measured, so he can be flown along it at a steady
+// pace (alongFlight).
+const TAKE_OFF = 0.4;         // seconds to come up to a road crow's pace off the perch
+const HOP = 45;               // the rise off the perch: about 26px at its highest
+function crowFlight(a, b, j) {
+  const road = laneOf(level.routes[j.route], 1);
+  const t = pointOn(road, j.s);
+  const L = Math.min(70, 0.45 * Math.hypot(b[0] - a[0], b[1] - a[1]));
+  const c2 = [b[0] - t.tx * L, b[1] - t.ty * L];
+  const c1 = [a[0] + (c2[0] - a[0]) / 3, a[1] + (c2[1] - a[1]) / 3];
+  const pts = [], cum = [0];
+  for (let i = 0; i <= 48; i++) {
+    const u = i / 48, w = 1 - u;
+    pts.push([0, 1].map(n => w * w * w * a[n] + 3 * w * w * u * c1[n] + 3 * w * u * u * c2[n] + u * u * u * b[n]));
+    if (i) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  }
+  return { pts, cum, len: cum[cum.length - 1] };
+}
+function alongFlight(f, d) {
+  let i = 1;
+  while (i < f.cum.length - 1 && f.cum[i] < d) i++;
+  const u = Math.max(0, Math.min(1, (d - f.cum[i - 1]) / ((f.cum[i] - f.cum[i - 1]) || 1)));
+  return [0, 1].map(n => f.pts[i - 1][n] + (f.pts[i][n] - f.pts[i - 1][n]) * u);
+}
+
 // A spot `s` px along route `ri` — on its middle lane, where a creature placed on the
 // road by a script stands (see spawn in src/enemies.js) — as a point with its `s`.
 function joinAt(ri, s) {
   const q = pointOn(laneOf(level.routes[ri], 1), s);
-  return { x: q.x, y: q.y, s };
+  return { x: q.x, y: q.y, s, route: ri };
 }
 
 // STAGE 16, THE CROW HARBINGER ON HIS BALCONY. He is an enemy rather than a villager
@@ -1755,14 +1792,18 @@ function balconyRound(state, vp, b, dt) {
     if (vp.t - B.at >= b.inside) {
       // OUT AT THE GROUND FLOOR'S DOOR, and down to the bottom road.
       const g = spot.gate, last = g.way[g.way.length - 1];
-      const j = nearestOn([level.routes[b.route]], last[0], last[1]);
+      const j = mergeOnto(b.route, last);
       Object.assign(e, { x: g.at[0], y: g.at[1], hidden: false, alpha: 0, g: undefined, face: 1 });
-      Object.assign(B, { phase: 'down', at: vp.t, leg: 0, way: smoothWay([g.at, ...g.way, [j.x, j.y]]), join: j });
+      Object.assign(B, { phase: 'down', at: vp.t, leg: 0, way: smoothWay([g.at, ...g.way, ...j.tail]), join: j });
     }
   } else if (B.phase === 'down') {
     e.alpha = Math.min(1, (vp.t - B.at) / DOOR_FADE);
-    // A GOOD WAY TO THE ROAD now (the level's `gate.way`), so at `march` pace.
-    if (walkFig(e, B.way, b.march || b.walk, dt, B)) {
+    // A GOOD WAY TO THE ROAD now (the level's `gate.way`), so at `march` pace — and up
+    // to his own across the road's edge, as the thugs do, so he steps on unbroken.
+    const d = nearestOn(level.routes, e.x, e.y).d;
+    const k = Math.min(1, Math.max(0, 1 - d / ROAD_EDGE)), march = b.march || b.walk;
+    const pace = march + (e.def.speed - march) * k * k * (3 - 2 * k);
+    if (walkFig(e, B.way, pace, dt, B)) {
       B.phase = 'gone';
       state.perched = null;
       vp.holdWin = false;
@@ -1792,6 +1833,24 @@ function lineDone(vp, c) {
   if (vp.say || talking()) { c.doneAt = null; return false; }
   if (c.doneAt == null) c.doneAt = vp.t;
   return true;
+}
+
+// ONTO THE ROAD ALONG IT, at the owner's word — a figure walking up to the middle of
+// the road and turning there onto it jolted, half-way across, from the way he came to
+// the way the road goes. So the end of his way is the road itself: from the nearest
+// spot on route `ri` to `last` (the board's last way-point), on along it `MERGE` px —
+// on the middle lane, where the creature is placed (see spawn in src/enemies.js). His
+// rounded way (smoothWay) curves into it and its last leg runs down the road, so he
+// is heading the road's way, on it, at the very spot he becomes the creature.
+// `tail` is the road's three points, for the end of a way; `s` where he joins.
+const MERGE = 36;
+function mergeOnto(ri, last) {
+  const road = laneOf(level.routes[ri], 1);
+  const s0 = nearestOn([road], last[0], last[1]).s;
+  const s = Math.max(s0, Math.min(s0 + MERGE, road.total - 40));
+  const tail = [s0, (s0 + s) / 2, s].map(q => { const p = pointOn(road, q); return [p.x, p.y]; });
+  const end = pointOn(road, s);
+  return { route: ri, s, x: end.x, y: end.y, tail };
 }
 
 // A WALKING ROUTE WITH ITS CORNERS ROUNDED, at the owner's word — "ensure units that
