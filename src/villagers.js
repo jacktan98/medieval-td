@@ -684,9 +684,12 @@ const PLAYS = {
     // TOP, and each tree's to the road beside it. `route` is the road; he joins it at
     // the point of it nearest him. `ground` is the ground under his perch — the
     // citadel's foot, or his tree's — where his shadow starts as he takes off.
+    // A TREE'S CROW JOINS IT `ahead` px further on than the point nearest him, at the
+    // owner's word: the trees stand right by the road, and dropping onto the nearest
+    // spot looked like a hop out of the tree; this way he flies a little way along it.
     perch: [{ who: 4, route: 2, ground: 351 }, { who: 5, route: 2, ground: 351 },
-            { who: 6, route: 0, ground: 351 }, { who: 7, route: 0, ground: 262 },
-            { who: 8, route: 0, ground: 97 }, { who: 9, route: 2, ground: 521 }],
+            { who: 6, route: 0, ground: 351 }, { who: 7, route: 0, ground: 262, ahead: 160 },
+            { who: 8, route: 0, ground: 97, ahead: 160 }, { who: 9, route: 2, ground: 521, ahead: 160 }],
     // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
     // he casts what that wave says, `n` times, `every` seconds apart; a cast not yet
     // made when the wave ends is skipped. Once the last wave is over and the board has
@@ -1589,7 +1592,9 @@ function perchRound(state, vp, dt) {
       if (c.tapped) {
         // Where he joins the road, and where his body is when he gets there: a crow's
         // flying height above it, as every crow on the road is drawn.
-        const j = joinAt(p.route, nearestOn([level.routes[p.route]], v.x, v.y).s);
+        const road = level.routes[p.route];
+        const near = nearestOn([road], v.x, v.y).s;
+        const j = joinAt(p.route, Math.min(near + (p.ahead || 0), road.total - 40));
         Object.assign(c, { phase: 'fly', t: 0, fx: v.x, fy: v.y - 4, tx: j.x, ty: j.y - lift, j,
                            dur: Math.max(0.6, Math.hypot(j.x - v.x, j.y - v.y) / crow.speed) });
         v.look = 'flying'; v.g = 900;

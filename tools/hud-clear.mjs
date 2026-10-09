@@ -124,12 +124,10 @@ const RUNS = [
 // the board and stood inside the speed button" — a box top of 8.7 against the
 // plate's 9, which fails the new line as it failed the old one.
 //
-// AND THE TAP AREA IS NOT THE PLATE, which is the one thing the old note had
-// right for a reason it did not give. hitHudButton takes anything above y=63 and
-// HUD_PAD to either side, so the taps a plate swallows reach well below the
-// picture of it. It is not what this rule measures, because it is not something a
-// player can see and because the body of any building tall enough to reach up
-// there runs hundreds of px below y=63 — there is always somewhere to tap it.
+// AND THE TAP AREA IS THE PLATE now, at the owner's word — it used to reach down to
+// y=63 and 7px either side, well below the picture of it. Either way it is not what
+// this rule measures: the body of any building tall enough to reach up there runs
+// hundreds of px below the plates, so there is always somewhere to tap it.
 const CONTROLS = Object.entries(HUD_BTN).map(([id, b]) => [b.x, b.w, b.y + b.h, id, b.y]);
 
 // THE INFO PANEL IS NOT A CONTROL, and that distinction is the whole reason it
