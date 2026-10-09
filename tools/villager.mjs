@@ -83,10 +83,12 @@ console.log('\nWho lives here\n');
   // Dark Hollow Citadel's balcony, the same size and colour — he is listed, at his own
   // shadow on the planks below it.
   const NOT_VILLAGERS = { m10: [{ x: 189, y: 303 }], m18: [{ x: 161, y: 208 }] };
-  // AND SIX ON THE LIST WHO STAND ON NO SHADOW: Dark Hollow Citadel's crows, perched
+  // AND SEVEN ON THE LIST WHO STAND ON NO SHADOW: Dark Hollow Citadel's crows, perched
   // on the battlements and in the trees — a bird on a merlon or a branch stands on
   // stone or wood, and the artist drew none.
-  const PERCHED = { m18: [{ x: 56.5, y: 155.5 }, { x: 76, y: 159 }, { x: 158, y: 133 },
+  // And stage 1's, on a house's ridge.
+  const PERCHED = { m0: [{ x: 193, y: 108.5 }],
+                    m18: [{ x: 56.5, y: 155.5 }, { x: 76, y: 159 }, { x: 158, y: 133 },
                           { x: 235, y: 207.5 }, { x: 398, y: 75 }, { x: 439.5, y: 471.5 }] };
   const missing = [], stray = [];
   for (const l of campaign) {

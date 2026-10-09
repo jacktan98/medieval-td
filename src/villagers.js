@@ -18,7 +18,7 @@
 //
 // SO THE LIVE HALF IS A POINT AND A NAME. Four fields and no update loop.
 import { SCALE } from './data/towers.js';
-import { solo, play, slice, alone, talking, WINGS_RATE, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, ANVIL,
+import { solo, play, slice, alone, talking, WINGS_RATE, CUE, VILLAGER_RUN, VILLAGER_NOOO, VILLAGER_WAVE, LANDED, HAMMER, CHOP, BELL, FACTORY, SPLASH, ANVIL,
          BOSS_ENTERS, BOSS_LEADS, BOSS_BATTLE } from './audio.js';
 import { starsFor } from './score.js';
 import { level } from './level.js';
@@ -243,21 +243,21 @@ const ENEMY_VILLAGER_CARD = { title: 'Enemy Villager', sprite: 'evill_front_stan
 const PLAYS = {
   oakhaven: {
     before: [front('greet'), back('greet'), back('greet'), front('greet'), front('greet')],
-    // VILLAGERS 1 AND 2 RUN TO THE ROAD, to the grass just under it beside the
-    // exit flag, at the owner's word: down past the log, along the bottom of the
-    // village below both houses and the plot, then up to the road's edge.
-    //
-    // ROUND THE ROCK, not over it: the grey boulder by the plot at the left
-    // (about x 270-297, y 455-471) is passed underneath by both, the first a
-    // dozen pixels below it and the second further out. Grass tufts they step over.
+    // VILLAGERS 1 AND 2 RUN TO THE TWO HOUSES AT THE BOTTOM, at the owner's word (his
+    // two lines): down from the campfire in a long curve, past the grey boulder by the
+    // plot (about x 270-297, y 455-471) — the first above it, the second below — and
+    // along to the foot of the houses, the first under the left one, the second under
+    // the right one's corner.
     run: [
       { who: 0, delay: 0,
-        path: [[205, 400], [238, 448], [262, 478], [300, 486], [330, 492], [430, 497], [525, 514], [630, 512],
-               [790, 498], [840, 482], [872, 468]] },
+        path: [[188, 362], [205, 382], [228, 402], [248, 421], [272, 438], [306, 455], [356, 473], [417, 482],
+               [488, 484]] },
       { who: 1, delay: 0.35,
-        path: [[190, 432], [228, 475], [270, 494], [330, 503], [430, 505], [530, 520], [630, 518],
-               [790, 506], [850, 490], [895, 478]] }
+        path: [[166, 400], [178, 416], [192, 430], [220, 444], [255, 460], [285, 477], [310, 483], [350, 494],
+               [400, 500], [460, 499], [518, 496]] }
     ],
+    // 6, THE DARK CROW ON THE ROOF: see roostRound.
+    roost: { who: 5, ground: 150, roof: 222, rise: 46, up: 0.8, hover: 1, speed: 110, ramp: 0.6 },
     // The road is above them all but villagers 4 and 5, who have it below.
     after: [back('pray'), back('pray'), back('pray'), front('pray'), front('pray')],
     hops: [{ every: 10, who: [2, 3, 4] }, { every: 12, who: [0, 1] }],
@@ -990,6 +990,8 @@ function work(state, vp, dt) {
   // STAGE 16'S CROWS on the battlements, and the Crow Harbinger on his balcony.
   if (vp.plan.perch) perchRound(state, vp, dt);
   if (vp.plan.balcony) balconyRound(state, vp, vp.plan.balcony, dt);
+  // STAGE 1'S DARK CROW on the roof, and the way the board ends.
+  if (vp.plan.roost) roostRound(state, vp, vp.plan.roost, dt);
 
   // STAGE 11'S TWO CARRIERS, each on a loop of his own.
   if (vp.plan.porter) porterLoop(state, vp, vp.plan.porter, dt);
@@ -1693,6 +1695,63 @@ function alongFlight(f, d) {
   while (i < f.cum.length - 1 && f.cum[i] < d) i++;
   const u = Math.max(0, Math.min(1, (d - f.cum[i - 1]) / ((f.cum[i] - f.cum[i - 1]) || 1)));
   return [0, 1].map(n => f.pts[i - 1][n] + (f.pts[i][n] - f.pts[i - 1][n]) * u);
+}
+
+// STAGE 1'S DARK CROW, AN EASTER EGG at the owner's word: perched on the ridge of a
+// house at the top left the whole game, turning about (`PERCH_TURN`, as stage 16's),
+// answering a tap with a caw — and going nowhere for it. When the last enemy of the
+// last wave falls he gets up (`rise` px over `up` seconds), hangs there flapping
+// `hover` seconds and caws, then flies east, straight, up to `speed` over `ramp`
+// seconds, and off the edge of the board — and only then is the board won
+// (`vp.holdWin`, read by src/waves.js). His shadow is on the ground under him
+// (`ground`) once it is clear of the house (east of `roof`).
+//   idle — on the ridge;  rise — up and hanging there;  fly — east;  gone.
+function roostRound(state, vp, r, dt) {
+  const v = state.villagers[r.who];
+  if (!v) return;
+  const crow = enemyTypes.crow;
+  const c = vp.roost || (vp.roost = { phase: 'idle', x0: v.x, y0: v.y });
+  vp.holdWin = c.phase !== 'gone';
+  if (c.phase === 'gone') return;
+  v.work = true; v.voice = 'perched_crow';
+  v.card = { title: crow.name, sprite: crow.sprite, trim: crow.spriteTrim };
+  if (c.phase === 'idle') {
+    v.look = 'perch';
+    const span = () => PERCH_TURN[0] + Math.random() * (PERCH_TURN[1] - PERCH_TURN[0]);
+    if (c.turn === undefined) c.turn = vp.t + span();
+    if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + span(); }
+    const over = state.waveIndex >= state.waves.length && state.enemies.length === 0 && state.result === null;
+    if (over) {
+      Object.assign(c, { phase: 'rise', at: vp.t, beat: 0 });
+      v.look = 'flying'; v.g = 900;
+      solo(CUE.perched_crow, true, true, true);
+      alone('wings_flap', 1, WINGS_RATE);
+    }
+    return;
+  }
+  const t = vp.t - c.at;
+  // Flapping the whole time he hangs there — no glide with nowhere to go.
+  if (c.phase === 'rise') {
+    c.beat += crow.speed * dt;
+    v.flyDist = c.beat;
+    const k = Math.min(1, t / r.up), ease = k * k * (3 - 2 * k);
+    v.x = c.x0;
+    v.y = c.y0 - r.rise * ease + (k >= 1 ? Math.sin((t - r.up) * 6) * 1.2 : 0);
+    v.grow = PERCH_K + (1 - PERCH_K) * ease;
+    if (t >= r.up + r.hover) {
+      Object.assign(c, { phase: 'fly', at: vp.t, y1: v.y, speed: 0 });
+      v.flip = true;                      // the drawings face left: east is mirrored
+    }
+  } else if (c.phase === 'fly') {
+    c.speed = r.speed * Math.min(1, t / r.ramp);
+    v.x += c.speed * dt;
+    // Easing back to level from wherever the hover's bob left him.
+    v.y += (c.y0 - r.rise - v.y) * Math.min(1, dt * 4);
+    v.flyDist = c.beat + glideDist(t, crow.flying.stride);
+    if (v.x > 960 + 40) { c.phase = 'gone'; v.hidden = true; v.live = false; v.shadow = null; vp.holdWin = false; return; }
+  }
+  c.shadowA = v.x < r.roof ? 0 : Math.min(1, (c.shadowA || 0) + dt / SHADOW_IN);
+  v.shadow = { x: v.x, y: r.ground, k: v.grow, a: c.shadowA };
 }
 
 // A spot `s` px along route `ri` — on its middle lane, where a creature placed on the

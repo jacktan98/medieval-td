@@ -91,7 +91,12 @@ export const level00 = {
     { x: 155, y: 387 },   // and the other one
     { x: 495, y: 460 },   // outside the bottom house
     { x: 918, y: 298 },   // the pair up at the top right
-    { x: 905, y: 319 }
+    { x: 905, y: 319 },
+    // 6, THE DARK CROW on the ridge of the second house at the top left, at the owner's
+    // word — an easter egg: he turns about up there all game, and flies off east when
+    // the last enemy falls (`roost` in src/villagers.js). Standing on the roof, with a
+    // window cut to a bird and drawn in front of the house (`g`).
+    { x: 193, y: 108.5, w: 8, up: 13, down: 1, g: 171 }
   ],
 
   // WHAT A FIGURE CAN WALK BEHIND.
@@ -122,6 +127,9 @@ export const level00 = {
   // was: its base on the logs at (x, y), `s` times the world map's fire, sorted at
   // `g`, the depth of the logs' own front box below.
   fires: [{ x: 123, y: 369, s: 4.6, g: 383 }],
+  // AND THE PAINTED FLAME, back in the owner's Layer 3, taken out again by
+  // tools/split-map.mjs so the live one is not drawn over a still one.
+  unpaint: [{ box: [114, 347, 131, 371], fills: ['#d30000', '#ffaa36'] }],
   // Birdsong under the whole battle, at half the world map's already quiet level.
   // And the campfire crackling, soft.
   ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'fire_crackling', level: 1 }],
