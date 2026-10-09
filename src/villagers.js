@@ -706,7 +706,7 @@ const PLAYS = {
     // spot looked like a hop out of the tree; this way he flies a little way along it.
     perch: [{ who: 4, route: 2, ground: 351, to: [398, 432] }, { who: 5, route: 2, ground: 351, to: [402, 419] },
             { who: 6, route: 0, ground: 351, to: [402, 186] }, { who: 7, route: 0, ground: 262, ahead: 160 },
-            { who: 8, route: 0, ground: 97, ahead: 160 }, { who: 9, route: 2, ground: 521, ahead: 160 }],
+            { who: 8, route: 0, ground: 113, ahead: 160 }, { who: 9, route: 2, ground: 521, ahead: 160 }],
     // THE CROW HARBINGER ON THE BALCONY — see balconyRound. Ten seconds into a wave
     // he casts what that wave says, `n` times, `every` seconds apart; a cast not yet
     // made when the wave ends is skipped. Once the last wave is over and the board has

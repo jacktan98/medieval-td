@@ -138,7 +138,7 @@ export const level18 = {
     // road — drawn in front of its tree (`g`, just past the tree's own foot; the tree
     // beside the citadel stands inside the citadel's own front box, so past that).
     { x: 235, y: 207.5, w: 8, up: 13, down: 1, g: 352 },
-    { x: 415, y: 59, w: 8, up: 13, down: 1, g: 97 },
+    { x: 398, y: 75, w: 8, up: 13, down: 1, g: 113 },
     { x: 439.5, y: 471.5, w: 8, up: 13, down: 1, g: 521 },
     // 11, the Crow Harbinger on the balcony, facing right — at his shadow on its
     // planks, in front of the citadel's wall (`g`) and behind the one line of the
@@ -195,7 +195,7 @@ export const level18 = {
   // beside it, inside its box), and the two other trees the crows perch in.
   frontArt: 'front18',
   front: [
-    { x: 389, y:  35, w:  53, h:  71, g:  97 },   // stands on y 97  — the tree above the top road
+    { x: 372, y:  51, w:  53, h:  71, g: 113 },   // stands on y 113 — the tree above the top road
     { x:   0, y: 144, w: 257, h: 254, g: 351 },   // stands on y 351 — the citadel
     { x: 400, y: 450, w:  60, h:  82, g: 521 }    // stands on y 521 — the tree below the bottom road
   ]

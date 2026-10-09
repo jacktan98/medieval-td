@@ -4668,10 +4668,10 @@ function flag(ctx, x, y, alpha) {
 // 24 TALL, the same height as the gold and lives icons beside them, so the whole
 // dashboard sits on one band instead of the controls being twice the depth of
 // the readouts. They were 44 tall, which is the touch minimum — but the touch
-// minimum was never being met by the drawn box anyway. It was met by the HIT box —
-// the full 63px depth of the strip plus 7px each side — until the owner asked for
-// the tap to be the plate and nothing round it (see hitHudButton below), which is
-// smaller than the touch minimum on a small phone. That is the owner's call.
+// minimum was never being met by the drawn box anyway. It is met by the HIT box:
+// the full 63px depth of the strip plus HUD_PAD each side (see hitHudButton below),
+// and 63 logical px is 44 real ones on the smallest canvas this game targets.
+// Shrinking the picture does not shrink the target.
 // The plates are artwork now, so the HEIGHT is chosen and the WIDTH follows from
 // the drawing's own proportions — 24 tall ties them to the icons beside them, and
 // squashing a plate to a width picked before it was drawn is the one thing this
@@ -4754,17 +4754,16 @@ export const HUD_BTN = {
   wave:  { x: HUD_X + PAUSE_W + HUD_GAP + SPEED_W + HUD_GAP, y: 9, w: WAVE_W, h: PLATE_H, art: 'plate_wave' }
 };
 
-// THE BUTTON IS ITS BORDER, at the owner's word: "I was able to click the pause
-// button even though my mouse was not in the border box." The tap box used to be
-// padded 7px either side and ran from the top of the screen down to y 63 — over
-// twice the plate's depth — so a click well below a button pressed it. It is the
-// drawn plate now, and nothing round it.
-const HUD_PAD = 0;
+// THE BIGGER TAP AGAIN, at the owner's word, once the stage 16 crow that sat under the
+// pause button was moved off it: from the top of the screen down to y 63, and 7px
+// either side of each plate. Sized so the two padded boxes do not touch: the gap
+// between the buttons is 14, so 7 a side exactly fills it and no tap is ambiguous.
+const HUD_PAD = 7;
 
 export function hitHudButton(state, x, y) {
+  if (y > 63) return null;
   for (const [id, b] of Object.entries(HUD_BTN)) {
     if (x < b.x - HUD_PAD || x > b.x + b.w + HUD_PAD) continue;
-    if (y < b.y - HUD_PAD || y > b.y + b.h + HUD_PAD) continue;
     if (id === 'wave' && !canCallWave(state)) return null;
     return id;
   }

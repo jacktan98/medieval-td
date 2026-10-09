@@ -87,7 +87,7 @@ console.log('\nWho lives here\n');
   // on the battlements and in the trees — a bird on a merlon or a branch stands on
   // stone or wood, and the artist drew none.
   const PERCHED = { m18: [{ x: 56.5, y: 155.5 }, { x: 76, y: 159 }, { x: 158, y: 133 },
-                          { x: 235, y: 207.5 }, { x: 415, y: 59 }, { x: 439.5, y: 471.5 }] };
+                          { x: 235, y: 207.5 }, { x: 398, y: 75 }, { x: 439.5, y: 471.5 }] };
   const missing = [], stray = [];
   for (const l of campaign) {
     const feet = shapesByFill(readArtwork(l.src))
