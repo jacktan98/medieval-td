@@ -156,8 +156,11 @@ export const level18 = {
     // A STEP INTO THE DOORWAY and no further, at the owner's word — he used to cross
     // the whole of it to the far post before he faded.
     door: [[154, 231]],
-    // A GOOD WAY DOWN AND ALONG the bottom road from the door, at the owner's word.
-    gate: { at: [186, 362], way: [[196, 380], [236, 400], [305, 413]] }
+    // DOWN FROM THE DOOR AND A SHORT CURVE ROUND onto the middle of the bottom road, at
+    // the owner's word — the longer way he had, along the road, took him past the plot
+    // below it, where a tower held him up before he was on it. `merge`: how far along the
+    // road he runs before he is the boss (mergeOnto, src/villagers.js).
+    gate: { at: [186, 362], way: [[193, 380], [207, 398], [226, 410]], merge: 26 }
   },
   // THE CITADEL'S WALLS as one outline on the board, in game px — its two faces, off
   // Layer 3b, from the top of the walls to their foot. A crow flying off the

@@ -1792,7 +1792,7 @@ function balconyRound(state, vp, b, dt) {
     if (vp.t - B.at >= b.inside) {
       // OUT AT THE GROUND FLOOR'S DOOR, and down to the bottom road.
       const g = spot.gate, last = g.way[g.way.length - 1];
-      const j = mergeOnto(b.route, last);
+      const j = mergeOnto(b.route, last, g.merge);
       Object.assign(e, { x: g.at[0], y: g.at[1], hidden: false, alpha: 0, g: undefined, face: 1 });
       Object.assign(B, { phase: 'down', at: vp.t, leg: 0, way: smoothWay([g.at, ...g.way, ...j.tail]), join: j });
     }
@@ -1844,10 +1844,10 @@ function lineDone(vp, c) {
 // is heading the road's way, on it, at the very spot he becomes the creature.
 // `tail` is the road's three points, for the end of a way; `s` where he joins.
 const MERGE = 36;
-function mergeOnto(ri, last) {
+function mergeOnto(ri, last, ahead = MERGE) {
   const road = laneOf(level.routes[ri], 1);
   const s0 = nearestOn([road], last[0], last[1]).s;
-  const s = Math.max(s0, Math.min(s0 + MERGE, road.total - 40));
+  const s = Math.max(s0, Math.min(s0 + ahead, road.total - 40));
   const tail = [s0, (s0 + s) / 2, s].map(q => { const p = pointOn(road, q); return [p.x, p.y]; });
   const end = pointOn(road, s);
   return { route: ri, s, x: end.x, y: end.y, tail };
