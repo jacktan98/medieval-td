@@ -192,7 +192,7 @@ export const level11 = {
   maxTier: 3,
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep', 'High Altar', 'Assassin Guild'],
 
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // AN ASSASSIN GUILD ALREADY STANDING, at the owner's ask: "There is a prebuilt

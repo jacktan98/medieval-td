@@ -1247,8 +1247,8 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
   const got5 = castle.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got5.join(' | ') === WANT5.map(marched).join(' | '), 'the Castle sends exactly the eight it was given',
     got5.map((g, i) => (g === marched(WANT5[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT5[i])})`)).join(' '));
-  ok(castle.plots.length === 9 && castle.startGold === 240 && castle.waves.length === 8,
-    'and is nine plots, 240 gold and eight waves',
+  ok(castle.plots.length === 9 && castle.startGold === 300 && castle.waves.length === 8,
+    'and is nine plots, 300 gold and eight waves',
     `${castle.plots.length} plots, ${castle.startGold} gold, ${castle.waves.length} waves`);
   ok(!castle.prebuilt || !castle.prebuilt.length,
     'and opens with nothing built, the first board since the tutorial to',
@@ -1553,8 +1553,8 @@ console.log('\n--- stage 6, one way in and two ways out ---\n');
   const got6 = ford.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got6.join(' | ') === WANT6.map(marched).join(' | '), 'Dawnford sends exactly the eight it was given',
     got6.map((g, i) => (g === marched(WANT6[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT6[i])})`)).join(' '));
-  ok(ford.plots.length === 9 && ford.startGold === 240 && ford.waves.length === 8,
-    'and is nine plots, 240 gold and eight waves',
+  ok(ford.plots.length === 9 && ford.startGold === 300 && ford.waves.length === 8,
+    'and is nine plots, 300 gold and eight waves',
     `${ford.plots.length} plots, ${ford.startGold} gold, ${ford.waves.length} waves`);
 
   // ONE MOUTH, TWO DOORS, and it is asked of the ROUTES rather than of a comment:
@@ -1623,8 +1623,8 @@ console.log('\n--- stage 8, two roads that cross, and five men already standing 
   ok(giants.every((n, i) => i === 0 || n >= giants[i - 1]),
     'never carrying fewer than the wave before', giants.join(' -> '));
 
-  ok(kirk.plots.length === 8 && kirk.startGold === 240 && kirk.waves.length === 8,
-    'and is eight plots, 240 gold and eight waves',
+  ok(kirk.plots.length === 8 && kirk.startGold === 300 && kirk.waves.length === 8,
+    'and is eight plots, 300 gold and eight waves',
     `${kirk.plots.length} plots, ${kirk.startGold} gold, ${kirk.waves.length} waves`);
   ok(!kirk.prebuilt || !kirk.prebuilt.length, 'with nothing prebuilt on any of them',
     `${(kirk.prebuilt || []).length} prebuilt`);
@@ -1772,8 +1772,8 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
   ok(giants9.every((n, i) => i === 0 || n >= giants9[i - 1]),
     '  never carrying fewer than the wave before', giants9.join(' -> '));
 
-  ok(sand.plots.length === 9 && sand.startGold === 240 && sand.waves.length === 8,
-    'and is nine plots, 240 gold and eight waves',
+  ok(sand.plots.length === 9 && sand.startGold === 300 && sand.waves.length === 8,
+    'and is nine plots, 300 gold and eight waves',
     `${sand.plots.length} plots, ${sand.startGold} gold, ${sand.waves.length} waves`);
 
   // --- the shape of the roads ------------------------------------------------
@@ -1961,8 +1961,8 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
   // AND NO RALLY THUG: he waits for Dark Hollow now.
   ok(!sendsType(iron, 'rally_inf'), 'it sends no Rally Thug', '');
 
-  ok(iron.plots.length === 9 && iron.startGold === 240 && iron.waves.length === 8,
-    'and is nine plots, 240 gold and eight waves',
+  ok(iron.plots.length === 9 && iron.startGold === 300 && iron.waves.length === 8,
+    'and is nine plots, 300 gold and eight waves',
     `${iron.plots.length} plots, ${iron.startGold} gold, ${iron.waves.length} waves`);
 
   ok(iron.maxTier === 3 && iron.allow.length === 6,
@@ -2156,8 +2156,8 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
   ok(firstSends('bomb_inf') === fact, 'it is the first board to send a Bomb Thug',
     (firstSends('bomb_inf') || {}).name || 'none');
 
-  ok(fact.plots.length === 9 && fact.startGold === 240 && fact.waves.length === 8,
-    'and is nine plots, 240 gold and eight waves',
+  ok(fact.plots.length === 9 && fact.startGold === 300 && fact.waves.length === 8,
+    'and is nine plots, 300 gold and eight waves',
     `${fact.plots.length} plots, ${fact.startGold} gold, ${fact.waves.length} waves`);
   ok(fact.maxTier === 3 && fact.allow.length === 7,
     'it caps at tier 3 and lets seven named rungs through — the most of any board',
@@ -2332,8 +2332,8 @@ console.log('\n--- stage 12, Ironforge Castle ---\n');
       'a retune of either lands on one board');
   }
 
-  ok(cast.plots.length === 9 && cast.startGold === 240 && cast.waves.length === 8,
-    'and is nine plots, 240 gold and eight waves',
+  ok(cast.plots.length === 9 && cast.startGold === 300 && cast.waves.length === 8,
+    'and is nine plots, 300 gold and eight waves',
     `${cast.plots.length} plots, ${cast.startGold} gold, ${cast.waves.length} waves`);
   ok(cast.maxTier === 3 && cast.allow.length === 7,
     'it caps at tier 3 and lets seven named rungs through',
@@ -2502,8 +2502,8 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
   ok(got13.join(' | ') === WANT13.map(marched).join(' | '), 'the Lake sends exactly the eight it was given',
     got13.map((g, i) => (g === marched(WANT13[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT13[i])})`)).join(' '));
 
-  ok(peak.plots.length === 9 && peak.startGold === 240 && peak.waves.length === 8,
-    'and is nine plots, 240 gold and eight waves',
+  ok(peak.plots.length === 9 && peak.startGold === 300 && peak.waves.length === 8,
+    'and is nine plots, 300 gold and eight waves',
     `${peak.plots.length} plots, ${peak.startGold} gold, ${peak.waves.length} waves`);
 
   // THE BOULDER GIANT FIRST THROWS HERE, as the story has it: no board before this
@@ -2675,7 +2675,7 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
 
 console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their own doors ---\n');
 
-// THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 300 gold,
+// THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 500 gold,
 // no cap, eight waves, 50/50 — and "enemies who enter the left middle will
 // exit only at right middle road. Enemies that enter the left bottom will exit only
 // at right bottom road."
@@ -2701,9 +2701,9 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
   ok(firstSends('rally_inf') === hollow, 'it is the first board to send a Rally Thug',
     (firstSends('rally_inf') || {}).name || 'none');
 
-  ok(hollow.plots.length === 9 && hollow.startGold === 300 && hollow.waves.length === 8 &&
+  ok(hollow.plots.length === 9 && hollow.startGold === 500 && hollow.waves.length === 8 &&
      !(hollow.prebuilt || []).length && hollow.maxTier === undefined && hollow.allow === undefined,
-    'and is nine plots, 300 gold, eight waves, nothing prebuilt and nothing capped',
+    'and is nine plots, 500 gold, eight waves, nothing prebuilt and nothing capped',
     `${hollow.plots.length} plots, ${hollow.startGold} gold, ${hollow.waves.length} waves, ` +
     `${(hollow.prebuilt || []).length} prebuilt, maxTier ${hollow.maxTier}`);
 
@@ -2721,7 +2721,7 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
 
 console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link between them ---\n');
 
-// THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 300 gold, no
+// THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 800 gold, no
 // cap, the same eight waves as Dark Hollow Woods — and "60% of the enemies
 // will enter left top. 40% will exit right top road. 20% will cross the road path in
 // between to exit right bottom road. 40% of the enemies will enter left bottom and
@@ -2736,9 +2736,9 @@ console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link betwee
     'it sends the eight waves it was given — Dark Hollow Woods\' list, in its own array',
     `${quarters.waves.length} waves`);
 
-  ok(quarters.plots.length === 9 && quarters.startGold === 300 && quarters.waves.length === 8 &&
+  ok(quarters.plots.length === 9 && quarters.startGold === 800 && quarters.waves.length === 8 &&
      !(quarters.prebuilt || []).length && quarters.maxTier === undefined && quarters.allow === undefined,
-    'and is nine plots, 300 gold, eight waves, nothing prebuilt and nothing capped',
+    'and is nine plots, 800 gold, eight waves, nothing prebuilt and nothing capped',
     `${quarters.plots.length} plots, ${quarters.startGold} gold, ${quarters.waves.length} waves, ` +
     `${(quarters.prebuilt || []).length} prebuilt, maxTier ${quarters.maxTier}`);
 
@@ -2839,8 +2839,8 @@ console.log('\n--- stage 7, two ways in and two ways out that never meet ---\n')
   const got7 = well.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got7.join(' | ') === WANT7.map(marched).join(' | '), 'Dawnford Fountain sends exactly the eight it was given',
     got7.map((g, i) => (g === marched(WANT7[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT7[i])})`)).join(' '));
-  ok(well.plots.length === 9 && well.startGold === 240 && well.waves.length === 8,
-    'and is nine plots, 240 gold and eight waves',
+  ok(well.plots.length === 9 && well.startGold === 300 && well.waves.length === 8,
+    'and is nine plots, 300 gold and eight waves',
     `${well.plots.length} plots, ${well.startGold} gold, ${well.waves.length} waves`);
 
   // TWO MOUTHS AND TWO DOORS, asked of the ROUTES rather than of a comment: the two
@@ -2921,8 +2921,8 @@ console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');
   const got4 = shop.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
   ok(got4.join(' | ') === WANT4.join(' | '), 'the Workshop sends exactly the seven it was given',
     got4.map((g, i) => (g === WANT4[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT4[i]})`)).join(' '));
-  ok(shop.plots.length === 9 && shop.startGold === 220 && shop.waves.length === 7,
-    'and is nine plots, 220 gold and seven waves',
+  ok(shop.plots.length === 9 && shop.startGold === 300 && shop.waves.length === 7,
+    'and is nine plots, 300 gold and seven waves',
     `${shop.plots.length} plots, ${shop.startGold} gold, ${shop.waves.length} waves`);
   ok(shop.routes.length === 3, 'and three ways in', `${shop.routes.length} routes`);
 
@@ -3179,8 +3179,8 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
   ok(win && win.maxTier === 3 && (win.allow || []).join() === 'Crossbow Sentry',
     'Winchester caps at tier 3 and lets one named rung through',
     win ? `maxTier ${win.maxTier}, allow ${JSON.stringify(win.allow)}` : 'no m5');
-  ok(win.plots.length === 8 && win.startGold === 220 && win.waves.length === 7,
-    'and is eight plots, 220 gold and seven waves',
+  ok(win.plots.length === 8 && win.startGold === 300 && win.waves.length === 7,
+    'and is eight plots, 300 gold and seven waves',
     `${win.plots.length} plots, ${win.startGold} gold, ${win.waves.length} waves`);
 
   // WHAT THE RADIAL MENU ACTUALLY OFFERS, driven through the real menu rather than

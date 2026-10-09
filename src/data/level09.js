@@ -177,7 +177,7 @@ export const level09 = {
   maxTier: 3,
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep', 'High Altar'],
 
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // A HIGH ALTAR ALREADY STANDING, at the owner's ask: "There is a prebuilt high

@@ -212,7 +212,7 @@ export const level13 = {
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep', 'High Altar',
           'Assassin Guild', 'Musketeer Post', 'Cannon Outpost'],
 
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // A CANNON OUTPOST ALREADY STANDING, at the owner's ask: "There is a prebuilt

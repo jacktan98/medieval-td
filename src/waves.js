@@ -37,6 +37,16 @@ export function updateWaves(state, dt) {
     return;
   }
 
+  // THE FIRST WAVE WAITS FOR THE PLAYER, at the owner's word: "Do not let the first
+  // Next Wave gold start ticking down. This time we wait for players to build and
+  // strategise first." Nothing comes until Next wave is pressed (`called`, set by
+  // callWaveEarly) — and so there is no early-call bonus on it either. Only a game
+  // built by main.js carries `called`; a tool's hand-made state runs as it always did.
+  if (state.called === false && state.waveIndex === 0 && state.spawned === 0) return;
+  // AND STAGE 1'S TUTORIAL MAY HOLD THE REST between two waves, while it walks the
+  // player through an upgrade. See src/tutorial.js.
+  if (state.tutorial && state.tutorial.hold && state.resting) return;
+
   const wave = waves[state.waveIndex];
   state.timer -= dt;
 
@@ -176,6 +186,8 @@ export function canCallWave(state) {
 // are buying that gold with the time you would have spent rebuilding.
 export function callWaveEarly(state) {
   if (!canCallWave(state)) return 0;
+  // The first wave, held until now: sent, with nothing for calling it.
+  if (state.called === false) { state.called = true; state.timer = 0; return 0; }
   const bonus = Math.round(state.timer * earlyCallRate);
   state.gold += bonus;
   state.timer = 0;
@@ -183,6 +195,7 @@ export function callWaveEarly(state) {
 }
 
 export function earlyCallBonus(state) {
+  if (state.called === false) return 0;
   return canCallWave(state) ? Math.round(state.timer * earlyCallRate) : 0;
 }
 

@@ -56,6 +56,7 @@ import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft, boughtIn } from './upgrades.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
+import { drawTutorial } from './tutorial.js';
 import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS, towerNamed } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -127,6 +128,9 @@ export function draw(ctx, state) {
   // "NEW ENEMY" alerts under the gold — over the menu, because they are part of the
   // HUD and answer a tap before it does. See src/newfoe.js.
   if (state.started && !state.result) drawFoeAlerts(ctx, state);
+  // STAGE 1'S TUTORIAL: its line of advice and its arrow, over the HUD and the menu
+  // it is pointing into. See src/tutorial.js.
+  if (state.started && !state.result) drawTutorial(ctx, state);
 
   // Over everything, including the menu: while either of these is up the board
   // is not accepting the taps it normally would, and a dimmed board is how that
@@ -5242,8 +5246,10 @@ function drawHud(ctx, state) {
   }
 
   hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
-  hudButton(ctx, HUD_BTN.wave, 'Next wave',
-    call ? `+${earlyCallBonus(state)}g` : null, call);
+  // No bonus on the first wave, which waits for the player (see updateWaves), so
+  // no "+0g" on the button before it.
+  const bonus = call ? earlyCallBonus(state) : 0;
+  hudButton(ctx, HUD_BTN.wave, 'Next wave', bonus > 0 ? `+${bonus}g` : null, call);
 
   drawWavePreview(ctx, state);
 }

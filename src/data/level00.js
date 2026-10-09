@@ -85,6 +85,8 @@ export const level00 = {
   // THE VILLAGERS ARE ALIVE HERE — cut out of the artwork and drawn by the game,
   // at the owner's word. See src/villagers.js for what they do and when.
   villagerPlay: 'oakhaven',
+  // THE TUTORIAL, for a player who has not won this stage yet. See src/tutorial.js.
+  tutorial: true,
 
   villagers: [
     { x: 176, y: 351 },   // by the campfire

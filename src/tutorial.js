@@ -1,0 +1,310 @@
+// STAGE 1 IS THE TUTORIAL, at the owner's word: "Let's make stage 1 a tutorial for new
+// players." A run of steps, each a line of advice typed out in Lobster in the top right
+// of the board — as if someone were writing it down — that fades after a while, and
+// most with an arrow at the one thing to press next. While an arrow is up, that thing
+// (and the pause button) is all the board answers.
+//
+//   before wave 1  — the first plot; Archery; how to select a tower (its shadow); the
+//                    second plot; Barracks; Next wave.
+//   wave 1         — the Thug's new-enemy card; then the board is the player's.
+//   after wave 1   — Next wave again, early, for the gold; buy more towers.
+//   after wave 2   — the tier 2 towers arrive as new-tower cards; the first archery
+//                    tower selected (by its shadow) and upgraded; and good luck.
+//
+// TIER 1 ONLY until the tier 2 cards come up (`cap`), and the two towers the player
+// was walked through building can never be sold (`kept` on the tower) — upgraded or
+// not, at the owner's word.
+//
+// FOR A NEW PLAYER: it runs on stage 1 until stage 1 has been won once. The admin
+// dashboard's fresh start brings it back.
+//
+// THE STEPS ARE READ OFF THE GAME, not off the taps: a step is done when the board
+// shows it done — a menu open on the plot, a tower standing on it, the wave called.
+// So the two taps a purchase takes (press, then Confirm), a hover that opens a menu
+// with a mouse, and a menu closed halfway all come out right without the tutorial
+// having to know about them.
+import { level } from './level.js';
+import { families } from './data/towers.js';
+import { sealOf } from './score.js';
+import { alertRects } from './newfoe.js';
+import { HUD_BTN } from './render.js';
+import { BTN_R, HIT_R } from './menu.js';
+
+const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
+const TYPE_RATE = 32;         // characters a second, typed
+const READ = 3;               // seconds a line stays once typed, and a second per 25 characters more
+const FADE = 0.8;             // seconds to fade
+// The two plots the player is walked to, by index into stage 1's `plots`: the top one
+// by Oakhaven's houses, then the one below it.
+const FIRST = 1, SECOND = 0;
+
+// THE WORDS, the owner's, put into plain English.
+const SAY = {
+  plot1:    'Click this plot to buy a tower to defend the village.',
+  archery:  'The Archery tower is reliable and shoots enemies from afar.',
+  shadow:   'To select a tower, click its shadow on the ground. Clicking the top of the tower will not select it.',
+  plot2:    'Click this plot to buy another tower to defend the village.',
+  barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
+  call:     'When you are ready, click here to start the first wave.',
+  foe:      'Reading the cards of new enemies helps you learn how to counter them.',
+  free:     'Now it is up to you. Build more towers on the empty plots, or sell the ones you do not need.',
+  early:    'Click Next wave as soon as it appears to earn extra gold.',
+  more:     'Buy more towers to strengthen your defense. More enemies are coming!',
+  cards:    'Reading the cards of new towers helps you learn how to use them.',
+  select:   'Time to upgrade to a tier 2 tower. Select your archery tower. Remember: always click or tap a tower\'s shadow to select it.',
+  upgrade:  'Click Upgrade to turn it into an Archer Post.',
+  congrats: 'Congratulations, you now have a tier 2 archery tower!',
+  farewell: 'All the best, General! We trust the village is in safe hands.'
+};
+
+const plotAt = i => level.plots[i];
+const towerOn = (state, i) => state.towers.find(t => t.plot === plotAt(i)) || null;
+const menuOn = (state, i) => state.menu && state.menu.plot === plotAt(i) ? state.menu : null;
+const tier2 = () => families.map(f => f.tiers[1] && f.tiers[1].name).filter(Boolean);
+
+// A target the arrow points at and a tap may land on: a circle { x, y, r } or a box
+// { x, y, w, h }, and which way the arrow comes in from (`from`).
+const plotSpot = i => ({ x: plotAt(i).x, y: plotAt(i).y, r: PLOT_HIT, from: 'up' });
+const itemSpot = it => ({ x: it.x, y: it.y, r: HIT_R, ring: BTN_R, from: 'up' });
+const waveSpot = () => ({ ...HUD_BTN.wave, from: 'down' });
+const alertSpot = (state, match) => {
+  const r = alertRects(state).find(a => match(a.id));
+  return r ? { x: r.x, y: r.y, w: r.w, h: r.h, from: 'right' } : null;
+};
+
+// THE STEPS. Each one: `say`, a key into SAY; `when`, whether it may begin (it waits
+// until then, saying nothing); `point`, where the arrow is (null for none); `lock`,
+// whether only the arrow's target answers taps; `done`, whether it is over; `hold`,
+// whether the next wave waits for it; `start`, anything it does as it begins; `skip`,
+// whether the game has already gone past it. A step with no `done` is a line of
+// advice, over once it has faded — or as soon as it has been typed, if the step after
+// it is due (the wave it waits for has ended while the player was still reading).
+const STEPS = [
+  { say: 'plot1', lock: true, point: () => plotSpot(FIRST),
+    done: s => !!menuOn(s, FIRST) || !!towerOn(s, FIRST) },
+  { say: 'archery', lock: true, family: 'archery',
+    point: s => {
+      const m = menuOn(s, FIRST);
+      const it = m && !m.tower && m.items.find(i => i.act === 'build' && i.family.id === 'archery');
+      return it ? itemSpot(it) : plotSpot(FIRST);
+    },
+    also: s => { const m = menuOn(s, FIRST); return m ? [plotSpot(FIRST)] : []; },
+    done: s => { const t = towerOn(s, FIRST); if (t) t.kept = true; return !!t; } },
+  { say: 'shadow', lock: true, point: () => plotSpot(FIRST) },
+  { say: 'plot2', lock: true, point: () => plotSpot(SECOND),
+    done: s => !!menuOn(s, SECOND) || !!towerOn(s, SECOND) },
+  { say: 'barracks', lock: true, family: 'barracks',
+    point: s => {
+      const m = menuOn(s, SECOND);
+      const it = m && !m.tower && m.items.find(i => i.act === 'build' && i.family.id === 'barracks');
+      return it ? itemSpot(it) : plotSpot(SECOND);
+    },
+    also: s => { const m = menuOn(s, SECOND); return m ? [plotSpot(SECOND)] : []; },
+    done: s => { const t = towerOn(s, SECOND); if (t) t.kept = true; return !!t; } },
+  { say: 'call', lock: true, point: () => waveSpot(), done: s => s.called !== false },
+  // THE THUG'S CARD, as he comes: raised here if the player has met him before and the
+  // game did not raise it — a second try at stage 1 still teaches the card.
+  { say: 'foe', lock: true, when: s => s.enemies.length > 0,
+    start: s => { if (!(s.foeAlerts || []).includes('light_inf')) (s.foeAlerts ||= []).push('light_inf'); },
+    point: s => alertSpot(s, id => id === 'light_inf'),
+    done: s => !(s.foeAlerts || []).includes('light_inf') && !s.foeCard },
+  { say: 'free' },
+  { say: 'early', lock: true, when: s => s.resting && s.waveIndex === 0, skip: s => s.waveIndex >= 1,
+    point: () => waveSpot(),
+    done: s => s.waveIndex >= 1 && !s.resting },
+  { say: 'more' },
+  // THE TIER 2 TOWERS, as new-tower cards, once wave 2 is beaten — and the next wave
+  // waits until the archery tower has been upgraded.
+  { say: 'cards', lock: true, hold: true, when: s => (s.resting && s.waveIndex === 1) || s.waveIndex >= 2,
+    start: (s, tut) => {
+      tut.cap = 2;
+      (s.foeAlerts ||= []).push(...tier2().map(tower => ({ tower })));
+    },
+    point: s => alertSpot(s, id => id && id.tower === tier2()[0]),
+    done: s => !(s.foeAlerts || []).some(id => id && id.tower === tier2()[0]) && !s.foeCard },
+  { say: 'select', lock: true, hold: true, point: () => plotSpot(FIRST),
+    done: s => !!(menuOn(s, FIRST) && menuOn(s, FIRST).tower) || (towerOn(s, FIRST) || {}).def?.tier >= 2 },
+  { say: 'upgrade', lock: true, hold: true,
+    point: s => {
+      const m = menuOn(s, FIRST);
+      const it = m && m.tower && m.items.find(i => i.act === 'upgrade' && i.to);
+      return it ? itemSpot(it) : plotSpot(FIRST);
+    },
+    also: s => { const m = menuOn(s, FIRST); return m ? [plotSpot(FIRST)] : []; },
+    done: s => ((towerOn(s, FIRST) || {}).def || {}).tier >= 2 },
+  { say: 'congrats' },
+  { say: 'farewell' }
+];
+
+// A new game's tutorial, or null: stage 1, not yet won.
+export function makeTutorial(lv) {
+  if (!lv.tutorial || sealOf(lv.id)) return null;
+  return { i: 0, begun: false, t: 0, cap: 1, hold: false, done: false };
+}
+
+// One step of the game's clock: begin the step when it may, end it when it is done.
+export function updateTutorial(state, dt) {
+  const tut = state.tutorial;
+  if (!tut || tut.done) return;
+  const step = STEPS[tut.i];
+  // The menu up now, as this step wants it — every frame, because a menu opened by
+  // a hover in the step before is still up in this one.
+  shapeMenu(state);
+  if (!tut.begun && step.skip && step.skip(state)) { advance(tut); return; }
+  if (!tut.begun) {
+    if (step.when && !step.when(state)) return;
+    tut.begun = true;
+    tut.t = 0;
+    if (step.start) step.start(state, tut);
+  }
+  tut.t += dt;
+  tut.hold = !!step.hold;
+  const next = STEPS[tut.i + 1];
+  const due = !step.done && next && next.when && next.when(state);
+  const over = step.done ? step.done(state) : tut.t >= lineLife(step) || due;
+  if (!over) return;
+  // A line is let finish typing before the next one replaces it.
+  if (tut.t < typed(step)) return;
+  advance(tut);
+}
+
+function advance(tut) {
+  tut.i++;
+  tut.begun = false;
+  tut.hold = false;
+  if (tut.i >= STEPS.length) tut.done = true;
+}
+
+const typed = step => SAY[step.say].length / TYPE_RATE;
+const lineLife = step => typed(step) + READ + SAY[step.say].length / 25 + FADE;
+
+// THE STEP UNDER WAY, or null.
+const current = state => {
+  const tut = state.tutorial;
+  return tut && !tut.done && tut.begun ? STEPS[tut.i] : null;
+};
+
+// Whether the next wave is to wait — see updateWaves.
+export const tutorialHolds = state => !!(state.tutorial && state.tutorial.hold);
+
+const inSpot = (sp, x, y) => sp && (sp.r !== undefined
+  ? Math.hypot(sp.x - x, sp.y - y) <= sp.r
+  : x >= sp.x - 4 && x <= sp.x + sp.w + 4 && y >= sp.y - 4 && y <= sp.y + sp.h + 4);
+
+// MAY A TAP HERE DO ANYTHING? Everything, unless a step has locked the board to the
+// thing its arrow is on (and the plot under an open menu, so the menu stays up).
+export function tutorialAllows(state, x, y) {
+  const step = current(state);
+  if (!step || !step.lock) return true;
+  const spots = [step.point && step.point(state), ...(step.also ? step.also(state) : [])];
+  return spots.some(sp => inSpot(sp, x, y));
+}
+
+// A MENU AS THE TUTORIAL WANTS IT, on the plot it has just opened over: only the
+// family being taught while one is, no tier past the cap, and no refund on a tower
+// the player was walked through building.
+export function shapeMenu(state) {
+  const tut = state.tutorial, m = state.menu;
+  if (!tut || !m) return;
+  const step = current(state);
+  for (const it of m.items) {
+    if (it.act === 'build' && step && step.family && it.family.id !== step.family) it.available = false;
+    if (it.act === 'upgrade' && it.to && it.to.tier > tut.cap) it.available = false;
+    if (it.act === 'refund' && m.tower && m.tower.kept) it.available = false;
+  }
+}
+
+// --- drawn -------------------------------------------------------------------------
+
+const BOX = { x: 716, y: 16, w: 230 };
+const FONT = '17px Lobster, system-ui, sans-serif';
+const LINE = 22;
+const INK = '#F0E6D2';
+const EDGE = 'rgba(14,12,10,0.85)';
+
+function wrap(ctx, text, w) {
+  const lines = [];
+  let line = '';
+  for (const word of text.split(' ')) {
+    const next = line ? `${line} ${word}` : word;
+    if (ctx.measureText(next).width > w && line) { lines.push(line); line = word; }
+    else line = next;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+// The line being typed, top right, and the arrow at what to press. Nothing while a
+// card is open over the board — it has the player's attention, and the arrow would
+// be pointing at something underneath it.
+export function drawTutorial(ctx, state) {
+  const step = current(state);
+  if (!step || state.foeCard || state.result) return;
+  const tut = state.tutorial;
+  const text = SAY[step.say];
+  const shown = Math.min(text.length, Math.floor(tut.t * TYPE_RATE));
+  const life = lineLife(step);
+  const alpha = tut.t < life - FADE ? 1 : Math.max(0, (life - tut.t) / FADE);
+
+  ctx.save();
+  ctx.font = FONT;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.lineJoin = 'round';
+  if (alpha > 0) {
+    ctx.globalAlpha = alpha;
+    let left = shown;
+    wrap(ctx, text, BOX.w).forEach((line, i) => {
+      const part = line.slice(0, Math.max(0, left));
+      left -= line.length + 1;
+      if (!part) return;
+      const y = BOX.y + i * LINE;
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = EDGE;
+      ctx.strokeText(part, BOX.x, y);
+      ctx.fillStyle = INK;
+      ctx.fillText(part, BOX.x, y);
+    });
+    ctx.globalAlpha = 1;
+  }
+  const sp = step.point && step.point(state);
+  if (sp) arrowAt(ctx, sp, tut.t);
+  ctx.restore();
+}
+
+// A CREAM ARROW WITH A DARK EDGE, bobbing towards its target, and a ring pulsing round
+// a round one.
+function arrowAt(ctx, sp, t) {
+  const bob = Math.sin(t * 6) * 4;
+  let tip, dir;
+  if (sp.r !== undefined) {
+    const R = sp.ring || sp.r - 8;
+    ctx.save();
+    ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 6);
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = INK;
+    ctx.beginPath();
+    ctx.arc(sp.x, sp.y, R + 3 + Math.sin(t * 6) * 2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    tip = [sp.x, sp.y - R - 6 - bob]; dir = [0, 1];
+  } else if (sp.from === 'down') {
+    tip = [sp.x + 24, sp.y + sp.h + 4 + bob]; dir = [0, -1];
+  } else {
+    tip = [sp.x + sp.w + 6 + bob, sp.y + sp.h / 2]; dir = [-1, 0];
+  }
+  // Drawn pointing along `dir`, its tip at `tip`: a head 18 across and 14 deep on a
+  // shaft 8 across and 18 long.
+  const [tx, ty] = tip, [dx, dy] = dir, nx = -dy, ny = dx;
+  const P = (along, side) => [tx - dx * along + nx * side, ty - dy * along + ny * side];
+  const pts = [P(0, 0), P(14, 9), P(14, 4), P(32, 4), P(32, -4), P(14, -4), P(14, -9)];
+  ctx.beginPath();
+  pts.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
+  ctx.lineWidth = 3;
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = EDGE;
+  ctx.stroke();
+  ctx.fillStyle = INK;
+  ctx.fill();
+}

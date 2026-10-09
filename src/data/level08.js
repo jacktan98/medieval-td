@@ -150,7 +150,7 @@ export const level08 = {
   maxTier: 3,
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep'],
 
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // A PALADIN KEEP ALREADY STANDING, at the owner's ask: "Switch the prebuilt paladin

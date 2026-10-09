@@ -190,8 +190,8 @@ export const level18 = {
   // the other 60% and sends a third of it up the link.
   routeMix: [2, 1, 2],
 
-  // NO CAP and NOTHING PREBUILT, at the owner's word. 300 gold, as stage 15.
-  startGold: 300,
+  // NO CAP and NOTHING PREBUILT, at the owner's word. 800 gold on Hard, as stage 15.
+  startGold: 800,
   startLives: 20,
 
   // WHAT A FIGURE CAN WALK BEHIND: the citadel, torches and all (and the dead tree

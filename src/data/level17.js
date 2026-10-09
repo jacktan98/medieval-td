@@ -176,8 +176,8 @@ export const level17 = {
   // it down the link; the bottom mouth takes the other 40%.
   routeMix: [2, 1, 2],
 
-  // NO CAP and NOTHING PREBUILT, at the owner's word. 300 gold on Hard.
-  startGold: 300,
+  // NO CAP and NOTHING PREBUILT, at the owner's word. 800 gold on Hard, as stage 16.
+  startGold: 800,
   startLives: 20,
 
   // WHAT A FIGURE CAN WALK BEHIND: the two huts, the forge's wall, its flagpole and

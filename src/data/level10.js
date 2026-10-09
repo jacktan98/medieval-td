@@ -172,7 +172,7 @@ export const level10 = {
   maxTier: 3,
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep', 'High Altar'],
 
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // NOTHING IS PREBUILT, and the board opens with five men on it instead. This is the

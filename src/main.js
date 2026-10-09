@@ -24,6 +24,7 @@ import { draw, tierMarks, setDeviceScale } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
+import { makeTutorial, updateTutorial } from './tutorial.js';
 import { canvasScale } from './data/ui.js';
 
 // HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
@@ -181,6 +182,8 @@ function newGame() {
     // already past a hop, and the villagers hopped on the first frame.
     slain: 0,
     timer: openingDelay,
+    // THE FIRST WAVE IS HELD until the player presses Next wave — see updateWaves.
+    called: false,
     // Held at the title screen. Nothing steps until the player presses Start —
     // not the spawn clock and not `timer`, which is what the early-call bonus is
     // computed from. Loading the page used to start that draining silently.
@@ -265,6 +268,9 @@ function newGame() {
     // unopened goes with the game it was raised in. See src/newfoe.js.
     foeAlerts: [],
     foeCard: null,
+    // STAGE 1'S TUTORIAL, for a player who has not yet won it — or null. See
+    // src/tutorial.js.
+    tutorial: makeTutorial(level),
     // Whether this game's stage has had its towers noticed yet — see noticeTowers —
     // and the game seconds still to wait before it does.
     towersNoticed: false,
@@ -511,6 +517,9 @@ function step(state, dt) {
   // the villagers turning just now — so one met for the first time raises its
   // alert on the step it arrives.
   noticeFoes(state);
+  // STAGE 1'S TUTORIAL, which raises cards of its own — before the chime, so they
+  // sound as any other does.
+  updateTutorial(state, dt);
   // AND THE ALERT SOUNDS as one goes up — once, however many arrive together.
   // Over the village's shout if the two arrive together — see chime() in audio.js.
   if ((state.foeAlerts || []).length > alerts) chime(CUE.alert);

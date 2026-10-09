@@ -221,7 +221,7 @@ export const level14 = {
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep', 'High Altar',
           'Assassin Guild', 'Musketeer Post', 'Cannon Outpost'],
 
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // NOTHING IS PREBUILT, and the board gives two men instead. The owner's ask:

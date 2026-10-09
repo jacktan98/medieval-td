@@ -208,7 +208,7 @@ export const level15 = {
   // everything through, and a board that listed them all would have to be edited
   // every time a rung is added.
 
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // A JUDGEMENT TEMPLE ALREADY STANDING, at the owner's ask: "There is a prebuilt

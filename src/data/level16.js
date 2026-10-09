@@ -159,7 +159,7 @@ export const level16 = {
 
   // NO CAP, at the owner's word — "Towers are not restricted anymore." No
   // `maxTier` and no `allow`, as on Serene Peak. And NOTHING PREBUILT.
-  startGold: 300,
+  startGold: 500,
   startLives: 20,
 
   // WHAT A FIGURE CAN WALK BEHIND: the three stone huts and the Dark Hollow signpost.

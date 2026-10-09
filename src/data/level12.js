@@ -252,7 +252,7 @@ export const level12 = {
   allow: ['Crossbow Sentry', 'Ballista Turret', 'Paladin Keep', 'High Altar',
           'Assassin Guild', 'Musketeer Post'],
 
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // A MUSKETEER POST ALREADY STANDING, at the owner's ask — first at the bottom

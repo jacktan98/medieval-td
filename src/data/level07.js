@@ -162,7 +162,7 @@ export const level07 = {
   // FORTY MORE THAN THE WORKSHOP, at the owner's ask, and it buys about half a tier 1
   // tower. This board has nothing prebuilt where stage 4 opened with a Ballista
   // Turret standing, so the opening purse is doing work the free tower used to.
-  startGold: 240,
+  startGold: 300,
   startLives: 20,
 
   // TWO CROSSBOWMEN BEHIND THE BARRICADE BY THE BRIDGE, and they are the first

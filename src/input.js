@@ -17,6 +17,7 @@ import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
+import { tutorialAllows, shapeMenu } from './tutorial.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { AIM_MODES } from './data/towers.js';
 import { DIFFICULTIES } from './data/difficulty.js';
@@ -167,8 +168,9 @@ export function attachInput(canvas, state, restart) {
     if (state.menu) return;   // never steal a menu that is already up
 
     const plot = level.plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
-    if (plot && !state.towers.some(t => t.plot === plot)) {
+    if (plot && !state.towers.some(t => t.plot === plot) && tutorialAllows(state, plot.x, plot.y)) {
       openMenu(state, plot, null);
+      shapeMenu(state);
       state.menu.viaHover = true;
     }
   });
@@ -303,6 +305,9 @@ export function tap(state, x, y, restart) {
   // would lose to it.
   const hud = hitHudButton(state, x, y);
   if (hud === 'pause') { togglePause(state); return true; }
+  // STAGE 1'S TUTORIAL, while it has an arrow up, lets only that thing be pressed —
+  // and the pause above, and whatever a paused game offers. See src/tutorial.js.
+  if (!state.paused && !tutorialAllows(state, x, y)) return false;
 
   // A NEW-ENEMY ALERT, under the gold. Answers on a paused board as well — reading
   // is not playing, the same argument that lets the book open there — and the card
@@ -377,6 +382,7 @@ export function tap(state, x, y, restart) {
   if (plot) {
     const tower = state.towers.find(t => t.plot === plot) || null;
     openMenu(state, plot, tower);
+    shapeMenu(state);
     // Opened deliberately, so moving the mouse away must not take it back.
     state.menu.viaHover = false;
     // A built tower fills the info box the moment its menu opens: you are

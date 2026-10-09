@@ -201,7 +201,7 @@ export const level06 = {
   maxTier: 3,
   allow: ['Crossbow Sentry', 'Ballista Turret'],
 
-  startGold: 220,
+  startGold: 300,
   startLives: 20,
 
   // WHAT A FIGURE CAN WALK BEHIND. The whole top layer of the artwork, one entry per
