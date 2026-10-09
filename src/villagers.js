@@ -554,7 +554,7 @@ const PLAYS = {
     // TAPPED, EVERY ONE OF THEM STANDS `still` SECONDS where he is first — the box
     // carrier with the box dropped at his feet — and then walks, slowly (`walk` px a
     // second), to the road or to his hut to arm.
-    still: 2, walk: 14,
+    still: 2, walk: 20,   // 20, from 14: a bit faster to the road, at the owner's word
     // A SMOOTH WAY TO THE ROAD, at the owner's word (their drawn lines a guide): the
     // thug by the bottom hut curves up to the road above him rather than stepping
     // straight onto its nearest edge.
@@ -617,7 +617,7 @@ const PLAYS = {
     // THE TWO BY THE HUTS, as stage 14's: tapped, each stands `still` seconds, then the
     // thug walks down onto the road and is a Thug there, and the villager goes into
     // the left hut and comes out a Tough Thug three seconds later.
-    still: 2, walk: 14,
+    still: 2, walk: 20,   // 20, from 14: a bit faster to the road, at the owner's word
     // A SMOOTH WAY TO THE ROAD, at the owner's word: down and along it toward the exit
     // rather than straight onto its nearest edge.
     thugs: [{ who: 11, road: [[698, 128], [742, 158], [790, 175], [815, 180]] }],
@@ -648,7 +648,7 @@ const PLAYS = {
       // straight up or down from where each man stands.
       top: 238, topWay: [[96, 206], [130, 192], [160, 188]],
       bottom: 405, bottomWay: [[96, 440], [130, 455], [160, 460]],
-      topRoutes: [0, 0, 1, 0], bottomRoute: 2, march: 22,
+      topRoutes: [0, 0, 1, 0], bottomRoute: 2, march: 28,   // 28, from 22, at the owner's word
       // THE CAPTAIN WATCHES HIS MEN from the wall's corner, at the owner's word, and
       // now and then drops into his Idle drawing, sword lowered — for `idle` seconds,
       // after `watch` seconds of the Default one (each a range). He walks out only
@@ -684,7 +684,7 @@ const PLAYS = {
     // and is that creature there (`type`, a Thug where none is named) — the Rally Thug
     // with his war cry, as every Rally Thug walks on. Each `road` is the point he walks
     // to before stepping onto it.
-    still: 2, walk: 14,
+    still: 2, walk: 20,   // 20, from 14: a bit faster to the road, at the owner's word
     thugs: [
       // A GOOD WAY DOWN AND ALONG, at the owner's word (the lines they drew): each
       // makes for a spot well along his road toward its exit, not straight down onto it.
