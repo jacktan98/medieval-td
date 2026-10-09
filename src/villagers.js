@@ -555,7 +555,11 @@ const PLAYS = {
     // carrier with the box dropped at his feet — and then walks, slowly (`walk` px a
     // second), to the road or to his hut to arm.
     still: 2, walk: 14,
-    thugs: [{ who: 0, road: [[140, 112], [134, 165]] }, { who: 4, road: [[228, 470]] }],
+    // A SMOOTH WAY TO THE ROAD, at the owner's word (their drawn lines a guide): the
+    // thug by the bottom hut curves up to the road above him rather than stepping
+    // straight onto its nearest edge.
+    thugs: [{ who: 0, road: [[140, 112], [134, 165]] },
+            { who: 4, road: [[212, 488], [200, 466], [199, 442], [207, 421]] }],
     // THE BOX CARRIER: the box down from the north and in at the top hut's door; three
     // seconds inside; out empty-handed, back up off the top of the board; three
     // seconds gone; back with the next box. The first time from where he is painted.
@@ -576,9 +580,9 @@ const PLAYS = {
     // of it armed, as `type`, and makes for the road.
     hideouts: [
       { who: 2, type: 'archer_inf', side: 'back', way: [[100, 118], [86, 105.5]], arm: 3,
-        road: [[100, 124], [108, 150]] },
+        road: [[102, 132], [114, 160], [135, 192], [160, 220]] },
       { who: 3, type: 'tough_inf', side: 'back', way: [[267, 491], [282, 479]], arm: 3,
-        road: [[268, 490], [246, 470]] }
+        road: [[262, 486], [244, 468], [232, 446], [229, 420]] }
     ],
     // The village's cries are the enemy's here: "get rid of these intruders,
     // brothers!" as the first wave comes, and "nooo" still as a star is lost.
@@ -614,9 +618,11 @@ const PLAYS = {
     // thug walks down onto the road and is a Thug there, and the villager goes into
     // the left hut and comes out a Tough Thug three seconds later.
     still: 2, walk: 14,
-    thugs: [{ who: 11, road: [[684, 132]] }],
+    // A SMOOTH WAY TO THE ROAD, at the owner's word: down and along it toward the exit
+    // rather than straight onto its nearest edge.
+    thugs: [{ who: 11, road: [[698, 128], [742, 158], [790, 175], [815, 180]] }],
     hideouts: [{ who: 12, type: 'tough_inf', side: 'front', way: [[786, 95], [761, 100]], arm: 3,
-                 road: [[762, 104], [766, 128]] }],
+                 road: [[770, 114], [800, 134], [850, 154], [900, 164], [935, 168]] }],
     // THE CAMP BEHIND THE WALL — see musterRound.
     muster: {
       captain: 10,
@@ -635,7 +641,14 @@ const PLAYS = {
       // Up to the top road (`top`, the y he walks up to before joining it) and down to
       // the bottom one. The top road's men take its two routes one in four down the
       // link, as the wave does.
-      top: 214, topRoutes: [0, 0, 1, 0], bottom: 408, bottomRoute: 2, march: 22,
+      //
+      // A SMOOTH WAY TO EACH ROAD, at the owner's word: the back line up past the wall's
+      // end to `top` and on round to the top road along `topWay`, the front line down
+      // to `bottom` and on round to the bottom road along `bottomWay` — rather than
+      // straight up or down from where each man stands.
+      top: 238, topWay: [[96, 206], [130, 192], [160, 188]],
+      bottom: 405, bottomWay: [[96, 440], [130, 455], [160, 460]],
+      topRoutes: [0, 0, 1, 0], bottomRoute: 2, march: 22,
       // THE CAPTAIN WATCHES HIS MEN from the wall's corner, at the owner's word, and
       // now and then drops into his Idle drawing, sword lowered — for `idle` seconds,
       // after `watch` seconds of the Default one (each a range). He walks out only
@@ -1462,12 +1475,12 @@ function musterRound(state, vp, m, dt) {
         for (const who of m.back) {
           if (M[who].phase !== 'stand') continue;
           const v = state.villagers[who];
-          go(who, [[v.x, m.top]], m.topRoutes[top++ % m.topRoutes.length]);
+          go(who, [[v.x + 8, m.top], ...(m.topWay || [])], m.topRoutes[top++ % m.topRoutes.length]);
         }
         for (const who of m.front) {
           if (M[who].phase !== 'stand') continue;
           const v = state.villagers[who];
-          go(who, [[v.x, m.bottom]], m.bottomRoute);
+          go(who, [[v.x + 8, m.bottom], ...(m.bottomWay || [])], m.bottomRoute);
         }
         // THE CAPTAIN LEADS THEM OUT, in his own voice, as they go.
         if (standing.length) say(BOSS_LEADS);
