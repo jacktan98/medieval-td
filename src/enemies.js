@@ -867,6 +867,15 @@ export function updateEnemies(state, dt) {
     // than stop lit halfway. See src/gesture.js.
     tickHit(e, dt);
 
+    // THE SHADOW THUG'S CLOAK GOING UP, heard: as he comes onto the board (he is
+    // born `cloaked: false`) and each time a soldier's hold on him ends and he is
+    // unseen again. See CUE.vanish in src/audio.js.
+    if (e.def.unseen && e.hp > 0) {
+      const cloak = unseen(e);
+      if (cloak && !e.cloaked) play(CUE.vanish);
+      e.cloaked = cloak;
+    }
+
     // THE SHIELD COMES DOWN when nothing has hit him for five seconds. Ticked
     // here, at the top, so it runs wherever he is — held, halted or walking — and
     // a Blocker who was shot and then pinned still lowers it on schedule instead

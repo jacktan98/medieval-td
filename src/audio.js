@@ -308,6 +308,9 @@ const paths = {
   // runs from the third straight back into the first. So it plays through, stops,
   // and waits for the next wingbeat.
   dark_crow_dies:  'assets/audio/sfx/Dark_crow_dies.mp3',
+  // THE SHADOW THUG'S CLOAK going up — as he comes onto the board, and again each time
+  // he slips out of a soldier's hold — at the owner's word. See CUE.vanish.
+  vanish:          'assets/audio/sfx/Vanish_effect.mp3',
   wings_flap:      'assets/audio/sfx/Wings_flap.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
@@ -1058,6 +1061,11 @@ export const CUE = {
   // played through `play`, not `solo`, at the owner's word, though it sits in this
   // table because it is keyed by the def rather than exported on its own.
   crowDies:     ['dark_crow_dies'],
+  // THE SHADOW THUG VANISHING, at the owner's word: "whenever shadow thug appears on
+  // the map" and "when he becomes invisible again after attacking a soldier".
+  // Category B, through `play`: one per thug, every time. See `cloaked` in
+  // src/enemies.js.
+  vanish:       ['vanish'],
   // Selling. Category A and always played with priority, which puts it in the
   // same bracket as a build and an upgrade rather than with the battle: all
   // three are the player pressing a button and moving gold, and the reply to a

@@ -24,7 +24,7 @@ import { starsFor } from './score.js';
 import { level } from './level.js';
 import { nearestOn, at as pointOn, laneOf } from './route.js';
 import { enemyTypes } from './data/waves.js';
-import { makePerched, perchCast, perchTick, glideDist } from './enemies.js';
+import { makePerched, perchCast, perchTick, glideDist, flapped } from './enemies.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
 // a figure to be: `pickFigure` reads `def.r` and `def.spriteTrim`, and the info
@@ -257,7 +257,7 @@ const PLAYS = {
                [400, 500], [460, 499], [518, 496]] }
     ],
     // 6, THE DARK CROW ON THE ROOF: see roostRound.
-    roost: { who: 5, ground: 150, roof: 222, rise: 46, up: 0.8, hover: 1, speed: 110, ramp: 0.6 },
+    roost: { who: 5, wait: 1, ground: 150, roof: 222, rise: 46, up: 0.8, hover: 1, speed: 110, ramp: 0.6 },
     // The road is above them all but villagers 4 and 5, who have it below.
     after: [back('pray'), back('pray'), back('pray'), front('pray'), front('pray')],
     hops: [{ every: 10, who: [2, 3, 4] }, { every: 12, who: [0, 1] }],
@@ -1699,12 +1699,14 @@ function alongFlight(f, d) {
 
 // STAGE 1'S DARK CROW, AN EASTER EGG at the owner's word: perched on the ridge of a
 // house at the top left the whole game, turning about (`PERCH_TURN`, as stage 16's),
-// answering a tap with a caw — and going nowhere for it. When the last enemy of the
-// last wave falls he gets up (`rise` px over `up` seconds), hangs there flapping
+// answering a tap with a caw — and going nowhere for it. `wait` seconds after the last
+// enemy of the last wave falls he gets up (`rise` px over `up` seconds), hangs there flapping
 // `hover` seconds and caws, then flies east, straight, up to `speed` over `ramp`
 // seconds, and off the edge of the board — and only then is the board won
 // (`vp.holdWin`, read by src/waves.js). His shadow is on the ground under him
-// (`ground`) once it is clear of the house (east of `roof`).
+// (`ground`) once it is clear of the house (east of `roof`). HIS WINGS BEAT AS A ROAD
+// CROW'S DO the whole way, at the owner's word — no glide — on a road crow's tempo
+// (as if he had flown `crow.speed` px a second), the wings heard on each downstroke.
 //   idle — on the ridge;  rise — up and hanging there;  fly — east;  gone.
 function roostRound(state, vp, r, dt) {
   const v = state.villagers[r.who];
@@ -1721,7 +1723,9 @@ function roostRound(state, vp, r, dt) {
     if (c.turn === undefined) c.turn = vp.t + span();
     if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + span(); }
     const over = state.waveIndex >= state.waves.length && state.enemies.length === 0 && state.result === null;
-    if (over) {
+    if (!over) c.clearAt = null;
+    else if (c.clearAt == null) c.clearAt = vp.t;
+    if (over && vp.t - c.clearAt >= r.wait) {
       Object.assign(c, { phase: 'rise', at: vp.t, beat: 0 });
       v.look = 'flying'; v.g = 900;
       solo(CUE.perched_crow, true, true, true);
@@ -1730,10 +1734,11 @@ function roostRound(state, vp, r, dt) {
     return;
   }
   const t = vp.t - c.at;
-  // Flapping the whole time he hangs there — no glide with nowhere to go.
+  const was = c.beat;
+  c.beat += crow.speed * dt;
+  v.flyDist = c.beat;
+  if (flapped({ def: crow, s: c.beat }, was)) alone('wings_flap', 1, WINGS_RATE);
   if (c.phase === 'rise') {
-    c.beat += crow.speed * dt;
-    v.flyDist = c.beat;
     const k = Math.min(1, t / r.up), ease = k * k * (3 - 2 * k);
     v.x = c.x0;
     v.y = c.y0 - r.rise * ease + (k >= 1 ? Math.sin((t - r.up) * 6) * 1.2 : 0);
@@ -1747,7 +1752,6 @@ function roostRound(state, vp, r, dt) {
     v.x += c.speed * dt;
     // Easing back to level from wherever the hover's bob left him.
     v.y += (c.y0 - r.rise - v.y) * Math.min(1, dt * 4);
-    v.flyDist = c.beat + glideDist(t, crow.flying.stride);
     if (v.x > 960 + 40) { c.phase = 'gone'; v.hidden = true; v.live = false; v.shadow = null; vp.holdWin = false; return; }
   }
   c.shadowA = v.x < r.roof ? 0 : Math.min(1, (c.shadowA || 0) + dt / SHADOW_IN);
