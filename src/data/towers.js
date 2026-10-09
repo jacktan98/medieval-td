@@ -610,11 +610,11 @@ export const rock = {
   lob: true,
   // How high it goes, as a fraction of how far it is going.
   arc: 0.22,
-  // SILENT IN THE AIR, and loud when it arrives. Nothing plays when the arm
-  // comes over: the release is not the moment the player is looking at, and a
-  // creak nobody can place among ten towers is noise. The landing is the event —
-  // it is where the damage happens and where the eye already is.
-  fireSound: false,
+  // HEARD GOING AND ARRIVING. The arm coming over was silent once, on the reasoning
+  // that the landing is the event; the owner's Artillery_fires — the machine
+  // reloading and letting go — is played on every throw now, at the owner's word
+  // ("whenever artillery tier 1, 2, 3 reloads and fire"). See FIRING.rock.
+  fireSound: true,
   landSound: true,
   // And it throws up earth where it comes down. A third flag beside the two
   // sound ones, and a third flag for the same reason they are two: "what does

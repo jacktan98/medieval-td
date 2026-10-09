@@ -1048,6 +1048,9 @@ export const enemyTypes = {
     speed: 50,      // level with the blockers, so the two arrive as one wall
     bounty: 40,
     leak: 2,        // worth two lives: letting one through really hurts
+    // HIS CLUB COMING DOWN, heard on every blow, at the owner's word. See MELEE_SOUND
+    // in src/audio.js.
+    meleeSound: 'club',
     // 40 TO ONE MAN, and the club does not sweep. The owner's word: "remove aoe
     // damage for giants and increase attack damage to 40."
     //

@@ -25,6 +25,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Defend_while_walking.mp3, Enemies_heal.mp3,
                       War_cry.mp3, Bomb_sound.mp3, Boulder_hit.mp3,
                       Dark_crow_dies.mp3, Wings_flap.mp3, Vanish_effect.mp3,
+                      Fire_status.mp3, Fuse_lit.mp3, Club_swing.mp3, Artillery_fires.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3,
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
@@ -257,12 +258,16 @@ and it now means "how long a lull has to be before the game forgets".
 | **an archer looses** — Category B | `Arrow_shot` |
 | **a spearman, pikeman or swordsman swings** — Category B | `Attack_1/2/3` |
 | **a paladin swings** — Category B | `Paladin_attack` |
+| **a Catapult, Mangonel or Trebuchet throws** — reloading and letting go, Category B | `Artillery_fires` |
 | **a rock lands** — Category B | `Rock_hit_ground` |
 | **a flask breaks** — Category B | `Flask_Break` |
 | **a Boulder Giant's boulder hits** — thrown and landing, or brought down on a man's head in melee — Category B, twice as loud as the rest of the battle's (90% of a voice) | `Boulder_hit` |
 | **a dark crow is shot down**, whatever shot him — Category B | `Dark_crow_dies` |
 | **a dark crow's wings come down**, if the last play has finished — whole, one at a time, 1.25x speed, soft at 0.35 | `Wings_flap` |
 | **a Shadow Thug vanishes** — as he comes onto the board, and again each time a soldier's hold on him ends — Category B | `Vanish_effect` |
+| **somebody is set alight** — a Fiery Shot or a burning bolt landing — one of the file's two takes by turns, never both, once a shot and not within a second of the last, Category B | `Fire_status` |
+| **a Bomb Thug falls** and his fuse catches, for the 2 seconds before the bomb goes off — Category B | `Fuse_lit` |
+| **a Club Giant's club lands** on a man — Category B | `Club_swing` |
 | **a priest looses a missile** — Category B | `Arcane_shot` |
 | **a pope looses one** — Category B | `Arcane_shot`, a quarter louder |
 | **a dark priest looses one** — Category B | `Arcane_shot` |

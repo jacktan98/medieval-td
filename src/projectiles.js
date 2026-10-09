@@ -1,7 +1,7 @@
 import { splat } from './blood.js';
 import { impact } from './impacts.js';
 import { inRange } from './ground.js';
-import { play, LAND, BREAK, KNIFE, BOULDER_HIT } from './audio.js';
+import { play, fireSound, LAND, BREAK, KNIFE, BOULDER_HIT } from './audio.js';
 import { apply as applyStatus } from './status.js';
 import { slowOn } from './data/status.js';
 import { taken, wornBy } from './data/armor.js';
@@ -277,8 +277,11 @@ export const LANDING = { rock: LAND, flask: BREAK, knife: KNIFE, boulder: BOULDE
 // flask. A burning cannonball is a cannonball that ALSO burns, for its full 70,
 // and folding the two into one "does it leave something on him" test would have
 // had the flask hit for its 20 as well.
-const burn = (s, v) =>
+// And heard, once a shot however many it lights: see fireSound in src/audio.js.
+const burn = (s, v) => {
   applyStatus(v, 'burnt', s.ammo.burn.dps, s.ammo.burn.seconds, s.ammo.kind);
+  fireSound();
+};
 
 // AND HOLDING SOMEBODY UP, which is the same shape and deliberately so: a monk's
 // Slowed Pulse carries `slow` on its ammunition exactly as a fiery ball carries

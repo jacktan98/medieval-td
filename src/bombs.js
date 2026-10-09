@@ -30,7 +30,7 @@
 
 import { splat } from './blood.js';
 import { inRange } from './ground.js';
-import { play, BOMB } from './audio.js';
+import { play, BOMB, FUSE_LIT } from './audio.js';
 import { impact } from './impacts.js';
 import { taken, typeOf, pierceOf, wornBy } from './data/armor.js';
 // The one number that turns source px into game px, for `DROP` below.
@@ -104,6 +104,9 @@ const DROP = [120.0, 12.5];
 // `face === def.spriteFaces`, and it is written out here rather than imported
 // from towers.js because this file has no other business with sprites.
 export function dropBomb(state, def, x, y, face) {
+  // THE FUSE CATCHES as he falls, heard, at the owner's word — 2 seconds of hiss for
+  // the 2 seconds it burns (FUSE).
+  play(FUSE_LIT);
   const flip = face === def.spriteFaces ? 1 : -1;
   // `bombs` is made on demand. Every fixture in tools/ builds its own little
   // world by hand and none of them list a field that did not exist when they

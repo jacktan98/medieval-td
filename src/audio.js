@@ -311,6 +311,14 @@ const paths = {
   // THE SHADOW THUG'S CLOAK going up — as he comes onto the board, and again each time
   // he slips out of a soldier's hold — at the owner's word. See CUE.vanish.
   vanish:          'assets/audio/sfx/Vanish_effect.mp3',
+  // A FIGURE SET ALIGHT, two takes in one file — see FIRE_STATUS.
+  fire_status:     'assets/audio/sfx/Fire_status.mp3',
+  // THE BOMB THUG'S FUSE, lit as he falls — see FUSE_LIT.
+  fuse_lit:        'assets/audio/sfx/Fuse_lit.mp3',
+  // THE CLUB GIANT'S CLUB coming down on a man — see MELEE_SOUND.
+  club_swing:      'assets/audio/sfx/Club_swing.mp3',
+  // THE CATAPULT, MANGONEL AND TREBUCHET reloading and letting go — see FIRING.rock.
+  artillery_fires: 'assets/audio/sfx/Artillery_fires.mp3',
   wings_flap:      'assets/audio/sfx/Wings_flap.mp3',
   arrow_shot:      'assets/audio/sfx/Arrow_shot.mp3',
   // The monastery. A missile leaving a staff, and it announces itself on the way
@@ -1244,6 +1252,10 @@ export const BOLT = ['ballista_shot'];
 // watching. It is also the first artillery report in the game — every machine
 // below this tier makes its noise on the LANDING instead.
 export const CANNON = ['cannon_shot'];
+// AND THE THREE MACHINES BELOW IT, at the owner's word: the arm reloading and
+// letting go, on every rock the Catapult, Mangonel and Trebuchet throw. The landing
+// still makes its own noise.
+export const ARTILLERY = ['artillery_fires'];
 // The three ability sounds, and all three are Category B beside the weapons they
 // belong to. A heavy ball leaving the barrel, a paladin calling the light down on
 // himself, and a paladin's fifth blow. See abilityCue below for how an ability
@@ -1284,7 +1296,7 @@ export const DEADEYE = ['musketeer_deadeye'];
 // KILLS could be theirs, and this row is what stops that kind going silent.
 export const FIRING = { arrow: SHOT, arcane: ARCANE, pope: ARCANE, monk: ARCANE,
                         bullet: MUSKET, deadeye: DEADEYE, bolt: BOLT,
-                        quarrel: CROSSBOW, cannonball: CANNON, dark: ARCANE };
+                        quarrel: CROSSBOW, cannonball: CANNON, dark: ARCANE, rock: ARTILLERY };
 export const HOLY_LIGHT = ['paladin_holy_light'];
 // A BLOW THAT LANDS HARD, whoever throws it. The paladin's fifth strike and the
 // Captain's sword, through one cue.
@@ -1326,10 +1338,35 @@ export const KNIFE = ['assassin_knife_throw'];
 // Category B, beside the other landings, for the same reason: several can land at
 // once.
 export const BOULDER_HIT = ['boulder_hit'];
-// What a melee blow sounds like, by the `meleeSound` an enemy's def names. Only the
-// Boulder Giant has one: every other creature's blow is the swing the soldier makes
-// a noise about.
-export const MELEE_SOUND = { boulder: BOULDER_HIT };
+// THE CLUB GIANT'S CLUB, at the owner's word: "used whenever club giants hit
+// someone". Category B, like the boulder.
+export const CLUB = ['club_swing'];
+// What a melee blow sounds like, by the `meleeSound` an enemy's def names: the
+// Boulder Giant's and the Club Giant's. Every other creature's blow is the swing the
+// soldier makes a noise about.
+export const MELEE_SOUND = { boulder: BOULDER_HIT, club: CLUB };
+
+// THE BOMB THUG'S FUSE, at the owner's word: lit as he falls, between his death and
+// his bomb going off (src/bombs.js). Category B: two can fall together.
+export const FUSE_LIT = ['fuse_lit'];
+
+// SOMEBODY SET ALIGHT — a Fiery Shot's ball or a burning bolt landing — at the
+// owner's word: "Use it whenever there is fire status." The recording is two takes
+// of a fire with a gap between them, and the owner's ask is one OR the other each
+// time, never both: `parts` is where each starts in the file and how long it runs,
+// played by turns, faded out over its last `fade` seconds. One shot that lights a
+// crowd is one fire, and none starts within `gap` seconds of the last.
+export const FIRE_STATUS = { key: 'fire_status', parts: [[0.3, 3.65], [4.5, 3.6]], fade: 0.4, gap: 1 };
+let fireTake = -1, fireAt = -Infinity;
+export function fireSound() {
+  if (!ctx || ctx.state !== 'running') return;
+  const { key, parts, fade, gap } = FIRE_STATUS;
+  if (ctx.currentTime - fireAt < gap) return;
+  fireAt = ctx.currentTime;
+  fireTake = (fireTake + 1) % parts.length;
+  const [from, dur] = parts[fireTake];
+  slice(key, from, dur, 1, fade);
+}
 
 // THE TAP. Every control in the game that does something answers with this, and
 // it is Category B for a reason that has nothing to do with the battle: it is a
