@@ -80,7 +80,9 @@ export function makeVillagers(state, level) {
              mode: 'idle', path: null, leg: 0, greetUntil: -1 };
   });
   state.villagerPlay = play ? { plan: play, started: false, t: 0, hops: play.hops.map(() => ({ n: 0, at: null })),
-    startLives: level.startLives, stars: null, shouted: false } : null;
+    startLives: level.startLives, stars: null, shouted: false,
+    // Stage 1's crow has the last word, from the very first frame: see roostRound.
+    holdWin: !!play.roost } : null;
 }
 
 // --- villagers who move ----------------------------------------------------------

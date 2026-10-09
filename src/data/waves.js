@@ -665,6 +665,9 @@ export const enemyTypes = {
     // played: a key into CUE in src/audio.js. Category B, at the owner's word —
     // on the background bus, so every crow shot down is heard.
     cry: 'crowDies',
+    // AND HIS CAW WHEN TAPPED, at the owner's word, in place of the thug's line every
+    // other creature without a voice of its own answers with — the perched crows'.
+    voice: 'perched_crow',
     // HE FLIES. Read by pickTarget, the splash, the soldiers' block, the renderer
     // and the death path, and by nothing else.
     //
