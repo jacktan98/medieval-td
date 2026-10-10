@@ -68,6 +68,7 @@ const SAY = {
   more:     'Build more towers to strengthen your defense. More enemies are coming!',
   cards:    'Reading the cards of new towers helps you learn how to use them.',
   select:   'Time to upgrade to a Tier 2 tower. Select your archery tower. Remember: always {click} a tower\'s shadow to select it.',
+  topUp:    'Here is more gold for your upgrade.',
   upgrade:  '{Click} Upgrade to turn it into a Tier 2 Archery Tower.',
   congrats: 'Great, you now have a Tier 2 Archery Tower!',
   farewell: 'All the best, General! We trust the village is in safe hands.',
@@ -89,6 +90,11 @@ const VERB = { click: ['click', 'tap'], Click: ['Click', 'Tap'], clicking: ['cli
 const plotAt = i => level.plots[i];
 const towerOn = (state, i) => state.towers.find(t => t.plot === plotAt(i)) || null;
 const menuOn = (state, i) => state.menu && state.menu.plot === plotAt(i) ? state.menu : null;
+// What the first archery tower's next rung costs, less the gold in hand.
+const shortOf = s => {
+  const t = towerOn(s, FIRST), next = t && t.fam.tiers.find(d => d.tier === t.def.tier + 1);
+  return next ? next.cost - s.gold : 0;
+};
 const tier2 = () => families.map(f => f.tiers[1] && f.tiers[1].name).filter(Boolean);
 
 // A target the arrow points at and a tap may land on: a circle { x, y, r } or a box
@@ -194,6 +200,10 @@ const STEPS = [
     done: s => !(s.foeAlerts || []).some(id => id && id.tower === tier2()[0]) && !s.foeCard },
   { say: 'select', lock: true, hold: true, point: () => plotSpot(FIRST),
     done: s => !!(menuOn(s, FIRST) && menuOn(s, FIRST).tower) || (towerOn(s, FIRST) || {}).def?.tier >= 2 },
+  // NOT ENOUGH GOLD FOR IT, if the player has spent what they had: given exactly what
+  // the upgrade is short of, at the owner's word, and told so. Skipped otherwise.
+  { say: 'topUp', lock: true, hold: true, skip: s => shortOf(s) <= 0, point: () => hudSpot('gold'),
+    start: s => { s.gold += shortOf(s); } },
   { say: 'upgrade', lock: true, hold: true,
     point: s => {
       const m = menuOn(s, FIRST);
