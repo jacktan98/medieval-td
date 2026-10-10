@@ -1,5 +1,5 @@
 // STAGE 1 IS THE TUTORIAL, at the owner's word: "Let's make stage 1 a tutorial for new
-// players." A run of steps, each a line of advice typed out in Lobster on a dark panel
+// players." A run of steps, each a line of advice typed out in Lobster on a sheet of old paper
 // in the top right of the board — as if someone were writing it down — and most with an
 // arrow at the one thing to press next. A line that asks for something stays up until it has been
 // done and then fades; a line of advice fades once it has been read. Each arrives with
@@ -30,7 +30,7 @@ import { families } from './data/towers.js';
 import { sealOf } from './score.js';
 import { alertRects } from './newfoe.js';
 import { SQUASH } from './ground.js';
-import { HUD_BTN, HUD_ICONS } from './render.js';
+import { HUD_BTN, HUD_ICONS, tutorialPaper, TUTORIAL_INK } from './render.js';
 import { BTN_R, HIT_R } from './menu.js';
 import { chime, CUE } from './audio.js';
 import { art } from './assets.js';
@@ -427,17 +427,15 @@ export function shapeMenu(state) {
 
 // --- drawn -------------------------------------------------------------------------
 
-// THE LINE ON A DARK PANEL, at the owner's word. `cx` is the panel's centre across,
+// THE LINE ON A SHEET OF OLD PAPER, at the owner's word. `cx` is the panel's centre across,
 // `top` its top edge (or `mid`, its centre down), `w` its width. In a game, in the top
 // right corner, right of the Next wave button and the arrow under it; on the world
 // map, in the middle, clear of the encyclopedia and the upgrades at the bottom.
 const BOX = { cx: 826, top: 10, w: 248 };
 const MAP_BOX = { cx: 480, mid: 250, w: 340 };
 const PAD = 14;               // the panel's margin round the words
-const PANEL = 'rgba(20,16,12,0.62)';
 const FONT = '17px Lobster, system-ui, sans-serif';
 const LINE = 22;
-const INK = '#F0E6D2';
 // THE ARROW AND ITS RING IN THE GAME'S CREAM, at the owner's word — the #FFEFD4 every
 // plate and button is drawn on.
 const CREAM = '#FFEFD4';
@@ -496,20 +494,15 @@ function drawLine(ctx, state, tut, BOX) {
     const h = lines.length * LINE + 2 * PAD - 4;
     const x = BOX.cx - BOX.w / 2;
     const top = BOX.top ?? BOX.mid - h / 2;
-    ctx.beginPath();
-    ctx.roundRect(x, top, BOX.w, h, 12);
-    ctx.fillStyle = PANEL;
-    ctx.fill();
+    // ON OLD PAPER, at the owner's word — the new-enemy card's — in its dark ink.
+    tutorialPaper(ctx, x, top, BOX.w, h);
     let left = shown;
     lines.forEach((line, i) => {
       const part = line.slice(0, Math.max(0, left));
       left -= line.length + 1;
       if (!part) return;
       const y = top + PAD + i * LINE;
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = EDGE;
-      ctx.strokeText(part, x + PAD, y);
-      ctx.fillStyle = INK;
+      ctx.fillStyle = TUTORIAL_INK;
       ctx.fillText(part, x + PAD, y);
     });
     ctx.globalAlpha = 1;

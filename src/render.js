@@ -8096,6 +8096,14 @@ function paperRect(ctx, x, y, w, h, seed, tone, tear, edge, lw = 1.2, shadow = f
   ctx.drawImage(c, x - P, y - P, w + 2 * P, h + 2 * P);
 }
 
+// STAGE 1'S TUTORIAL WRITES ON OLD PAPER, at the owner's word — the new-enemy card's
+// own sheet, torn edge, stains and black rim, at whatever size the line needs. See
+// drawLine in src/tutorial.js; the ink to write on it in is TUTORIAL_INK.
+export const TUTORIAL_INK = INK;
+export function tutorialPaper(ctx, x, y, w, h) {
+  paperRect(ctx, x, y, w, h, 61, CARD_TONE, 2, HUD_PLATE_EDGE, 2);
+}
+
 // A ROUND ONE, for the medallions: the same photo paper cut to a circle with a
 // torn rim, made once per size and kept like paperRect's sheets.
 const discCache = new Map();
