@@ -300,6 +300,9 @@ const PANEL = 'rgba(20,16,12,0.62)';
 const FONT = '17px Lobster, system-ui, sans-serif';
 const LINE = 22;
 const INK = '#F0E6D2';
+// THE ARROW AND ITS RING IN THE GAME'S CREAM, at the owner's word — the #FFEFD4 every
+// plate and button is drawn on.
+const CREAM = '#FFEFD4';
 const EDGE = 'rgba(14,12,10,0.85)';
 
 function wrap(ctx, text, w) {
@@ -387,7 +390,7 @@ function arrowAt(ctx, sp, t) {
     ctx.save();
     ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 6);
     ctx.lineWidth = 3;
-    ctx.strokeStyle = INK;
+    ctx.strokeStyle = CREAM;
     ctx.beginPath();
     ctx.ellipse(sp.x, sp.y, rx + pulse, ry + pulse, 0, 0, Math.PI * 2);
     ctx.stroke();
@@ -413,6 +416,6 @@ function arrowAt(ctx, sp, t) {
   ctx.lineJoin = 'round';
   ctx.strokeStyle = EDGE;
   ctx.stroke();
-  ctx.fillStyle = INK;
+  ctx.fillStyle = CREAM;
   ctx.fill();
 }
