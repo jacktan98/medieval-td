@@ -270,6 +270,10 @@ function newGame() {
     foeCard: null,
     // And the cards opened in this game — see openFoeCard in src/newfoe.js.
     cardsRead: new Set(),
+    // The rally flag just planted, and the last spot refused — see the placing tap in
+    // src/input.js.
+    rallyMark: null,
+    badTap: null,
     // STAGE 1'S TUTORIAL, for a player who has not yet won it — or null. See
     // src/tutorial.js.
     tutorial: makeTutorial(level),

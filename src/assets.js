@@ -836,6 +836,10 @@ export const paths = {
   stat_range:      'assets/ui/Range_Icon.png',
   glyph_refund:    'assets/ui/Refund_Icon.png',
   glyph_flag:      'assets/ui/Rally_Point_Icon.png',
+  // STAGE 1'S TUTORIAL: the hand that points at what to press (src/tutorial.js), and
+  // the mark where a rally point may not go (src/render.js).
+  tut_point:       'assets/ui/Pointing_Icon.png',
+  mark_invalid:    'assets/ui/Invalid_Icon.png',
   // The archer's three standing orders. They were vector glyphs drawn in
   // render.js — the last family button that had no artwork — and the vectors are
   // still there as the fallback every glyph has.

@@ -29,17 +29,17 @@ import { level, levels } from './level.js';
 import { families } from './data/towers.js';
 import { sealOf } from './score.js';
 import { alertRects } from './newfoe.js';
-import { nearestOn } from './route.js';
-import { inRange, SQUASH } from './ground.js';
+import { SQUASH } from './ground.js';
 import { HUD_BTN, HUD_ICONS } from './render.js';
 import { BTN_R, HIT_R } from './menu.js';
 import { chime, CUE } from './audio.js';
+import { art } from './assets.js';
+import { ui } from './data/ui.js';
 import { BOOK_ICON_HIT } from './book.js';
 import { UPGRADES_BTN } from './upgradepage.js';
 import { STAGES } from './data/overview.js';
 
 const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
-const ROAD_HALF = 30;         // how far from the middle of the road a rally tap may land (about half its width)
 const TYPE_RATE = 32;         // characters a second, typed
 const READ = 3;               // seconds a line of advice stays once fully typed, at the owner's word
 const FADE = 0.8;             // seconds to fade
@@ -183,9 +183,12 @@ const STEPS = [
   { say: 'rallySet', lock: true,
     point: s => { const t = towerOn(s, SECOND); return t ? reachSpot(t) : null; },
     skip: rallied,
+    // Any tap on the board while the flag is in hand — the game itself refuses a spot
+    // off the road or outside the ring, and marks it — but not on the barracks, which
+    // would put the flag down unmoved, and not up on the dashboard.
     allow: (s, x, y) => {
       const t = towerOn(s, SECOND);
-      return !!t && inRange(t.x, t.y, x, y, t.def.range) && nearestOn(level.routes, x, y).d <= ROAD_HALF;
+      return !!t && s.placing === t && y > 63 && Math.hypot(t.plot.x - x, t.plot.y - y) > PLOT_HIT;
     },
     done: rallied },
   { say: 'rallyWhy', lock: true },
@@ -546,8 +549,21 @@ function arrowAt(ctx, sp, t) {
   } else {
     tip = [sp.x + sp.w + 6 + bob, sp.y + sp.h / 2]; dir = [-1, 0];
   }
-  // Drawn pointing along `dir`, its tip at `tip`: a head 18 across and 14 deep on a
-  // shaft 8 across and 18 long.
+  // THE POINTING HAND, at the owner's word, its fingertip on `tip` and the finger along
+  // `dir` — the drawing points up, so it is turned by the angle from up to `dir`.
+  const hand = art.tut_point && ui.tut_point;
+  if (hand) {
+    const [sx, sy, sw, sh] = hand.trim;
+    const h = hand.h, w = h * sw / sh;
+    ctx.save();
+    ctx.translate(tip[0], tip[1]);
+    ctx.rotate(Math.atan2(dir[0], -dir[1]));
+    ctx.drawImage(art.tut_point, sx, sy, sw, sh, -hand.tip * w, 0, w, h);
+    ctx.restore();
+    return;
+  }
+  // Without the drawing, the cream arrow: a head 18 across and 14 deep on a shaft 8
+  // across and 18 long.
   const [tx, ty] = tip, [dx, dy] = dir, nx = -dy, ny = dx;
   const P = (along, side) => [tx - dx * along + nx * side, ty - dy * along + ny * side];
   const pts = [P(0, 0), P(14, 9), P(14, 4), P(32, 4), P(32, -4), P(14, -4), P(14, -9)];

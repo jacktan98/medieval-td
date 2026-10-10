@@ -633,6 +633,13 @@ function postOn(tower, base) {
 // IDEMPOTENT, which is what lets input.js store the result as `tower.rally`: the
 // point that comes back is on the road and inside the ring, so running stations()
 // on it finds it fits on the first test and posts the squad exactly there.
+// MAY A RALLY POINT GO HERE? On the road — within RALLY_ROAD of its middle — and
+// inside the barracks' reach, at the owner's word: a tap anywhere else is refused,
+// and marked as refused (see the placing tap in src/input.js).
+export const RALLY_ROAD = 30;
+export const rallyValid = (tower, x, y) =>
+  inRange(tower.x, tower.y, x, y, tower.def.range) && nearestOn(level.routes, x, y).d <= RALLY_ROAD;
+
 export function rallyPoint(tower, x, y) {
   // No range clamp, for the reason spelled out in stations(): clamping first and
   // re-finding the road second is what used to throw a squad onto a different

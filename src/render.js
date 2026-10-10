@@ -4559,7 +4559,35 @@ function drawHits(ctx, state) {
 // Only ever shown for ONE barracks at a time — the one being placed, or the one
 // whose menu is open, or the one under the mouse. Nine rally flags on screen at
 // once is noise, not information.
+// THE FLAG JUST PLANTED stays RALLY_HOLD seconds where it went and fades over
+// RALLY_FADE; the red cross where a rally point was refused, the same. Both on the
+// board's own clock, so a pause holds them. See the placing tap in src/input.js.
+const RALLY_HOLD = 0.5, RALLY_FADE = 0.4;
+function drawRallyMarks(ctx, state) {
+  const now = state.anim || 0;
+  const fade = at => {
+    const k = now - at;
+    return k < RALLY_HOLD ? 1 : Math.max(0, 1 - (k - RALLY_HOLD) / RALLY_FADE);
+  };
+  const m = state.rallyMark;
+  if (m && m.tower.rally && state.placing !== m.tower) {
+    const a = fade(m.at);
+    if (a > 0) flag(ctx, m.tower.rally.x, m.tower.rally.y, a); else state.rallyMark = null;
+  }
+  const bad = state.badTap;
+  if (bad) {
+    const a = fade(bad.at);
+    if (a > 0) {
+      ctx.save();
+      ctx.globalAlpha = a;
+      drawUi(ctx, 'mark_invalid', bad.x, bad.y);
+      ctx.restore();
+    } else state.badTap = null;
+  }
+}
+
 function drawRally(ctx, state) {
+  drawRallyMarks(ctx, state);
   const t = state.placing ||
             (state.menu && state.menu.tower && state.menu.tower.def.soldier ? state.menu.tower : null) ||
             (state.hoverTower && state.hoverTower.def.soldier ? state.hoverTower : null);

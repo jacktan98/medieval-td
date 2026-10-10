@@ -465,6 +465,10 @@ export const ui = {
   //
   // This is the only glyph that needs it, because it is the only asymmetric one.
   glyph_flag:   { trim: [220, 207, 72, 98],  fit: GLYPH_BOX_BARE, nudge: [3, 0] },
+  // The tutorial's pointing hand, finger up — its tip `tip` across the trim and at
+  // its top — and the red cross laid on the ground where a rally point may not go.
+  tut_point:    { trim: [227, 211, 58, 90], h: 40, tip: 0.388 },
+  mark_invalid: { trim: [240, 247, 32, 18], h: 14 },
 
   // The archer's three standing orders, on the same bare box as the flag: they
   // sit on a button with nothing to buy, so they get the bigger glyph. Wider

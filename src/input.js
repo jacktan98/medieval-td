@@ -6,7 +6,7 @@ import { stageAt, skipReveal } from './overview.js';
 import { STAGES } from './data/overview.js';
 import { openMenu, closeMenu, hitMenu, hitCancel, canUse, refundValue, RING_R,
          needsConfirm, armed } from './menu.js';
-import { makeUnits, moveUnits, removeUnits, rallyPoint } from './units.js';
+import { makeUnits, moveUnits, removeUnits, rallyPoint, rallyValid } from './units.js';
 import { towerBox, cooldownOf, makeTower, faceOncoming } from './towers.js';
 import { puff } from './smoke.js';
 import { clampToRange } from './ground.js';
@@ -339,8 +339,19 @@ export function tap(state, x, y, restart) {
 
   // Placing a rally point swallows the tap: the whole board is the target,
   // so nothing underneath may act on it.
+  //
+  // ONLY ON THE ROAD INSIDE THE RING, at the owner's word (rallyValid): anywhere else
+  // is marked with the red cross where it was tapped and the flag is still in hand.
+  // A tap on the barracks itself puts it down where it was. A good spot plants the
+  // flag, and it stands there a moment before it fades (`rallyMark`, drawn in
+  // src/render.js).
   if (state.placing) {
-    setRally(state, state.placing, x, y);
+    const t = state.placing;
+    if (Math.hypot(t.plot.x - x, t.plot.y - y) <= PLOT_R + 8) { state.placing = null; return true; }
+    if (!rallyValid(t, x, y)) { state.badTap = { x, y, at: state.anim || 0 }; return true; }
+    setRally(state, t, x, y);
+    state.rallyMark = { tower: t, at: state.anim || 0 };
+    state.badTap = null;
     state.placing = null;
     return true;
   }
