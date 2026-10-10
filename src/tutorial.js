@@ -1,10 +1,12 @@
 // STAGE 1 IS THE TUTORIAL, at the owner's word: "Let's make stage 1 a tutorial for new
 // players." A run of steps, each a line of advice typed out in Lobster in the top right
-// of the board — as if someone were writing it down — that fades after a while, and
-// most with an arrow at the one thing to press next. While an arrow is up, that thing
-// (and the pause button) is all the board answers.
+// of the board — as if someone were writing it down — and most with an arrow at the
+// one thing to press next. A line that asks for something stays up until it has been
+// done and then fades; a line of advice fades once it has been read. Each arrives with
+// the alert chime. While an arrow is up, that thing (and the pause button) is all the
+// board answers.
 //
-//   before wave 1  — the first plot; Archery; how to select a tower (its shadow); the
+//   before wave 1  — a welcome; the first plot; Archery; how to select a tower (its shadow); the
 //                    second plot; Barracks; Next wave.
 //   wave 1         — the Thug's new-enemy card; then the board is the player's.
 //   after wave 1   — Next wave again, early, for the gold; buy more towers.
@@ -29,6 +31,7 @@ import { sealOf } from './score.js';
 import { alertRects } from './newfoe.js';
 import { HUD_BTN } from './render.js';
 import { BTN_R, HIT_R } from './menu.js';
+import { chime, CUE } from './audio.js';
 
 const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
 const TYPE_RATE = 32;         // characters a second, typed
@@ -40,6 +43,7 @@ const FIRST = 1, SECOND = 0;
 
 // THE WORDS, the owner's, put into plain English.
 const SAY = {
+  welcome:  'Welcome, General! There is no time for pleasantries. The thugs are coming, and we need to get you up to speed.',
   plot1:    'Click this plot to buy a tower to defend the village.',
   archery:  'The Archery tower is reliable and shoots enemies from afar.',
   shadow:   'To select a tower, click its shadow on the ground. Clicking the top of the tower will not select it.',
@@ -82,6 +86,7 @@ const alertSpot = (state, match) => {
 // advice, over once it has faded — or as soon as it has been typed, if the step after
 // it is due (the wave it waits for has ended while the player was still reading).
 const STEPS = [
+  { say: 'welcome' },
   { say: 'plot1', lock: true, point: () => plotSpot(FIRST),
     done: s => !!menuOn(s, FIRST) || !!towerOn(s, FIRST) },
   { say: 'archery', lock: true, family: 'archery',
@@ -141,7 +146,7 @@ const STEPS = [
 // A new game's tutorial, or null: stage 1, not yet won.
 export function makeTutorial(lv) {
   if (!lv.tutorial || sealOf(lv.id)) return null;
-  return { i: 0, begun: false, t: 0, cap: 1, hold: false, done: false };
+  return { i: 0, begun: false, t: 0, cap: 1, hold: false, done: false, leaving: null };
 }
 
 // One step of the game's clock: begin the step when it may, end it when it is done.
@@ -157,20 +162,33 @@ export function updateTutorial(state, dt) {
     if (step.when && !step.when(state)) return;
     tut.begun = true;
     tut.t = 0;
+    tut.leaving = null;
     if (step.start) step.start(state, tut);
+    // EVERY LINE ARRIVES WITH THE ALERT, at the owner's word.
+    chime(CUE.alert);
   }
   tut.t += dt;
   tut.hold = !!step.hold;
+  // DONE, AND FADING: the line goes once the player has done what it asked, and the
+  // next one comes when it has gone.
+  if (tut.leaving !== null) {
+    if (tut.t - tut.leaving >= FADE) advance(tut);
+    return;
+  }
   const next = STEPS[tut.i + 1];
   const due = !step.done && next && next.when && next.when(state);
   const over = step.done ? step.done(state) : tut.t >= lineLife(step) || due;
   if (!over) return;
-  // A line is let finish typing before the next one replaces it.
+  // A LINE THAT ASKED FOR SOMETHING stays up until it is done, at the owner's word,
+  // and then fades.
+  if (step.done) { tut.leaving = tut.t; return; }
+  // A line of advice is let finish typing before the next one replaces it.
   if (tut.t < typed(step)) return;
   advance(tut);
 }
 
 function advance(tut) {
+  tut.leaving = null;
   tut.i++;
   tut.begun = false;
   tut.hold = false;
@@ -197,7 +215,7 @@ const inSpot = (sp, x, y) => sp && (sp.r !== undefined
 // thing its arrow is on (and the plot under an open menu, so the menu stays up).
 export function tutorialAllows(state, x, y) {
   const step = current(state);
-  if (!step || !step.lock) return true;
+  if (!step || !step.lock || state.tutorial.leaving !== null) return true;
   const spots = [step.point && step.point(state), ...(step.also ? step.also(state) : [])];
   return spots.some(sp => inSpot(sp, x, y));
 }
@@ -245,8 +263,12 @@ export function drawTutorial(ctx, state) {
   const tut = state.tutorial;
   const text = SAY[step.say];
   const shown = Math.min(text.length, Math.floor(tut.t * TYPE_RATE));
+  // A line that asked for something is up until it is done (`leaving`), then fades;
+  // a line of advice fades once it has been read.
   const life = lineLife(step);
-  const alpha = tut.t < life - FADE ? 1 : Math.max(0, (life - tut.t) / FADE);
+  const alpha = step.done
+    ? (tut.leaving === null ? 1 : Math.max(0, 1 - (tut.t - tut.leaving) / FADE))
+    : tut.t < life - FADE ? 1 : Math.max(0, (life - tut.t) / FADE);
 
   ctx.save();
   ctx.font = FONT;
@@ -269,7 +291,7 @@ export function drawTutorial(ctx, state) {
     });
     ctx.globalAlpha = 1;
   }
-  const sp = step.point && step.point(state);
+  const sp = tut.leaving === null && step.point && step.point(state);
   if (sp) arrowAt(ctx, sp, tut.t);
   ctx.restore();
 }
