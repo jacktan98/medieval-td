@@ -51,10 +51,10 @@ const FIRST = 1, SECOND = 0;
 // "tap" on a phone, at the owner's word — see `touch` below.
 const SAY = {
   welcome:  'Welcome, General! There is no time for pleasantries. The thugs are coming, and we need to get you up to speed.',
-  plot1:    '{Click} on the plot to build a tower to defend the village.',
+  plot1:    '{Click} on the empty plot to build a tower to defend the village.',
   archery:  'The Archery tower is reliable and shoots enemies from afar.',
   shadow:   'To select a tower, {click} its shadow on the ground. {Clicking} the top of the tower will not select it.',
-  plot2:    '{Click} on the plot to build another tower to defend the village.',
+  plot2:    '{Click} on the empty plot to build another tower to defend the village.',
   barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
   rallyTap: '{Click} your barracks again to adjust its rally point.',
   rallyBtn: '{Click} on the Rally Flag to adjust the rally point.',
@@ -70,8 +70,8 @@ const SAY = {
   congrats: 'Great, you now have a Tier 2 Archery Tower!',
   farewell: 'All the best, General! We trust the village is in safe hands.',
   // ON THE WORLD MAP, once stage 1 is won: see MAP_STEPS.
-  book:     '{Click} on the book to review towers, units and enemies. It will help you plan a better defense.',
-  upgrades: '{Click} on the hammer to spend your hard-earned stars. Upgrades make your towers stronger.',
+  book:     '{Click} on Encyclopedia to review towers, units and enemies. It will help you plan a better defense.',
+  upgrades: '{Click} on Upgrades to spend your hard-earned stars. Upgrades make your towers stronger.',
   next:     'Your next battle is here, General. {Click} on the blue banner when you are ready!',
   // A NEW GAME'S FIRST WORDS, on the world map: see INTRO.
   intro:    'General, our scouts report large numbers of thugs heading towards Oakhaven. {Click} on the blue banner to head there!'
