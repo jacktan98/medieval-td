@@ -9,7 +9,7 @@
 //   before wave 1  — a welcome; the first plot; Archery; how to select a tower (its shadow); the
 //                    second plot; Barracks; Next wave.
 //   wave 1         — the Thug's new-enemy card; then the board stays locked to the end.
-//   after wave 1   — Next wave again, early, for the gold; buy more towers.
+//   after wave 1   — Next wave again, early, for the gold; build more towers.
 //   after wave 2   — the tier 2 towers arrive as new-tower cards; the first archery
 //                    tower selected (by its shadow) and upgraded; and good luck.
 //
@@ -44,15 +44,15 @@ const FIRST = 1, SECOND = 0;
 // THE WORDS, the owner's, put into plain English.
 const SAY = {
   welcome:  'Welcome, General! There is no time for pleasantries. The thugs are coming, and we need to get you up to speed.',
-  plot1:    'Click this plot to buy a tower to defend the village.',
+  plot1:    'Click this plot to build a tower to defend the village.',
   archery:  'The Archery tower is reliable and shoots enemies from afar.',
   shadow:   'To select a tower, click its shadow on the ground. Clicking the top of the tower will not select it.',
-  plot2:    'Click this plot to buy another tower to defend the village.',
+  plot2:    'Click this plot to build another tower to defend the village.',
   barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
   call:     'When you are ready, click here to start the first wave.',
   foe:      'Reading the cards of new enemies helps you learn how to counter them.',
   early:    'Click Next wave as soon as it appears to earn extra gold.',
-  more:     'Buy more towers to strengthen your defense. More enemies are coming!',
+  more:     'Build more towers to strengthen your defense. More enemies are coming!',
   cards:    'Reading the cards of new towers helps you learn how to use them.',
   select:   'Time to upgrade to a Tier 2 tower. Select your archery tower. Remember: always click or tap a tower\'s shadow to select it.',
   upgrade:  'Click Upgrade to turn it into a Tier 2 Archery Tower.',
