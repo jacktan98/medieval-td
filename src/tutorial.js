@@ -90,6 +90,13 @@ const VERB = { click: ['click', 'tap'], Click: ['Click', 'Tap'], clicking: ['cli
 const plotAt = i => level.plots[i];
 const towerOn = (state, i) => state.towers.find(t => t.plot === plotAt(i)) || null;
 const menuOn = (state, i) => state.menu && state.menu.plot === plotAt(i) ? state.menu : null;
+// HAS THE BARRACKS' FLAG BEEN MOVED since it went up — and set down, not still being
+// placed?
+const rallied = (s, tut) => {
+  const t = towerOn(s, SECOND);
+  return !!t && !s.placing && tut.rally0 !== undefined && t.rally !== tut.rally0;
+};
+
 // What the first archery tower's next rung costs, less the gold in hand.
 const shortOf = s => {
   const t = towerOn(s, FIRST), next = t && t.fam.tiers.find(d => d.tier === t.def.tier + 1);
@@ -146,12 +153,24 @@ const STEPS = [
       return it ? itemSpot(it) : plotSpot(SECOND);
     },
     also: s => { const m = menuOn(s, SECOND); return m ? [plotSpot(SECOND)] : []; },
-    done: s => { const t = towerOn(s, SECOND); if (t) t.kept = true; return !!t; } },
+    // Where its squad's flag stood when it went up, kept to tell whether the player has
+    // since moved it (`rallied`).
+    done: (s, tut) => {
+      const t = towerOn(s, SECOND);
+      if (t) { t.kept = true; if (tut.rally0 === undefined) tut.rally0 = t.rally; }
+      return !!t;
+    } },
   // THE RALLY POINT, at the owner's word: the barracks again, its Rally button, and a
   // spot on the road inside its reach — only a spot that is one (`allow`), so a tap
   // off the road or outside the ring does nothing and the line stays up.
-  { say: 'rallyTap', lock: true, point: () => plotSpot(SECOND),
-    done: s => !!(menuOn(s, SECOND) && menuOn(s, SECOND).tower) || s.placing === towerOn(s, SECOND) },
+  //
+  // AND A PLAYER QUICKER THAN THE LINES — who has opened the barracks, pressed Rally and
+  // set the flag while a line was still fading — is not asked to do it again: every one
+  // of the three is skipped, or ended, once the flag has moved (`rallied`), and the
+  // tutorial goes on to what rally points are for.
+  { say: 'rallyTap', lock: true, point: () => plotSpot(SECOND), skip: rallied,
+    done: (s, tut) => !!(menuOn(s, SECOND) && menuOn(s, SECOND).tower) || s.placing === towerOn(s, SECOND) ||
+                      rallied(s, tut) },
   { say: 'rallyBtn', lock: true,
     point: s => {
       const m = menuOn(s, SECOND);
@@ -159,15 +178,16 @@ const STEPS = [
       return it ? itemSpot(it, 'down') : plotSpot(SECOND);
     },
     also: s => { const m = menuOn(s, SECOND); return m ? [plotSpot(SECOND)] : []; },
-    done: s => !!s.placing && s.placing === towerOn(s, SECOND) },
+    skip: rallied,
+    done: (s, tut) => (!!s.placing && s.placing === towerOn(s, SECOND)) || rallied(s, tut) },
   { say: 'rallySet', lock: true,
     point: s => { const t = towerOn(s, SECOND); return t ? reachSpot(t) : null; },
-    start: (s, tut) => { tut.rally = (towerOn(s, SECOND) || {}).rally; },
+    skip: rallied,
     allow: (s, x, y) => {
       const t = towerOn(s, SECOND);
       return !!t && inRange(t.x, t.y, x, y, t.def.range) && nearestOn(level.routes, x, y).d <= ROAD_HALF;
     },
-    done: (s, tut) => !s.placing && (towerOn(s, SECOND) || {}).rally !== tut.rally },
+    done: rallied },
   { say: 'rallyWhy', lock: true },
   // THE GOLD AND THE LIVES, at the owner's word: an arrow up at each from below.
   { say: 'gold', lock: true, point: () => hudSpot('gold') },
@@ -282,7 +302,7 @@ function run(state, tut, dt) {
   if (!tut || tut.done) return;
   const STEPS = stepsOf(tut);
   const step = STEPS[tut.i];
-  if (!tut.begun && step.skip && step.skip(state)) { advance(tut); return; }
+  if (!tut.begun && step.skip && step.skip(state, tut)) { advance(tut); return; }
   if (!tut.begun) {
     if (step.when && !step.when(state)) return;
     tut.begun = true;
