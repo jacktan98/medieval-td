@@ -43,6 +43,7 @@ const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
 const TYPE_RATE = 32;         // characters a second, typed
 const READ = 3;               // seconds a line of advice stays once fully typed, at the owner's word
 const FADE = 0.8;             // seconds to fade
+const RINGS_FOR = 3;          // seconds the empty plots are ringed for (`rings`)
 // The two plots the player is walked to, by index into stage 1's `plots`: the top one
 // by Oakhaven's houses, then the one below it.
 const FIRST = 1, SECOND = 0;
@@ -57,19 +58,19 @@ const SAY = {
   plot2:    '{Click} on the empty plot to build another tower to defend the village.',
   barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
   rallyTap: '{Click} your barracks again to adjust its rally point.',
-  rallyBtn: '{Click} on the Rally Flag to adjust the rally point.',
+  rallyBtn: '{Click} on the Rally Flag button to adjust the rally point.',
   rallySet: '{Click} anywhere on the road inside the circle to move your soldiers there.',
-  rallyWhy: 'Rally points are useful: they help create choke points where your ranged towers can deal more damage.',
+  rallyWhy: 'Rally points are useful. They help create choke points where your ranged towers can deal more damage.',
   gold:     'Every enemy you defeat carries a bounty that earns you gold.',
   lives:    'Do not let enemies slip past the exit, which is marked by the blue banner. If your lives drop to 0, the game is lost.',
   call:     'When you are ready, {click} Next Wave to start the first wave.',
-  foe:      'Reading the cards of new enemies helps you learn how to counter them.',
+  foe:      '{Click} on the new enemy alert. Reading the cards of new enemies helps you learn how to counter them.',
   early:    '{Click} Next wave as soon as it appears to earn extra gold.',
   more:     'Build more towers to strengthen your defense. More enemies are coming!',
-  cards:    'Reading the cards of new towers helps you learn how to use them.',
-  select:   'Time to upgrade to a Tier 2 tower. Select your archery tower. Remember: always {click} a tower\'s shadow to select it.',
+  cards:    '{Click} on the new tower alert. Reading the cards of new towers helps you learn how to use them.',
+  select:   'Time to upgrade to a Tier 2 tower. Select your archery tower. Remember, always {click} a tower\'s shadow to select it.',
   topUp:    'Here is more gold for your upgrade.',
-  upgrade:  '{Click} Upgrade to turn it into a Tier 2 Archery Tower.',
+  upgrade:  '{Click} the Upgrade button to turn it into a Tier 2 Archery Tower.',
   congrats: 'Great, you now have a Tier 2 Archery Tower!',
   farewell: 'All the best, General! We trust the village is in safe hands.',
   // ON THE WORLD MAP, once stage 1 is won: see MAP_STEPS.
@@ -132,7 +133,7 @@ const STEPS = [
   // THE BOARD LOCKED while the welcome is read, at the owner's word — from the very
   // first frame (see tutorialAllows), so nothing can be built before it.
   // Up for READ seconds once it is fully typed, as every line of advice is, then faded.
-  { say: 'welcome', lock: true },
+  { say: 'welcome', lock: true, read: 5 },
   { say: 'plot1', lock: true, point: () => plotSpot(FIRST),
     done: s => !!menuOn(s, FIRST) || !!towerOn(s, FIRST) },
   { say: 'archery', lock: true, family: 'archery',
@@ -217,7 +218,10 @@ const STEPS = [
   { say: 'early', lock: true, slow: 0.25, when: s => s.resting && s.waveIndex === 0, skip: s => s.waveIndex >= 1,
     point: () => waveSpot(),
     done: s => s.waveIndex >= 1 && !s.resting },
-  { say: 'more' },
+  // AND THE PLOTS STILL EMPTY RINGED for RINGS_FOR seconds, at the owner's word, so the
+  // player sees where else a tower can go.
+  { say: 'more', rings: s => level.plots.filter(p => !s.towers.some(t => t.plot === p))
+      .map(p => ({ x: p.x, y: p.y, r: PLOT_HIT, oval: [54, 28], noArrow: true })) },
   // THE TIER 2 TOWERS, as new-tower cards, once wave 2 is beaten — and the next wave
   // waits until the archery tower has been upgraded.
   { say: 'cards', lock: true, hold: true, when: s => (s.resting && s.waveIndex === 1) || s.waveIndex >= 2,
@@ -365,7 +369,7 @@ function advance(tut) {
 const words = step => (step.say ? SAY[step.say] : '')
   .replace(/\{(\w+)\}/g, (m, w) => (VERB[w] ? VERB[w][touch ? 1 : 0] : m));
 const typed = step => words(step).length / TYPE_RATE;
-const lineLife = step => typed(step) + READ + FADE;
+const lineLife = step => typed(step) + (step.read ?? READ) + FADE;
 
 // THE STEP UNDER WAY, or null.
 const current = tut => (tut && !tut.done && tut.begun ? stepsOf(tut)[tut.i] : null);
@@ -509,6 +513,12 @@ function drawLine(ctx, state, tut, BOX) {
   }
   const sp = tut.leaving === null && step.point && step.point(state);
   if (sp) arrowAt(ctx, sp, tut.t);
+  if (step.rings && tut.t < RINGS_FOR) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, (RINGS_FOR - tut.t) / FADE);
+    for (const ring of step.rings(state)) arrowAt(ctx, ring, tut.t);
+    ctx.restore();
+  }
   ctx.restore();
 }
 
