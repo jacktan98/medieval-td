@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel } from './audio.js';
+import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -88,6 +88,8 @@ export function attachInput(canvas, state, restart) {
     else if (did === 'flip') play(PAGE_FLIP);
     // AND OPENING OR CLOSING THE ENCYCLOPEDIA sounds like the book doing it.
     else if (did === 'open' || did === 'close') bookSound();
+    // A rally flag planted sounds as one, in place of the click.
+    else if (did === 'planted') rallySound();
     else if (did) play(SELECT);
   });
 
@@ -353,7 +355,7 @@ export function tap(state, x, y, restart) {
     state.rallyMark = { tower: t, at: state.anim || 0 };
     state.badTap = null;
     state.placing = null;
-    return true;
+    return 'planted';
   }
 
   // A menu button wins over anything underneath it, including the plot ring

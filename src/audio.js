@@ -547,6 +547,8 @@ const paths = {
   // answers a moment, and these answer a situation that lasts.
   marching:        'assets/audio/map/Marching_sound.mp3',
   flag_planted:    'assets/audio/map/Flag_planted.mp3',
+  // A BARRACKS' RALLY FLAG PLANTED on a good spot — see RALLY_PLANTED.
+  rally_planted:   'assets/audio/map/Rally_flag_planted.mp3',
   // THE VILLAGERS' OWN FOLDER, assets/audio/villagers, at the owner's word — "i
   // anticipate there will be much more sound incoming".
   // Three answers to a tap, one chosen at random each time.
@@ -1162,6 +1164,16 @@ export const BOMB = ['bomb_sound'];
 // three are loops — see setLoop — and have no cue of their own because a loop is
 // named by its key rather than chosen from a list.
 export const FLAG_PLANTED = ['flag_planted'];
+
+// A RALLY FLAG PLANTED where the player chose, on a good spot, at the owner's word —
+// and only the planting of it: the recording is two seconds, the thud is its first
+// half second (from 0.08s, peaking at 0.2s) and the rest a faint tail, so `from` and
+// `dur` cut that out, faded over its last `fade`. Category B, through `slice`.
+export const RALLY_PLANTED = { key: 'rally_planted', from: 0.08, dur: 0.45, fade: 0.12 };
+export function rallySound() {
+  const { key, from, dur, fade } = RALLY_PLANTED;
+  slice(key, from, dur, 1, fade);
+}
 
 // --- THE VILLAGERS ------------------------------------------------------------------
 //

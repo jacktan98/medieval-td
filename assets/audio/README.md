@@ -40,7 +40,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Crow_Harbinger_Call_Crows_Wind.mp3,
                       Crow_Harbinger_before_dying.mp3, Crow_Harbinger_kill_soldier.mp3
 
-assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3,
+assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3, Rally_flag_planted.mp3,
                       Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3, Purchase_sound.mp3, Alert_sound.mp3, Page_flip.mp3, Book_open_close_sound.mp3,
                       Victory_sound.mp3, Lost_sound.mp3, Star_sound.mp3,
                       Fire_crackling.mp3, River_water_flowing.mp3,
@@ -510,6 +510,7 @@ country the army has reached is what that sounds like until they do something.
 | --- | --- |
 | `Marching_sound.mp3` | loops while the road draws itself — the yellow dots moving |
 | `Flag_planted.mp3` | once, the moment the road arrives and the flag goes in |
+| `Rally_flag_planted.mp3` | a barracks' rally flag planted on a good spot, in place of the click — only its first half second (0.08s to 0.53s), the thud without the tail |
 | `Flag_waving.mp3` | loops while the player is looking at the map, doing nothing |
 | **the stage's own background** | loops while the map is at rest: the background of the stage the rally flag stands at — or, with a stage's preview panel open, of that stage. Its level's `ambience`, at the levels the stage plays it at: birdsong, a river, a fire, a fountain, the desert wind, crows, the lake |
 
