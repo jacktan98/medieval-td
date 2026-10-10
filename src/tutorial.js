@@ -30,7 +30,7 @@ import { families } from './data/towers.js';
 import { sealOf } from './score.js';
 import { alertRects } from './newfoe.js';
 import { nearestOn } from './route.js';
-import { inRange } from './ground.js';
+import { inRange, SQUASH } from './ground.js';
 import { HUD_BTN } from './render.js';
 import { BTN_R, HIT_R } from './menu.js';
 import { chime, CUE } from './audio.js';
@@ -93,8 +93,12 @@ const tier2 = () => families.map(f => f.tiers[1] && f.tiers[1].name).filter(Bool
 // { x, y, w, h }, and which way the arrow comes in from (`from`).
 // A PLOT'S RING IS AN OVAL round the marker, at the owner's word: the marker is drawn
 // about 99 x 49 px, centred on the plot, so `oval` is its two radii with a little air.
-const plotSpot = i => ({ x: plotAt(i).x, y: plotAt(i).y, r: PLOT_HIT, oval: [54, 28], from: 'up' });
-const itemSpot = it => ({ x: it.x, y: it.y, r: HIT_R, ring: BTN_R, from: 'up' });
+const plotSpot = i => ({ x: plotAt(i).x, y: plotAt(i).y, r: PLOT_HIT, oval: [54, 28], from: 'down' });
+const itemSpot = (it, from = 'up') => ({ x: it.x, y: it.y, r: HIT_R, ring: BTN_R, from });
+// A TOWER'S REACH, ringed with no arrow: the oval the rally point may be set inside.
+// A little outside the game's own dashed ring, so the two are seen as two.
+const reachSpot = t => ({ x: t.x, y: t.y, r: 0, oval: [t.def.range + 12, t.def.range * SQUASH + 10],
+                          noArrow: true, width: 4 });
 const waveSpot = () => ({ ...HUD_BTN.wave, from: 'down' });
 const alertSpot = (state, match) => {
   const r = alertRects(state).find(a => match(a.id));
@@ -143,11 +147,12 @@ const STEPS = [
     point: s => {
       const m = menuOn(s, SECOND);
       const it = m && m.tower && m.items.find(i => i.act === 'rally');
-      return it ? itemSpot(it) : plotSpot(SECOND);
+      return it ? itemSpot(it, 'down') : plotSpot(SECOND);
     },
     also: s => { const m = menuOn(s, SECOND); return m ? [plotSpot(SECOND)] : []; },
     done: s => !!s.placing && s.placing === towerOn(s, SECOND) },
   { say: 'rallySet', lock: true,
+    point: s => { const t = towerOn(s, SECOND); return t ? reachSpot(t) : null; },
     start: (s, tut) => { tut.rally = (towerOn(s, SECOND) || {}).rally; },
     allow: (s, x, y) => {
       const t = towerOn(s, SECOND);
@@ -451,13 +456,17 @@ function arrowAt(ctx, sp, t) {
     const pulse = Math.sin(t * 6) * 2;
     ctx.save();
     ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 6);
-    ctx.lineWidth = 3;
+    ctx.lineWidth = sp.width || 3;
     ctx.strokeStyle = CREAM;
     ctx.beginPath();
     ctx.ellipse(sp.x, sp.y, rx + pulse, ry + pulse, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
-    tip = [sp.x, sp.y - ry - 6 - bob]; dir = [0, 1];
+    if (sp.noArrow) return;
+    // From below, at the owner's word, for a plot and the Rally button; from above
+    // for the rest of the menu's buttons.
+    if (sp.from === 'down') { tip = [sp.x, sp.y + ry + 6 + bob]; dir = [0, -1]; }
+    else { tip = [sp.x, sp.y - ry - 6 - bob]; dir = [0, 1]; }
   } else if (sp.from === 'up') {
     tip = [sp.x + sp.w / 2, sp.y - 4 - bob]; dir = [0, 1];
   } else if (sp.from === 'down') {
