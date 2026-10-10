@@ -68,7 +68,7 @@ const tier2 = () => families.map(f => f.tiers[1] && f.tiers[1].name).filter(Bool
 // about 99 x 49 px, centred on the plot, so `oval` is its two radii with a little air.
 const plotSpot = i => ({ x: plotAt(i).x, y: plotAt(i).y, r: PLOT_HIT, oval: [54, 28], from: 'up' });
 const itemSpot = it => ({ x: it.x, y: it.y, r: HIT_R, ring: BTN_R, from: 'up' });
-const waveSpot = () => ({ ...HUD_BTN.wave, from: 'right' });
+const waveSpot = () => ({ ...HUD_BTN.wave, from: 'down' });
 const alertSpot = (state, match) => {
   const r = alertRects(state).find(a => match(a.id));
   return r ? { x: r.x, y: r.y, w: r.w, h: r.h, from: 'right' } : null;
@@ -218,8 +218,7 @@ export function shapeMenu(state) {
 
 // --- drawn -------------------------------------------------------------------------
 
-// Clear of the arrow at Next wave, which comes in from its right.
-const BOX = { x: 728, y: 16, w: 222 };
+const BOX = { x: 716, y: 16, w: 230 };
 const FONT = '17px Lobster, system-ui, sans-serif';
 const LINE = 22;
 const INK = '#F0E6D2';
@@ -293,6 +292,9 @@ function arrowAt(ctx, sp, t) {
     ctx.stroke();
     ctx.restore();
     tip = [sp.x, sp.y - ry - 6 - bob]; dir = [0, 1];
+  } else if (sp.from === 'down') {
+    // From below, at the middle of the button, at the owner's word.
+    tip = [sp.x + sp.w / 2, sp.y + sp.h + 4 + bob]; dir = [0, -1];
   } else {
     tip = [sp.x + sp.w + 6 + bob, sp.y + sp.h / 2]; dir = [-1, 0];
   }
