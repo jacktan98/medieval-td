@@ -54,9 +54,9 @@ const SAY = {
   early:    'Click Next wave as soon as it appears to earn extra gold.',
   more:     'Buy more towers to strengthen your defense. More enemies are coming!',
   cards:    'Reading the cards of new towers helps you learn how to use them.',
-  select:   'Time to upgrade to a tier 2 tower. Select your archery tower. Remember: always click or tap a tower\'s shadow to select it.',
-  upgrade:  'Click Upgrade to turn it into an Archer Post.',
-  congrats: 'Congratulations, you now have a tier 2 archery tower!',
+  select:   'Time to upgrade to a Tier 2 tower. Select your archery tower. Remember: always click or tap a tower\'s shadow to select it.',
+  upgrade:  'Click Upgrade to turn it into a Tier 2 Archery Tower.',
+  congrats: 'Congratulations, you now have a Tier 2 Archery Tower!',
   farewell: 'All the best, General! We trust the village is in safe hands.'
 };
 

@@ -6,8 +6,8 @@
 //   name    the flavour one — Watchtower, Guard Post, Knight's Hall. Nothing
 //           draws it since the menu buttons lost their labels; the TOOLS print
 //           it, so a sim row still says which building it means.
-//   title   what the tier is called plainly: "Barracks Tier II", "Archery Tier
-//           III". It heads that tier's entry in the encyclopedia. It reads
+//   title   what the tier is called plainly: "Tier 2 Barracks", "Tier 3 Archery",
+//           at the owner's word, on the encyclopedia and the new-tower card. It reads
 //           "Archery" rather than "Archers" because the family, the folder and
 //           every file are called that now — the artist renamed the uploads and
 //           the one place the old word survived on screen was here.
@@ -1366,9 +1366,9 @@ export const AIM_MODES = [
 // see the whole board is a tower whose choice of target is the only thing left to
 // decide, and 60 damage into an 80-health militiaman is most of a reload wasted.
 export const archery = [
-  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Archery Tier 1',   unit: 'Novice Archer', cost: 60,  damage: 10, range: 200, damageType: 'physical', cooldown: 1.00, colour: '#9C7248', targeting: true },
-  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Archery Tier 2',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 220, damageType: 'physical', cooldown: 0.90, colour: '#7A5230', targeting: true },
-  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Archery Tier 3', unit: 'Elite Archer',  cost: 140, damage: 25, range: 240, damageType: 'physical', cooldown: 0.80, colour: '#B8B2A4', targeting: true },
+  { ...watchtower,  ...archer,  tier: 1, name: 'Watchtower',     title: 'Tier 1 Archery',   unit: 'Novice Archer', cost: 60,  damage: 10, range: 200, damageType: 'physical', cooldown: 1.00, colour: '#9C7248', targeting: true },
+  { ...watchtower2, ...archer2, tier: 2, name: 'Archer Post',    title: 'Tier 2 Archery',  unit: 'Combat Archer', cost: 90,  damage: 15, range: 220, damageType: 'physical', cooldown: 0.90, colour: '#7A5230', targeting: true },
+  { ...watchtower3, ...archer3, tier: 3, name: 'Crossbow Tower', title: 'Tier 3 Archery', unit: 'Elite Archer',  cost: 140, damage: 25, range: 240, damageType: 'physical', cooldown: 0.80, colour: '#B8B2A4', targeting: true },
   // THE LADDER'S FIRST FORK, and the first of its two fourth rungs. A Crossbow
   // Tower can become either of these two, which is why `tier` rather than array
   // index is what decides what follows what — see upgradesFrom below.
@@ -1791,17 +1791,17 @@ const assassin = {
 // 8 / 7 / 6 / 5: a tier buys a better man, not a quicker return.
 export const barracks = [
   {
-    ...camp, tier: 1, name: 'Militia Camp', title: 'Barracks Tier 1', cost: 70, range: 165, colour: '#6E7A6A',
+    ...camp, tier: 1, name: 'Militia Camp', title: 'Tier 1 Barracks', cost: 70, range: 165, colour: '#6E7A6A',
     soldier: { ...spearman,  name: 'Spearman',  count: 3, hp: 100, damage: 3, cd: 0.95, speed: 60, respawn: 7, regen: 4, colour: '#7C93B8',
                damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
-    ...camp2, tier: 2, name: 'Guard Post', title: 'Barracks Tier 2', cost: 100, range: 180, colour: '#5E6B5C',
+    ...camp2, tier: 2, name: 'Guard Post', title: 'Tier 2 Barracks', cost: 100, range: 180, colour: '#5E6B5C',
     soldier: { ...spearman2, name: 'Pikeman',   count: 3, hp: 150, damage: 4, cd: 0.90, speed: 60, respawn: 7, regen: 5, colour: '#6E86B4',
                damageType: 'physical', armour: { physical: 'none', magic: 'none' } }
   },
   {
-    ...camp3, tier: 3, name: "Knight's Hall", title: 'Barracks Tier 3', cost: 150, range: 195, colour: '#8A8478',
+    ...camp3, tier: 3, name: "Knight's Hall", title: 'Tier 3 Barracks', cost: 150, range: 195, colour: '#8A8478',
     soldier: { ...spearman3, name: 'Swordsman', count: 3, hp: 150, damage: 5, cd: 0.85, speed: 60, respawn: 7, regen: 6, colour: '#5C79AE',
                damageType: 'physical', armour: { physical: 'low', magic: 'none' } }
   },
@@ -2517,13 +2517,13 @@ const cannon = {
 // one of him rather than a squad, which is what the book prints: a barracks
 // entry reads "3 x Spearman" and this one reads "1 x Catapult Engineer".
 export const siege = [
-  { ...catapult,  tier: 1, name: 'Catapult',  title: 'Artillery Tier 1',   unit: 'Catapult Engineer',
+  { ...catapult,  tier: 1, name: 'Catapult',  title: 'Tier 1 Artillery',   unit: 'Catapult Engineer',
     cost: 90,  damage: 18, splash: 70, range: 300, minRange: DEAD, cooldown: CYCLE, colour: '#7A6A4A',
     damageType: 'physical', pierce: 1 },
-  { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Artillery Tier 2',  unit: 'Mangonel Engineer',
+  { ...mangonel,  tier: 2, name: 'Mangonel',  title: 'Tier 2 Artillery',  unit: 'Mangonel Engineer',
     cost: 120, damage: 24, splash: 80, range: 330, minRange: DEAD, cooldown: CYCLE, colour: '#6E6042',
     damageType: 'physical', pierce: 1 },
-  { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Artillery Tier 3', unit: 'Trebuchet Engineer',
+  { ...trebuchet, tier: 3, name: 'Trebuchet', title: 'Tier 3 Artillery', unit: 'Trebuchet Engineer',
     cost: 170, damage: 36, splash: 90, range: 360, minRange: DEAD, cooldown: CYCLE, colour: '#8A7A56',
     damageType: 'physical', pierce: 1 },
   // TIER 4, and it is the opposite tower to the three below it in every way that
@@ -3384,11 +3384,11 @@ const pope = {
 // itself for a tier 4 that costs 570 gold of cumulative spend, which is the more
 // honest shape for a ladder whose lower rungs are the reason to take the family.
 export const monastery = [
-  { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Monastery Tier 1',   unit: 'Priest',
+  { ...shrine, ...priest,   tier: 1, name: 'Wayside Shrine', title: 'Tier 1 Monastery',   unit: 'Priest',
     cost: 80,  damage: 20, range: 160, cooldown: 1.80, colour: '#8C7A5C', targeting: true, damageType: 'magic' },
-  { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Monastery Tier 2',  unit: 'Bishop',
+  { ...chapel, ...bishop,   tier: 2, name: 'Chapel',         title: 'Tier 2 Monastery',  unit: 'Bishop',
     cost: 110, damage: 30, range: 180, cooldown: 1.60, colour: '#7E6E52', targeting: true, damageType: 'magic' },
-  { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Monastery Tier 3', unit: 'Cardinal',
+  { ...abbey,  ...cardinal, tier: 3, name: 'Abbey',          title: 'Tier 3 Monastery', unit: 'Cardinal',
     cost: 160, damage: 50, range: 200, cooldown: 1.40, colour: '#9A948A', targeting: true, damageType: 'magic' },
   // TIER 4, AND THE ONE TOP RUNG THAT IS NOT A TRADE.
   //
@@ -3943,7 +3943,7 @@ export const TOWER_NOTES = {
   'Watchtower': 'A wooden lookout with a single archer. Cheap and quick to put up, it shoots steadily at ' +
     'anything in reach, crows included. A good first tower on almost any plot.',
   'Archer Post': 'A sturdier post for a better archer. It shoots harder, a little faster and a little ' +
-    'further than the Watchtower.',
+    'further than Tier 1.',
   'Crossbow Tower': 'A stone tower that holds an elite archer. The strongest of the plain archery towers, ' +
     'with the reach to cover a long stretch of road.',
   'Crossbow Sentry': 'A crossbowman on a quick reload, putting heavy quarrels into 1 target after another. ' +
@@ -3974,7 +3974,7 @@ export const TOWER_NOTES = {
     'to reload, but devastating against packed, armored groups. It cannot hit crows.',
   'Wayside Shrine': 'A priest casts bolts of magic that physical armor cannot stop, so it is the answer to ' +
     'armored enemies. It can hit crows, but its reach is shorter than other towers\'.',
-  'Chapel': 'A bishop with stronger, faster magic than the shrine. Build it where armored enemies will pass ' +
+  'Chapel': 'A bishop with stronger, faster magic than Tier 1. Build it where armored enemies will pass ' +
     'within its shorter reach.',
   'Abbey': 'A cardinal whose magic hits hard enough to bring down heavy brutes on its own. The strongest of the ' +
     'plain monastery towers.',
