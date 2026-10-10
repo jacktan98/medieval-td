@@ -268,6 +268,8 @@ function newGame() {
     // unopened goes with the game it was raised in. See src/newfoe.js.
     foeAlerts: [],
     foeCard: null,
+    // And the cards opened in this game — see openFoeCard in src/newfoe.js.
+    cardsRead: new Set(),
     // STAGE 1'S TUTORIAL, for a player who has not yet won it — or null. See
     // src/tutorial.js.
     tutorial: makeTutorial(level),

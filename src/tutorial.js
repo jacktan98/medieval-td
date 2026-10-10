@@ -196,7 +196,13 @@ const STEPS = [
   // THE THUG'S CARD, as he comes: raised here if the player has met him before and the
   // game did not raise it — a second try at stage 1 still teaches the card.
   { say: 'foe', lock: true, when: s => s.enemies.length > 0,
-    start: s => { if (!(s.foeAlerts || []).includes('light_inf')) (s.foeAlerts ||= []).push('light_inf'); },
+    // (Not if the player has opened it already — a quick one can, in the moment before
+    // this step begins.)
+    start: s => {
+      if (!(s.foeAlerts || []).includes('light_inf') && !(s.cardsRead && s.cardsRead.has('light_inf'))) {
+        (s.foeAlerts ||= []).push('light_inf');
+      }
+    },
     point: s => alertSpot(s, id => id === 'light_inf'),
     done: s => !(s.foeAlerts || []).includes('light_inf') && !s.foeCard },
   // AND NOTHING ELSE TO DO IN WAVE 1 but watch it, at the owner's word: no line, and
@@ -243,13 +249,14 @@ const onMap = s => !s.started && (s.stage === null || s.stage === undefined) && 
   (s.pendingReveal === null || s.pendingReveal === undefined) && s.book === null && !s.upgrades && !s.admin;
 const MAP_STEPS = [
   { say: 'book', lock: true, when: onMap, point: () => ({ ...BOOK_ICON_HIT, from: 'up' }),
-    done: (s, tut) => { if (s.book !== null) tut.opened = true; return !!tut.opened && s.book === null; } },
+    done: (s, tut) => !!tut.sawBook && s.book === null },
   { say: 'upgrades', lock: true, when: onMap, point: () => ({ ...UPGRADES_BTN, from: 'up' }),
-    done: s => !!s.upgrades },
+    done: (s, tut) => !!tut.sawUpgrades },
   // AND BACK FROM THE UPGRADES, stage 2's flag, until its panel is opened.
   // NOT LOCKED, at the owner's word: the player is free from here, and the arrow is a
   // pointer rather than a gate.
-  { say: 'next', when: onMap, point: () => flagSpot(1), done: s => s.stage === 1 }
+  { say: 'next', when: onMap, point: () => flagSpot(1), skip: (s, tut) => !!tut.sawNext,
+    done: (s, tut) => !!tut.sawNext }
 ];
 // A STAGE'S FLAG on the world map: the box round the flag standing on its marker (it is
 // FLAG_H tall in src/overview.js) down to just under the marker, with the arrow coming
@@ -293,6 +300,15 @@ export function updateTutorial(state, dt) {
 export function updateMapTour(state, dt) {
   if ((!state.mapTour || state.mapTour.done) && !introSeen() && !sealOf(firstStage())) {
     state.mapTour = { list: 'intro', i: 0, begun: false, t: 0, done: false, leaving: null };
+  }
+  // WHAT THE PLAYER HAS OPENED, noted every frame — not only while the step that asks for
+  // it is up, so a quick player who has been into the encyclopedia or the upgrades before
+  // the line arrives is not asked again (and not left waiting).
+  const tour = state.mapTour;
+  if (tour && !tour.done) {
+    if (state.book !== null && state.book !== undefined) tour.sawBook = true;
+    if (state.upgrades) tour.sawUpgrades = true;
+    if (state.stage === 1) tour.sawNext = true;
   }
   run(state, state.mapTour, dt);
 }
@@ -361,16 +377,32 @@ const inSpot = (sp, x, y) => sp && (sp.r !== undefined
 // MAY A TAP HERE DO ANYTHING? Everything, unless a step has locked the board to the
 // thing its arrow is on (and the plot under an open menu, so the menu stays up).
 export function tutorialAllows(state, x, y) {
-  const tut = state.tutorial;
-  if (tut && !tut.done && !tut.begun && tut.i === 0) return false;
-  return allows(state, tut, x, y);
+  return allows(state, state.tutorial, x, y);
 }
 // And on the world map.
 export const mapTourAllows = (state, x, y) => allows(state, state.mapTour, x, y);
 
+// WHICH STEP'S RULES THE BOARD IS UNDER. The step under way — and BETWEEN two steps,
+// while one fades or the next waits on its `when`, the NEXT one's, if it is due: a
+// quick player is let do the next thing early, and nothing else. (Free for the whole
+// fade was a gap a quick player got through, a tower or two and a wave ahead of the
+// lines, and the tutorial waited for things it had already missed.) If the next one is
+// not due yet, the board stays as the last one left it: locked after a locked step,
+// free after a free one.
+const BLOCK = { lock: true };
+function ruling(state, tut) {
+  if (!tut || tut.done) return null;
+  const steps = stepsOf(tut);
+  if (tut.begun && tut.leaving === null) return steps[tut.i];
+  const up = steps[tut.leaving !== null ? tut.i + 1 : tut.i];
+  if (up && (!up.when || up.when(state))) return up;
+  const was = tut.leaving !== null ? steps[tut.i] : steps[tut.i - 1];
+  return was && was.lock ? BLOCK : null;
+}
+
 function allows(state, tut, x, y) {
-  const step = current(tut);
-  if (!step || !step.lock || tut.leaving !== null) return true;
+  const step = ruling(state, tut);
+  if (!step || !step.lock) return true;
   if (step.allow) return step.allow(state, x, y);
   const spots = [step.point && step.point(state), ...(step.also ? step.also(state) : [])];
   return spots.some(sp => inSpot(sp, x, y));
@@ -382,7 +414,7 @@ function allows(state, tut, x, y) {
 export function shapeMenu(state) {
   const tut = state.tutorial, m = state.menu;
   if (!tut || !m) return;
-  const step = current(tut);
+  const step = ruling(state, tut);
   for (const it of m.items) {
     if (it.act === 'build' && step && step.family && it.family.id !== step.family) it.available = false;
     if (it.act === 'upgrade' && it.to && it.to.tier > tut.cap) it.available = false;

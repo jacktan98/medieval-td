@@ -235,6 +235,9 @@ export function hitAlert(state, x, y) {
 export function openFoeCard(state, i) {
   const [id] = state.foeAlerts.splice(i, 1);
   state.foeCard = id;
+  // Which cards have been read in this game — stage 1's tutorial asks, so it does not
+  // raise again a card the player has already opened. See src/tutorial.js.
+  (state.cardsRead ||= new Set()).add(id && typeof id === 'object' ? id.tower : id);
   state.foeTip = null;
   state.menu = null;
   state.placing = null;
