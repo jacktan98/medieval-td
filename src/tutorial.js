@@ -7,7 +7,7 @@
 // board answers.
 //
 //   before wave 1  — a welcome; the first plot; Archery; how to select a tower (its shadow); the
-//                    second plot; Barracks; Next wave.
+//                    second plot; Barracks; its rally point; Next wave.
 //   wave 1         — the Thug's new-enemy card; then the board stays locked to the end.
 //   after wave 1   — Next wave again, early, for the gold; build more towers.
 //   after wave 2   — the tier 2 towers arrive as new-tower cards; the first archery
@@ -29,6 +29,8 @@ import { level, levels } from './level.js';
 import { families } from './data/towers.js';
 import { sealOf } from './score.js';
 import { alertRects } from './newfoe.js';
+import { nearestOn } from './route.js';
+import { inRange } from './ground.js';
 import { HUD_BTN } from './render.js';
 import { BTN_R, HIT_R } from './menu.js';
 import { chime, CUE } from './audio.js';
@@ -37,6 +39,7 @@ import { UPGRADES_BTN } from './upgradepage.js';
 import { STAGES } from './data/overview.js';
 
 const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
+const ROAD_HALF = 30;         // how far from the middle of the road a rally tap may land (about half its width)
 const TYPE_RATE = 32;         // characters a second, typed
 const READ = 3;               // seconds a line stays once typed, and a second per 25 characters more
 const FADE = 0.8;             // seconds to fade
@@ -53,6 +56,10 @@ const SAY = {
   shadow:   'To select a tower, {click} its shadow on the ground. {Clicking} the top of the tower will not select it.',
   plot2:    '{Click} this plot to build another tower to defend the village.',
   barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
+  rallyTap: '{Click} your barracks again to adjust its rally point.',
+  rallyBtn: '{Click} here to adjust the rally point.',
+  rallySet: '{Click} anywhere on the road inside the circle to move your soldiers there.',
+  rallyWhy: 'Rally points are useful: they help create choke points where your ranged towers can deal more damage.',
   call:     'When you are ready, {click} here to start the first wave.',
   foe:      'Reading the cards of new enemies helps you learn how to counter them.',
   early:    '{Click} Next wave as soon as it appears to earn extra gold.',
@@ -127,6 +134,27 @@ const STEPS = [
     },
     also: s => { const m = menuOn(s, SECOND); return m ? [plotSpot(SECOND)] : []; },
     done: s => { const t = towerOn(s, SECOND); if (t) t.kept = true; return !!t; } },
+  // THE RALLY POINT, at the owner's word: the barracks again, its Rally button, and a
+  // spot on the road inside its reach — only a spot that is one (`allow`), so a tap
+  // off the road or outside the ring does nothing and the line stays up.
+  { say: 'rallyTap', lock: true, point: () => plotSpot(SECOND),
+    done: s => !!(menuOn(s, SECOND) && menuOn(s, SECOND).tower) || s.placing === towerOn(s, SECOND) },
+  { say: 'rallyBtn', lock: true,
+    point: s => {
+      const m = menuOn(s, SECOND);
+      const it = m && m.tower && m.items.find(i => i.act === 'rally');
+      return it ? itemSpot(it) : plotSpot(SECOND);
+    },
+    also: s => { const m = menuOn(s, SECOND); return m ? [plotSpot(SECOND)] : []; },
+    done: s => !!s.placing && s.placing === towerOn(s, SECOND) },
+  { say: 'rallySet', lock: true,
+    start: (s, tut) => { tut.rally = (towerOn(s, SECOND) || {}).rally; },
+    allow: (s, x, y) => {
+      const t = towerOn(s, SECOND);
+      return !!t && inRange(t.x, t.y, x, y, t.def.range) && nearestOn(level.routes, x, y).d <= ROAD_HALF;
+    },
+    done: (s, tut) => !s.placing && (towerOn(s, SECOND) || {}).rally !== tut.rally },
+  { say: 'rallyWhy', lock: true },
   { say: 'call', lock: true, point: () => waveSpot(), done: s => s.called !== false },
   // THE THUG'S CARD, as he comes: raised here if the player has met him before and the
   // game did not raise it — a second try at stage 1 still teaches the card.
@@ -178,7 +206,9 @@ const MAP_STEPS = [
   { say: 'upgrades', lock: true, when: onMap, point: () => ({ ...UPGRADES_BTN, from: 'up' }),
     done: s => !!s.upgrades },
   // AND BACK FROM THE UPGRADES, stage 2's flag, until its panel is opened.
-  { say: 'next', lock: true, when: onMap, point: () => flagSpot(1), done: s => s.stage === 1 }
+  // NOT LOCKED, at the owner's word: the player is free from here, and the arrow is a
+  // pointer rather than a gate.
+  { say: 'next', when: onMap, point: () => flagSpot(1), done: s => s.stage === 1 }
 ];
 // A STAGE'S FLAG on the world map: the box round the flag standing on its marker (it is
 // FLAG_H tall in src/overview.js) down to just under the marker, with the arrow coming
@@ -300,6 +330,7 @@ export const mapTourAllows = (state, x, y) => allows(state, state.mapTour, x, y)
 function allows(state, tut, x, y) {
   const step = current(tut);
   if (!step || !step.lock || tut.leaving !== null) return true;
+  if (step.allow) return step.allow(state, x, y);
   const spots = [step.point && step.point(state), ...(step.also ? step.also(state) : [])];
   return spots.some(sp => inSpot(sp, x, y));
 }
