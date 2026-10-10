@@ -99,6 +99,9 @@ export const GLYPH_BOX = 26;
 // but tools/trim.mjs correctly flags it, and a permanent SOFT you have decided
 // to ignore is how you stop reading the tool at all.
 export const GLYPH_BOX_BARE = 30;
+// HOW BIG A MENU ICON'S ARTWORK IS DRAWN: the Upgrade icon's, fitted to GLYPH_BOX by
+// its height (its trim, `glyph_up` below, is 88 tall).
+export const MENU_ART_K = GLYPH_BOX / 88;
 
 // The rally flag is the one UI file also drawn ON THE BOARD, as the marker
 // showing where a squad stands and as the ghost that follows a rally drag. It
@@ -467,8 +470,11 @@ export const ui = {
   glyph_flag:   { trim: [220, 207, 72, 98],  fit: GLYPH_BOX_BARE, nudge: [3, 0] },
   // The tutorial's pointing hand, finger up — its tip `tip` across the trim and at
   // its top — and the red cross laid on the ground where a rally point may not go.
-  tut_point:    { trim: [227, 211, 58, 90], h: 40, tip: 0.388 },
-  mark_invalid: { trim: [240, 247, 32, 18], h: 14 },
+  // AT THE RADIAL MENU'S SCALE, at the owner's word: both were drawn against the
+  // Upgrade icon, so they are drawn as many screen px per artwork px as it is
+  // (MENU_ART_K), and their outlines come out the same weight as the menu's.
+  tut_point:    { trim: [225, 210, 63, 92], h: 92 * MENU_ART_K, tip: 0.365 },
+  mark_invalid: { trim: [241, 254, 17, 10], h: 10 * MENU_ART_K },
 
   // The archer's three standing orders, on the same bare box as the flag: they
   // sit on a button with nothing to buy, so they get the bigger glyph. Wider
