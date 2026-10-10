@@ -32,6 +32,8 @@ import { alertRects } from './newfoe.js';
 import { HUD_BTN } from './render.js';
 import { BTN_R, HIT_R } from './menu.js';
 import { chime, CUE } from './audio.js';
+import { BOOK_ICON_HIT } from './book.js';
+import { UPGRADES_BTN } from './upgradepage.js';
 
 const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
 const TYPE_RATE = 32;         // characters a second, typed
@@ -41,24 +43,35 @@ const FADE = 0.8;             // seconds to fade
 // by Oakhaven's houses, then the one below it.
 const FIRST = 1, SECOND = 0;
 
-// THE WORDS, the owner's, put into plain English.
+// THE WORDS, the owner's, put into plain English. `{click}` is "click" with a mouse and
+// "tap" on a phone, at the owner's word — see `touch` below.
 const SAY = {
   welcome:  'Welcome, General! There is no time for pleasantries. The thugs are coming, and we need to get you up to speed.',
-  plot1:    'Click this plot to build a tower to defend the village.',
+  plot1:    '{Click} this plot to build a tower to defend the village.',
   archery:  'The Archery tower is reliable and shoots enemies from afar.',
-  shadow:   'To select a tower, click its shadow on the ground. Clicking the top of the tower will not select it.',
-  plot2:    'Click this plot to build another tower to defend the village.',
+  shadow:   'To select a tower, {click} its shadow on the ground. {Clicking} the top of the tower will not select it.',
+  plot2:    '{Click} this plot to build another tower to defend the village.',
   barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
-  call:     'When you are ready, click here to start the first wave.',
+  call:     'When you are ready, {click} here to start the first wave.',
   foe:      'Reading the cards of new enemies helps you learn how to counter them.',
-  early:    'Click Next wave as soon as it appears to earn extra gold.',
+  early:    '{Click} Next wave as soon as it appears to earn extra gold.',
   more:     'Build more towers to strengthen your defense. More enemies are coming!',
   cards:    'Reading the cards of new towers helps you learn how to use them.',
-  select:   'Time to upgrade to a Tier 2 tower. Select your archery tower. Remember: always click or tap a tower\'s shadow to select it.',
-  upgrade:  'Click Upgrade to turn it into a Tier 2 Archery Tower.',
+  select:   'Time to upgrade to a Tier 2 tower. Select your archery tower. Remember: always {click} a tower\'s shadow to select it.',
+  upgrade:  '{Click} Upgrade to turn it into a Tier 2 Archery Tower.',
   congrats: 'Congratulations, you now have a Tier 2 Archery Tower!',
-  farewell: 'All the best, General! We trust the village is in safe hands.'
+  farewell: 'All the best, General! We trust the village is in safe hands.',
+  // ON THE WORLD MAP, once stage 1 is won: see MAP_STEPS.
+  book:     '{Click} here to review towers, units and enemies. It will help you plan a better defense.',
+  upgrades: '{Click} here to spend your hard-earned stars. Upgrades make your towers stronger.'
 };
+
+// A PHONE OR A MOUSE: a coarse pointer to begin with, and then whatever the player
+// last pressed with (setTouch, from src/input.js).
+let touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+export const setTouch = on => { touch = !!on; };
+const VERB = { click: ['click', 'tap'], Click: ['Click', 'Tap'], clicking: ['clicking', 'tapping'],
+               Clicking: ['Clicking', 'Tapping'] };
 
 const plotAt = i => level.plots[i];
 const towerOn = (state, i) => state.towers.find(t => t.plot === plotAt(i)) || null;
@@ -150,20 +163,43 @@ const STEPS = [
   { say: 'farewell' }
 ];
 
+// AND ON THE WORLD MAP, ONCE STAGE 1 IS WON, at the owner's word: the encyclopedia,
+// opened and closed, and then the upgrades. It waits for the road to finish drawing
+// itself to stage 2, and for nothing else to be open.
+const onMap = s => !s.started && (s.stage === null || s.stage === undefined) && !s.reveal &&
+  (s.pendingReveal === null || s.pendingReveal === undefined) && s.book === null && !s.upgrades && !s.admin;
+const MAP_STEPS = [
+  { say: 'book', lock: true, when: onMap, point: () => ({ ...BOOK_ICON_HIT, from: 'up' }),
+    done: (s, tut) => { if (s.book !== null) tut.opened = true; return !!tut.opened && s.book === null; } },
+  { say: 'upgrades', lock: true, when: onMap, point: () => ({ ...UPGRADES_BTN, from: 'up' }),
+    done: s => !!s.upgrades }
+];
+const LISTS = { game: STEPS, map: MAP_STEPS };
+const stepsOf = tut => LISTS[tut.list];
+
 // A new game's tutorial, or null: stage 1, not yet won.
 export function makeTutorial(lv) {
   if (!lv.tutorial || sealOf(lv.id)) return null;
-  return { i: 0, begun: false, t: 0, cap: 1, hold: false, done: false, leaving: null, slow: 1 };
+  return { list: 'game', i: 0, begun: false, t: 0, cap: 1, hold: false, done: false, leaving: null, slow: 1 };
 }
+
+// The world map's, for a player who has just won stage 1 with the tutorial running.
+export const makeMapTour = () => ({ list: 'map', i: 0, begun: false, t: 0, done: false, leaving: null });
 
 // One step of the game's clock: begin the step when it may, end it when it is done.
 export function updateTutorial(state, dt) {
-  const tut = state.tutorial;
-  if (!tut || tut.done) return;
-  const step = STEPS[tut.i];
   // The menu up now, as this step wants it — every frame, because a menu opened by
   // a hover in the step before is still up in this one.
-  shapeMenu(state);
+  if (state.tutorial && !state.tutorial.done) shapeMenu(state);
+  run(state, state.tutorial, dt);
+}
+// And the world map's, on real seconds, while the map is up.
+export const updateMapTour = (state, dt) => run(state, state.mapTour, dt);
+
+function run(state, tut, dt) {
+  if (!tut || tut.done) return;
+  const STEPS = stepsOf(tut);
+  const step = STEPS[tut.i];
   if (!tut.begun && step.skip && step.skip(state)) { advance(tut); return; }
   if (!tut.begun) {
     if (step.when && !step.when(state)) return;
@@ -185,7 +221,7 @@ export function updateTutorial(state, dt) {
   }
   const next = STEPS[tut.i + 1];
   const due = !step.done && next && next.when && next.when(state);
-  const over = step.done ? step.done(state) : tut.t >= lineLife(step) || due;
+  const over = step.done ? step.done(state, tut) : tut.t >= lineLife(step) || due;
   if (!over) return;
   // A LINE THAT ASKED FOR SOMETHING stays up until it is done, at the owner's word,
   // and then fades.
@@ -202,18 +238,16 @@ function advance(tut) {
   tut.begun = false;
   tut.hold = false;
   tut.slow = 1;
-  if (tut.i >= STEPS.length) tut.done = true;
+  if (tut.i >= stepsOf(tut).length) tut.done = true;
 }
 
-const words = step => (step.say ? SAY[step.say] : '');
+const words = step => (step.say ? SAY[step.say] : '')
+  .replace(/\{(\w+)\}/g, (m, w) => (VERB[w] ? VERB[w][touch ? 1 : 0] : m));
 const typed = step => words(step).length / TYPE_RATE;
 const lineLife = step => typed(step) + (step.read ?? READ + words(step).length / 25) + FADE;
 
 // THE STEP UNDER WAY, or null.
-const current = state => {
-  const tut = state.tutorial;
-  return tut && !tut.done && tut.begun ? STEPS[tut.i] : null;
-};
+const current = tut => (tut && !tut.done && tut.begun ? stepsOf(tut)[tut.i] : null);
 
 // Whether the next wave is to wait — see updateWaves.
 export const tutorialHolds = state => !!(state.tutorial && state.tutorial.hold);
@@ -227,7 +261,13 @@ const inSpot = (sp, x, y) => sp && (sp.r !== undefined
 export function tutorialAllows(state, x, y) {
   const tut = state.tutorial;
   if (tut && !tut.done && !tut.begun && tut.i === 0) return false;
-  const step = current(state);
+  return allows(state, tut, x, y);
+}
+// And on the world map.
+export const mapTourAllows = (state, x, y) => allows(state, state.mapTour, x, y);
+
+function allows(state, tut, x, y) {
+  const step = current(tut);
   if (!step || !step.lock || tut.leaving !== null) return true;
   const spots = [step.point && step.point(state), ...(step.also ? step.also(state) : [])];
   return spots.some(sp => inSpot(sp, x, y));
@@ -239,7 +279,7 @@ export function tutorialAllows(state, x, y) {
 export function shapeMenu(state) {
   const tut = state.tutorial, m = state.menu;
   if (!tut || !m) return;
-  const step = current(state);
+  const step = current(tut);
   for (const it of m.items) {
     if (it.act === 'build' && step && step.family && it.family.id !== step.family) it.available = false;
     if (it.act === 'upgrade' && it.to && it.to.tier > tut.cap) it.available = false;
@@ -250,6 +290,8 @@ export function shapeMenu(state) {
 // --- drawn -------------------------------------------------------------------------
 
 const BOX = { x: 716, y: 16, w: 230 };
+// On the world map, top left, above Oakhaven's name.
+const MAP_BOX = { x: 16, y: 16, w: 320 };
 const FONT = '17px Lobster, system-ui, sans-serif';
 const LINE = 22;
 const INK = '#F0E6D2';
@@ -271,9 +313,18 @@ function wrap(ctx, text, w) {
 // card is open over the board — it has the player's attention, and the arrow would
 // be pointing at something underneath it.
 export function drawTutorial(ctx, state) {
-  const step = current(state);
-  if (!step || state.foeCard || state.result) return;
-  const tut = state.tutorial;
+  if (state.foeCard || state.result) return;
+  drawLine(ctx, state, state.tutorial, BOX);
+}
+// And the world map's — not over the encyclopedia or the upgrades, which it waits on.
+export function drawMapTour(ctx, state) {
+  if (state.book !== null || state.upgrades || state.admin) return;
+  drawLine(ctx, state, state.mapTour, MAP_BOX);
+}
+
+function drawLine(ctx, state, tut, BOX) {
+  const step = current(tut);
+  if (!step) return;
   const text = words(step);
   const shown = Math.min(text.length, Math.floor(tut.t * TYPE_RATE));
   // A line that asked for something is up until it is done (`leaving`), then fades;
@@ -327,6 +378,8 @@ function arrowAt(ctx, sp, t) {
     ctx.stroke();
     ctx.restore();
     tip = [sp.x, sp.y - ry - 6 - bob]; dir = [0, 1];
+  } else if (sp.from === 'up') {
+    tip = [sp.x + sp.w / 2, sp.y - 4 - bob]; dir = [0, 1];
   } else if (sp.from === 'down') {
     // From below, at the middle of the button, at the owner's word.
     tip = [sp.x + sp.w / 2, sp.y + sp.h + 4 + bob]; dir = [0, -1];

@@ -17,7 +17,7 @@ import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
-import { tutorialAllows, shapeMenu } from './tutorial.js';
+import { tutorialAllows, shapeMenu, mapTourAllows, setTouch } from './tutorial.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { AIM_MODES } from './data/towers.js';
 import { DIFFICULTIES } from './data/difficulty.js';
@@ -48,6 +48,8 @@ export function attachInput(canvas, state, restart) {
 
   canvas.addEventListener('pointerdown', e => {
     const { x, y } = at(e);
+    // "Tap" in the tutorial's words on a phone, "click" with a mouse.
+    setTouch(e.pointerType === 'touch');
 
     // Every tap, not just the first. A phone will not let sound out until the
     // screen has been touched, and it takes that permission back whenever the
@@ -230,6 +232,9 @@ export function tap(state, x, y, restart) {
     // and a player who has not is never made to sit through it twice by a stray
     // tap that did nothing.
     if (skipReveal(state)) return true;
+    // THE WORLD MAP'S TOUR, after stage 1, lets only what its arrow is on be pressed
+    // (and the dashboard). See src/tutorial.js.
+    if (!mapTourAllows(state, x, y) && !inside(ADMIN_BTN, x, y)) return false;
 
     // 'open', so the book sounds rather than the click.
     if (hitBookButton(state, x, y)) { openBook(state); return 'open'; }

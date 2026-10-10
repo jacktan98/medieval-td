@@ -24,7 +24,7 @@ import { draw, tierMarks, setDeviceScale } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
-import { makeTutorial, updateTutorial } from './tutorial.js';
+import { makeTutorial, updateTutorial, makeMapTour, updateMapTour } from './tutorial.js';
 import { canvasScale } from './data/ui.js';
 
 // HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
@@ -405,6 +405,9 @@ function frame(now) {
     // The unlock does NOT depend on the difficulty or the length. Those are two
     // ladders for how well a stage went; this is one road, and clearing a stage
     // clears it. See unlockedStages in score.js for why that is a separate key.
+    // STAGE 1 WON WITH THE TUTORIAL RUNNING: the world map shows the encyclopedia and
+    // the upgrades next — see makeMapTour in src/tutorial.js.
+    if (state.result === 'won' && state.tutorial) state.mapTour = makeMapTour();
     if (state.result === 'won') {
       const here = stageOfLevel(state.levelIndex);
       if (here !== null && here + 1 === state.unlocked && state.unlocked < STAGE_COUNT) {
@@ -419,6 +422,8 @@ function frame(now) {
   // Stepped on real time rather than through step(): it is a screen animation,
   // so the fast-forward multiplier has no business touching it.
   if (!state.started) stepReveal(state, real);
+  // And the world map's tour of the encyclopedia and the upgrades, once stage 1 is won.
+  if (!state.started) updateMapTour(state, real);
 
   // THE STARS COMING OUT, one by one, each with its own chime. Out here beside the
   // map's reveal and for the same two reasons: it is a screen animation, so it runs
