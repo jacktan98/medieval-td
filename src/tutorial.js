@@ -85,7 +85,9 @@ const alertSpot = (state, match) => {
 // advice, over once it has faded — or as soon as it has been typed, if the step after
 // it is due (the wave it waits for has ended while the player was still reading).
 const STEPS = [
-  { say: 'welcome' },
+  // THE BOARD LOCKED while the welcome is read, at the owner's word — from the very
+  // first frame (see tutorialAllows), so nothing can be built before it.
+  { say: 'welcome', lock: true },
   { say: 'plot1', lock: true, point: () => plotSpot(FIRST),
     done: s => !!menuOn(s, FIRST) || !!towerOn(s, FIRST) },
   { say: 'archery', lock: true, family: 'archery',
@@ -222,8 +224,10 @@ const inSpot = (sp, x, y) => sp && (sp.r !== undefined
 // MAY A TAP HERE DO ANYTHING? Everything, unless a step has locked the board to the
 // thing its arrow is on (and the plot under an open menu, so the menu stays up).
 export function tutorialAllows(state, x, y) {
+  const tut = state.tutorial;
+  if (tut && !tut.done && !tut.begun && tut.i === 0) return false;
   const step = current(state);
-  if (!step || !step.lock || state.tutorial.leaving !== null) return true;
+  if (!step || !step.lock || tut.leaving !== null) return true;
   const spots = [step.point && step.point(state), ...(step.also ? step.also(state) : [])];
   return spots.some(sp => inSpot(sp, x, y));
 }
