@@ -473,8 +473,8 @@ export const ui = {
   // AT THE RADIAL MENU'S SCALE, at the owner's word: both were drawn against the
   // Upgrade icon, so they are drawn as many screen px per artwork px as it is
   // (MENU_ART_K), and their outlines come out the same weight as the menu's.
-  tut_point:    { trim: [225, 210, 63, 92], h: 92 * MENU_ART_K, tip: 0.365 },
-  mark_invalid: { trim: [241, 254, 17, 10], h: 10 * MENU_ART_K },
+  tut_point:    { trim: [215, 196, 82, 120], h: 120 * MENU_ART_K, tip: 0.36 },
+  mark_invalid: { trim: [239, 247, 34, 18], h: 18 * MENU_ART_K },
 
   // The archer's three standing orders, on the same bare box as the flag: they
   // sit on a button with nothing to buy, so they get the bigger glyph. Wider
