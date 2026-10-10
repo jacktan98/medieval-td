@@ -48,7 +48,9 @@ export function updateWaves(state, dt) {
   if (state.tutorial && state.tutorial.hold && state.resting) return;
 
   const wave = waves[state.waveIndex];
-  state.timer -= dt;
+  // A REST RUN SLOWER by stage 1's tutorial, while it is showing the player the early
+  // call (`slow` — see src/tutorial.js): the bonus drains at that share of its pace.
+  state.timer -= dt * (state.resting && state.tutorial && state.tutorial.slow || 1);
 
   const group = groupAt(wave, state.spawned);
   if (group) {

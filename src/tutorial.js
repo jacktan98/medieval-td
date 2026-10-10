@@ -8,7 +8,7 @@
 //
 //   before wave 1  — a welcome; the first plot; Archery; how to select a tower (its shadow); the
 //                    second plot; Barracks; Next wave.
-//   wave 1         — the Thug's new-enemy card; then the board is the player's.
+//   wave 1         — the Thug's new-enemy card; then the board stays locked to the end.
 //   after wave 1   — Next wave again, early, for the gold; buy more towers.
 //   after wave 2   — the tier 2 towers arrive as new-tower cards; the first archery
 //                    tower selected (by its shadow) and upgraded; and good luck.
@@ -51,7 +51,6 @@ const SAY = {
   barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
   call:     'When you are ready, click here to start the first wave.',
   foe:      'Reading the cards of new enemies helps you learn how to counter them.',
-  free:     'Now it is up to you. Build more towers on the empty plots, or sell the ones you do not need.',
   early:    'Click Next wave as soon as it appears to earn extra gold.',
   more:     'Buy more towers to strengthen your defense. More enemies are coming!',
   cards:    'Reading the cards of new towers helps you learn how to use them.',
@@ -115,8 +114,13 @@ const STEPS = [
     start: s => { if (!(s.foeAlerts || []).includes('light_inf')) (s.foeAlerts ||= []).push('light_inf'); },
     point: s => alertSpot(s, id => id === 'light_inf'),
     done: s => !(s.foeAlerts || []).includes('light_inf') && !s.foeCard },
-  { say: 'free' },
-  { say: 'early', lock: true, when: s => s.resting && s.waveIndex === 0, skip: s => s.waveIndex >= 1,
+  // AND NOTHING ELSE TO DO IN WAVE 1 but watch it, at the owner's word: no line, and
+  // the board still locked, until it is over.
+  { lock: true, done: s => s.resting || s.waveIndex >= 1 },
+  // THE BONUS RUNS DOWN SLOWLY here (`slow`, a share of the clock's own pace — see
+  // updateWaves), at the owner's word, so a new player has the time to find the
+  // button and press it while it is still worth something.
+  { say: 'early', lock: true, slow: 0.25, when: s => s.resting && s.waveIndex === 0, skip: s => s.waveIndex >= 1,
     point: () => waveSpot(),
     done: s => s.waveIndex >= 1 && !s.resting },
   { say: 'more' },
@@ -146,7 +150,7 @@ const STEPS = [
 // A new game's tutorial, or null: stage 1, not yet won.
 export function makeTutorial(lv) {
   if (!lv.tutorial || sealOf(lv.id)) return null;
-  return { i: 0, begun: false, t: 0, cap: 1, hold: false, done: false, leaving: null };
+  return { i: 0, begun: false, t: 0, cap: 1, hold: false, done: false, leaving: null, slow: 1 };
 }
 
 // One step of the game's clock: begin the step when it may, end it when it is done.
@@ -165,10 +169,11 @@ export function updateTutorial(state, dt) {
     tut.leaving = null;
     if (step.start) step.start(state, tut);
     // EVERY LINE ARRIVES WITH THE ALERT, at the owner's word.
-    chime(CUE.alert);
+    if (step.say) chime(CUE.alert);
   }
   tut.t += dt;
   tut.hold = !!step.hold;
+  tut.slow = step.slow || 1;
   // DONE, AND FADING: the line goes once the player has done what it asked, and the
   // next one comes when it has gone.
   if (tut.leaving !== null) {
@@ -181,7 +186,8 @@ export function updateTutorial(state, dt) {
   if (!over) return;
   // A LINE THAT ASKED FOR SOMETHING stays up until it is done, at the owner's word,
   // and then fades.
-  if (step.done) { tut.leaving = tut.t; return; }
+  // (A step with no line has nothing to fade.)
+  if (step.done) { if (step.say) tut.leaving = tut.t; else advance(tut); return; }
   // A line of advice is let finish typing before the next one replaces it.
   if (tut.t < typed(step)) return;
   advance(tut);
@@ -192,11 +198,13 @@ function advance(tut) {
   tut.i++;
   tut.begun = false;
   tut.hold = false;
+  tut.slow = 1;
   if (tut.i >= STEPS.length) tut.done = true;
 }
 
-const typed = step => SAY[step.say].length / TYPE_RATE;
-const lineLife = step => typed(step) + READ + SAY[step.say].length / 25 + FADE;
+const words = step => (step.say ? SAY[step.say] : '');
+const typed = step => words(step).length / TYPE_RATE;
+const lineLife = step => typed(step) + READ + words(step).length / 25 + FADE;
 
 // THE STEP UNDER WAY, or null.
 const current = state => {
@@ -261,7 +269,7 @@ export function drawTutorial(ctx, state) {
   const step = current(state);
   if (!step || state.foeCard || state.result) return;
   const tut = state.tutorial;
-  const text = SAY[step.say];
+  const text = words(step);
   const shown = Math.min(text.length, Math.floor(tut.t * TYPE_RATE));
   // A line that asked for something is up until it is done (`leaving`), then fades;
   // a line of advice fades once it has been read.
