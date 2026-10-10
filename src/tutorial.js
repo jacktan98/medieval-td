@@ -87,7 +87,8 @@ const alertSpot = (state, match) => {
 const STEPS = [
   // THE BOARD LOCKED while the welcome is read, at the owner's word — from the very
   // first frame (see tutorialAllows), so nothing can be built before it.
-  { say: 'welcome', lock: true },
+  // Up for `read` seconds once it is fully typed, at the owner's word, then faded.
+  { say: 'welcome', lock: true, read: 5 },
   { say: 'plot1', lock: true, point: () => plotSpot(FIRST),
     done: s => !!menuOn(s, FIRST) || !!towerOn(s, FIRST) },
   { say: 'archery', lock: true, family: 'archery',
@@ -206,7 +207,7 @@ function advance(tut) {
 
 const words = step => (step.say ? SAY[step.say] : '');
 const typed = step => words(step).length / TYPE_RATE;
-const lineLife = step => typed(step) + READ + words(step).length / 25 + FADE;
+const lineLife = step => typed(step) + (step.read ?? READ + words(step).length / 25) + FADE;
 
 // THE STEP UNDER WAY, or null.
 const current = state => {
