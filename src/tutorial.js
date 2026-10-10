@@ -181,11 +181,9 @@ const MAP_STEPS = [
   { say: 'next', lock: true, when: onMap, point: () => flagSpot(1), done: s => s.stage === 1 }
 ];
 // A STAGE'S FLAG on the world map: the box round the flag standing on its marker (it is
-// FLAG_H tall in src/overview.js) and the marker's own tap ring (NODE_HIT, 22), with the
-// arrow coming down on to the top of it — or in from the right, for a flag so near the
-// top of the screen that an arrow above it would be cut off (stage 1's).
-const flagSpot = i => ({ x: STAGES[i].x - 24, y: STAGES[i].y - 44, w: 48, h: 68,
-                         from: STAGES[i].y - 44 < 40 ? 'right' : 'up' });
+// FLAG_H tall in src/overview.js) down to just under the marker, with the arrow coming
+// up from below it, at the owner's word.
+const flagSpot = i => ({ x: STAGES[i].x - 24, y: STAGES[i].y - 44, w: 48, h: 56, from: 'down' });
 
 // A NEW GAME'S FIRST STEP, at the owner's word: stage 1's flag, until the player has
 // opened it once (kept, `INTRO_KEY`) — or won it, which a saved game from before this
