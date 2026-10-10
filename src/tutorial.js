@@ -64,9 +64,11 @@ const tier2 = () => families.map(f => f.tiers[1] && f.tiers[1].name).filter(Bool
 
 // A target the arrow points at and a tap may land on: a circle { x, y, r } or a box
 // { x, y, w, h }, and which way the arrow comes in from (`from`).
-const plotSpot = i => ({ x: plotAt(i).x, y: plotAt(i).y, r: PLOT_HIT, from: 'up' });
+// A PLOT'S RING IS AN OVAL round the marker, at the owner's word: the marker is drawn
+// about 99 x 49 px, centred on the plot, so `oval` is its two radii with a little air.
+const plotSpot = i => ({ x: plotAt(i).x, y: plotAt(i).y, r: PLOT_HIT, oval: [54, 28], from: 'up' });
 const itemSpot = it => ({ x: it.x, y: it.y, r: HIT_R, ring: BTN_R, from: 'up' });
-const waveSpot = () => ({ ...HUD_BTN.wave, from: 'down' });
+const waveSpot = () => ({ ...HUD_BTN.wave, from: 'right' });
 const alertSpot = (state, match) => {
   const r = alertRects(state).find(a => match(a.id));
   return r ? { x: r.x, y: r.y, w: r.w, h: r.h, from: 'right' } : null;
@@ -216,7 +218,8 @@ export function shapeMenu(state) {
 
 // --- drawn -------------------------------------------------------------------------
 
-const BOX = { x: 716, y: 16, w: 230 };
+// Clear of the arrow at Next wave, which comes in from its right.
+const BOX = { x: 728, y: 16, w: 222 };
 const FONT = '17px Lobster, system-ui, sans-serif';
 const LINE = 22;
 const INK = '#F0E6D2';
@@ -279,17 +282,17 @@ function arrowAt(ctx, sp, t) {
   let tip, dir;
   if (sp.r !== undefined) {
     const R = sp.ring || sp.r - 8;
+    const [rx, ry] = sp.oval || [R + 3, R + 3];
+    const pulse = Math.sin(t * 6) * 2;
     ctx.save();
     ctx.globalAlpha = 0.5 + 0.3 * Math.sin(t * 6);
     ctx.lineWidth = 3;
     ctx.strokeStyle = INK;
     ctx.beginPath();
-    ctx.arc(sp.x, sp.y, R + 3 + Math.sin(t * 6) * 2, 0, Math.PI * 2);
+    ctx.ellipse(sp.x, sp.y, rx + pulse, ry + pulse, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
-    tip = [sp.x, sp.y - R - 6 - bob]; dir = [0, 1];
-  } else if (sp.from === 'down') {
-    tip = [sp.x + 24, sp.y + sp.h + 4 + bob]; dir = [0, -1];
+    tip = [sp.x, sp.y - ry - 6 - bob]; dir = [0, 1];
   } else {
     tip = [sp.x + sp.w + 6 + bob, sp.y + sp.h / 2]; dir = [-1, 0];
   }
