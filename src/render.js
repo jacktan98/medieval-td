@@ -20,11 +20,11 @@ import { campfire } from './life.js';
 import { swingOut, flinch, flash, silhouette, HIT_FLASH } from './gesture.js';
 import { towerBox, mountPoint, muzzlePoint, facing, mirror, frameOf, buildingFlip, rangeOf, auras, turnedAway,
          machineBox, machineFlip, crownTop, gunnerOf } from './towers.js';
-import { hidden, fixture, unseen, atEase } from './units.js';
+import { hidden, fixture, unseen, atEase, rallyValid } from './units.js';
 import { stageOf } from './data/armor.js';
 import { downed, wingbeat, crowFrame } from './enemies.js';
 import { BTN_R, CANCEL_R, canUse, armed, armedRange } from './menu.js';
-import { ringPath, clampToRange, SQUASH } from './ground.js';
+import { ringPath, SQUASH } from './ground.js';
 import { ui, uiSize, aspect, GLYPH_ART, GLYPH_BOX, GLYPH_BOX_BARE, RALLY_FLAG_H, FLAG_FOOT,
          INFO_SCALE, INFO_PORTRAIT, STAT_COL, BOOK_ICON_H } from './data/ui.js';
 import { selectionInfo, shownDamage, shownRange, attackIcon, traitRow, strikes, occupant } from './select.js';
@@ -4645,8 +4645,13 @@ function drawRally(ctx, state) {
     // ever be pointed at the middle of the tarmac. Being able to point anywhere
     // inside the ring is the feature; that the men then go to the nearest road is
     // a fact about the men, and the dim flag is where it is said.
-    const at = clampToRange(t.x, t.y, state.ghost.x, state.ghost.y, t.def.range);
-    flag(ctx, at.x, at.y, 1);
+    //
+    // AND NOW ONLY WHERE IT MAY GO, at the owner's word: over a spot a rally point is
+    // refused (off the road, or outside the ring — rallyValid in src/units.js) the
+    // mouse carries the red cross instead of the flag, the mark a tap there leaves.
+    const { x: gx, y: gy } = state.ghost;
+    if (rallyValid(t, gx, gy)) flag(ctx, gx, gy, 1);
+    else drawUi(ctx, 'mark_invalid', gx, gy);
   }
 }
 
