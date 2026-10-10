@@ -951,7 +951,10 @@ export const GAIN = {
   harbinger_wind: 1.333,
   // And the shield taking a hit, a little under the shots (40 against their 45) now
   // that it sounds on every one.
-  defend_walking: 0.891
+  defend_walking: 0.891,
+  // A rally flag planted, half as loud again as the levelling makes it, at the owner's
+  // word: 150 against the battle's 100.
+  rally_planted: 1.5
 };
 
 // A LIFT, APPLIED AFTER THE CAP, for the few clips the owner asked to be louder than
