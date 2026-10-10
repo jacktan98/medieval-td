@@ -1,6 +1,6 @@
 // STAGE 1 IS THE TUTORIAL, at the owner's word: "Let's make stage 1 a tutorial for new
 // players." A run of steps, each a line of advice typed out in Lobster on a dark panel
-// near the middle of the board — as if someone were writing it down — and most with an
+// in the top right of the board — as if someone were writing it down — and most with an
 // arrow at the one thing to press next. A line that asks for something stays up until it has been
 // done and then fades; a line of advice fades once it has been read. Each arrives with
 // the alert chime. While an arrow is up, that thing (and the pause button) is all the
@@ -289,17 +289,14 @@ export function shapeMenu(state) {
 
 // --- drawn -------------------------------------------------------------------------
 
-// THE LINE ON A DARK PANEL, near the middle of the screen, at the owner's word. `cx` is
-// the panel's centre across, `top` its top edge (or `mid`, its centre down), `w` its
-// width. In a game it sits a little above the middle and right of it, clear of the
-// first plot's build menu (which reaches x 424) and above the plot in the middle of the
-// board (whose marker starts at y 245); on the world map, in the middle, clear of the
-// encyclopedia and the upgrades at the bottom.
-const BOX = { cx: 600, top: 130, w: 340 };
+// THE LINE ON A DARK PANEL, at the owner's word. `cx` is the panel's centre across,
+// `top` its top edge (or `mid`, its centre down), `w` its width. In a game, in the top
+// right corner, right of the Next wave button and the arrow under it; on the world
+// map, in the middle, clear of the encyclopedia and the upgrades at the bottom.
+const BOX = { cx: 826, top: 10, w: 248 };
 const MAP_BOX = { cx: 480, mid: 250, w: 340 };
 const PAD = 14;               // the panel's margin round the words
 const PANEL = 'rgba(20,16,12,0.62)';
-const RIM = 'rgba(240,230,210,0.35)';
 const FONT = '17px Lobster, system-ui, sans-serif';
 const LINE = 22;
 const INK = '#F0E6D2';
@@ -359,9 +356,6 @@ function drawLine(ctx, state, tut, BOX) {
     ctx.roundRect(x, top, BOX.w, h, 12);
     ctx.fillStyle = PANEL;
     ctx.fill();
-    ctx.lineWidth = 1.5;
-    ctx.strokeStyle = RIM;
-    ctx.stroke();
     let left = shown;
     lines.forEach((line, i) => {
       const part = line.slice(0, Math.max(0, left));
