@@ -25,7 +25,7 @@
 // So the two taps a purchase takes (press, then Confirm), a hover that opens a menu
 // with a mouse, and a menu closed halfway all come out right without the tutorial
 // having to know about them.
-import { level } from './level.js';
+import { level, levels } from './level.js';
 import { families } from './data/towers.js';
 import { sealOf } from './score.js';
 import { alertRects } from './newfoe.js';
@@ -34,6 +34,7 @@ import { BTN_R, HIT_R } from './menu.js';
 import { chime, CUE } from './audio.js';
 import { BOOK_ICON_HIT } from './book.js';
 import { UPGRADES_BTN } from './upgradepage.js';
+import { STAGES } from './data/overview.js';
 
 const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
 const TYPE_RATE = 32;         // characters a second, typed
@@ -63,7 +64,10 @@ const SAY = {
   farewell: 'All the best, General! We trust the village is in safe hands.',
   // ON THE WORLD MAP, once stage 1 is won: see MAP_STEPS.
   book:     '{Click} here to review towers, units and enemies. It will help you plan a better defense.',
-  upgrades: '{Click} here to spend your hard-earned stars. Upgrades make your towers stronger.'
+  upgrades: '{Click} here to spend your hard-earned stars. Upgrades make your towers stronger.',
+  next:     'Your next battle is here, General. {Click} here when you are ready!',
+  // A NEW GAME'S FIRST WORDS, on the world map: see INTRO.
+  intro:    'General, our scouts report large numbers of thugs heading towards Oakhaven. {Click} here to head there!'
 };
 
 // A PHONE OR A MOUSE: a coarse pointer to begin with, and then whatever the player
@@ -172,9 +176,31 @@ const MAP_STEPS = [
   { say: 'book', lock: true, when: onMap, point: () => ({ ...BOOK_ICON_HIT, from: 'up' }),
     done: (s, tut) => { if (s.book !== null) tut.opened = true; return !!tut.opened && s.book === null; } },
   { say: 'upgrades', lock: true, when: onMap, point: () => ({ ...UPGRADES_BTN, from: 'up' }),
-    done: s => !!s.upgrades }
+    done: s => !!s.upgrades },
+  // AND BACK FROM THE UPGRADES, stage 2's flag, until its panel is opened.
+  { say: 'next', lock: true, when: onMap, point: () => flagSpot(1), done: s => s.stage === 1 }
 ];
-const LISTS = { game: STEPS, map: MAP_STEPS };
+// A STAGE'S FLAG on the world map: the box round the flag standing on its marker (it is
+// FLAG_H tall in src/overview.js) and the marker's own tap ring (NODE_HIT, 22), with the
+// arrow coming down on to the top of it — or in from the right, for a flag so near the
+// top of the screen that an arrow above it would be cut off (stage 1's).
+const flagSpot = i => ({ x: STAGES[i].x - 24, y: STAGES[i].y - 44, w: 48, h: 68,
+                         from: STAGES[i].y - 44 < 40 ? 'right' : 'up' });
+
+// A NEW GAME'S FIRST STEP, at the owner's word: stage 1's flag, until the player has
+// opened it once (kept, `INTRO_KEY`) — or won it, which a saved game from before this
+// has. The admin dashboard's fresh start asks for it again (forgetIntro).
+const INTRO = [
+  { say: 'intro', lock: true, when: onMap, point: () => flagSpot(0),
+    done: s => { if (s.stage !== 0) return false; saveIntro(); return true; } }
+];
+const LISTS = { game: STEPS, map: MAP_STEPS, intro: INTRO };
+
+const INTRO_KEY = 'medieval-td/intro';
+const store = () => { try { return globalThis.localStorage || null; } catch { return null; } };
+const introSeen = () => { try { return !!store()?.getItem(INTRO_KEY); } catch { return true; } };
+function saveIntro() { try { store()?.setItem(INTRO_KEY, '1'); } catch { /* private mode: this visit only */ } }
+export function forgetIntro() { try { store()?.removeItem(INTRO_KEY); } catch { /* nothing kept */ } }
 const stepsOf = tut => LISTS[tut.list];
 
 // A new game's tutorial, or null: stage 1, not yet won.
@@ -193,8 +219,15 @@ export function updateTutorial(state, dt) {
   if (state.tutorial && !state.tutorial.done) shapeMenu(state);
   run(state, state.tutorial, dt);
 }
-// And the world map's, on real seconds, while the map is up.
-export const updateMapTour = (state, dt) => run(state, state.mapTour, dt);
+// And the world map's, on real seconds, while the map is up — the new game's first
+// step among them, begun here when it is wanted.
+export function updateMapTour(state, dt) {
+  if ((!state.mapTour || state.mapTour.done) && !introSeen() && !sealOf(firstStage())) {
+    state.mapTour = { list: 'intro', i: 0, begun: false, t: 0, done: false, leaving: null };
+  }
+  run(state, state.mapTour, dt);
+}
+const firstStage = () => levels[STAGES[0].level].id;
 
 function run(state, tut, dt) {
   if (!tut || tut.done) return;

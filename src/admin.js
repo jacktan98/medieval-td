@@ -53,6 +53,7 @@ import { enemyTypes, MARCH_ORDER, defaultGap } from './data/waves.js';
 import { families } from './data/towers.js';
 import { resetProgress, clearStars, saveUnlocked, bestStars, setStars, MAX_STARS } from './score.js';
 import { forgetFoes, forgetTowers } from './newfoe.js';
+import { forgetIntro } from './tutorial.js';
 import { resetUpgrades } from './upgrades.js';
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 // The difficulties themselves, and the two rules that turn a tuned Hard number
@@ -1451,6 +1452,9 @@ export function tapAdmin(state, x, y, restart) {
     forgetFoes();
     // AND EVERY TOWER, so the encyclopedia locks again and "New tower!" comes back.
     forgetTowers();
+    // AND THE WORLD MAP POINTS AT STAGE 1 AGAIN, as for a new player. See src/tutorial.js.
+    forgetIntro();
+    state.mapTour = null;
     // AND EVERY STAR SPENT ON UPGRADES COMES BACK — there are no stars left to
     // have spent. See src/upgrades.js.
     resetUpgrades();
