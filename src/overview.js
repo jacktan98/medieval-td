@@ -734,8 +734,10 @@ function makeParchment() {
 // is a colour DRAIN now, so the far country keeps its shape at a brightness that
 // would have hidden it before — 0.28 here is much darker than the 0.45 wash ever
 // was, and you can still see it is a desert.
-const FOG_BRIGHT = 0.20;   // how much light the drained country keeps
-const FOG_WASH = 'rgba(30,20,9,0.30)';   // and a breath of brown over that
+// 10% LESS DARK at the owner's word: 0.80 of the light taken away became 0.72, and the
+// brown over it a tenth thinner with it.
+const FOG_BRIGHT = 0.28;   // how much light the drained country keeps
+const FOG_WASH = 'rgba(30,20,9,0.27)';   // and a breath of brown over that
 
 // AND THE COUNTRY THAT HAS BEEN REACHED IS IN SUNLIGHT — the exact mirror of the
 // fog. The fog is a DRAINED copy of the map with the lit shape cut out of it; this
