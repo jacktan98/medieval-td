@@ -24,6 +24,7 @@ import { starsFor } from './score.js';
 import { level } from './level.js';
 import { nearestOn, at as pointOn, laneOf } from './route.js';
 import { enemyTypes } from './data/waves.js';
+import { towerBox } from './towers.js';
 import { makePerched, perchCast, perchTick, glideDist, flapped } from './enemies.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
@@ -1756,8 +1757,24 @@ function roostRound(state, vp, r, dt) {
     v.y += (c.y0 - r.rise - v.y) * Math.min(1, dt * 4);
     if (v.x > 960 + 40) { c.phase = 'gone'; v.hidden = true; v.live = false; v.shadow = null; vp.holdWin = false; return; }
   }
-  c.shadowA = v.x < r.roof ? 0 : Math.min(1, (c.shadowA || 0) + dt / SHADOW_IN);
+  // ON THE GROUND ONLY, at the owner's word: not over the house he left, nor over a
+  // tower or anything else standing that it would cross (`level.front`) — gone over
+  // them, and back as quickly once it is on the grass again.
+  const over = v.x < r.roof || standingAt(state, v.x, r.ground);
+  c.shadowA = over ? Math.max(0, (c.shadowA || 0) - dt / SHADOW_IN)
+                   : Math.min(1, (c.shadowA || 0) + dt / SHADOW_IN);
   v.shadow = { x: v.x, y: r.ground, k: v.grow, a: c.shadowA };
+}
+
+// IS (x, y) ON SOMETHING STANDING — a tower, or a house, tree or wall the level boxes
+// as standing (`front`)? With a little room round each, for the shadow's own width.
+function standingAt(state, x, y) {
+  const PAD = 10;
+  for (const t of state.towers) {
+    const b = towerBox(t);
+    if (x >= b.left - PAD && x <= b.left + b.w + PAD && y >= b.top && y <= b.top + b.h + 4) return true;
+  }
+  return (level.front || []).some(b => x >= b.x - PAD && x <= b.x + b.w + PAD && y >= b.y && y <= b.y + b.h);
 }
 
 // A spot `s` px along route `ri` — on its middle lane, where a creature placed on the

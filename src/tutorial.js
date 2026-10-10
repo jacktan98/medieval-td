@@ -41,7 +41,7 @@ import { STAGES } from './data/overview.js';
 const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
 const ROAD_HALF = 30;         // how far from the middle of the road a rally tap may land (about half its width)
 const TYPE_RATE = 32;         // characters a second, typed
-const READ = 3;               // seconds a line stays once typed, and a second per 25 characters more
+const READ = 3;               // seconds a line of advice stays once fully typed, at the owner's word
 const FADE = 0.8;             // seconds to fade
 // The two plots the player is walked to, by index into stage 1's `plots`: the top one
 // by Oakhaven's houses, then the one below it.
@@ -115,8 +115,8 @@ const alertSpot = (state, match) => {
 const STEPS = [
   // THE BOARD LOCKED while the welcome is read, at the owner's word — from the very
   // first frame (see tutorialAllows), so nothing can be built before it.
-  // Up for `read` seconds once it is fully typed, at the owner's word, then faded.
-  { say: 'welcome', lock: true, read: 5 },
+  // Up for READ seconds once it is fully typed, as every line of advice is, then faded.
+  { say: 'welcome', lock: true },
   { say: 'plot1', lock: true, point: () => plotSpot(FIRST),
     done: s => !!menuOn(s, FIRST) || !!towerOn(s, FIRST) },
   { say: 'archery', lock: true, family: 'archery',
@@ -310,7 +310,7 @@ function advance(tut) {
 const words = step => (step.say ? SAY[step.say] : '')
   .replace(/\{(\w+)\}/g, (m, w) => (VERB[w] ? VERB[w][touch ? 1 : 0] : m));
 const typed = step => words(step).length / TYPE_RATE;
-const lineLife = step => typed(step) + (step.read ?? READ + words(step).length / 25) + FADE;
+const lineLife = step => typed(step) + READ + FADE;
 
 // THE STEP UNDER WAY, or null.
 const current = tut => (tut && !tut.done && tut.begun ? stepsOf(tut)[tut.i] : null);
@@ -394,6 +394,9 @@ export function drawTutorial(ctx, state) {
 // And the world map's — not over the encyclopedia or the upgrades, which it waits on.
 export function drawMapTour(ctx, state) {
   if (state.book !== null || state.upgrades || state.admin) return;
+  // GONE AT ONCE when a stage's panel opens, at the owner's word — not faded out over
+  // the preview.
+  if (state.stage !== null && state.stage !== undefined) return;
   drawLine(ctx, state, state.mapTour, MAP_BOX);
 }
 
