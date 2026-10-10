@@ -290,8 +290,8 @@ export function shapeMenu(state) {
 // --- drawn -------------------------------------------------------------------------
 
 const BOX = { x: 716, y: 16, w: 230 };
-// On the world map, top left, above Oakhaven's name.
-const MAP_BOX = { x: 16, y: 16, w: 320 };
+// On the world map, top right as in a game, at the owner's word.
+const MAP_BOX = BOX;
 const FONT = '17px Lobster, system-ui, sans-serif';
 const LINE = 22;
 const INK = '#F0E6D2';
