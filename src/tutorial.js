@@ -1,7 +1,7 @@
 // STAGE 1 IS THE TUTORIAL, at the owner's word: "Let's make stage 1 a tutorial for new
-// players." A run of steps, each a line of advice typed out in Lobster in the top right
-// of the board — as if someone were writing it down — and most with an arrow at the
-// one thing to press next. A line that asks for something stays up until it has been
+// players." A run of steps, each a line of advice typed out in Lobster on a dark panel
+// near the middle of the board — as if someone were writing it down — and most with an
+// arrow at the one thing to press next. A line that asks for something stays up until it has been
 // done and then fades; a line of advice fades once it has been read. Each arrives with
 // the alert chime. While an arrow is up, that thing (and the pause button) is all the
 // board answers.
@@ -289,9 +289,17 @@ export function shapeMenu(state) {
 
 // --- drawn -------------------------------------------------------------------------
 
-const BOX = { x: 716, y: 16, w: 230 };
-// On the world map, top right as in a game, at the owner's word.
-const MAP_BOX = BOX;
+// THE LINE ON A DARK PANEL, near the middle of the screen, at the owner's word. `cx` is
+// the panel's centre across, `top` its top edge (or `mid`, its centre down), `w` its
+// width. In a game it sits a little above the middle and right of it, clear of the
+// first plot's build menu (which reaches x 424) and above the plot in the middle of the
+// board (whose marker starts at y 245); on the world map, in the middle, clear of the
+// encyclopedia and the upgrades at the bottom.
+const BOX = { cx: 600, top: 130, w: 340 };
+const MAP_BOX = { cx: 480, mid: 250, w: 340 };
+const PAD = 14;               // the panel's margin round the words
+const PANEL = 'rgba(20,16,12,0.62)';
+const RIM = 'rgba(240,230,210,0.35)';
 const FONT = '17px Lobster, system-ui, sans-serif';
 const LINE = 22;
 const INK = '#F0E6D2';
@@ -309,7 +317,7 @@ function wrap(ctx, text, w) {
   return lines;
 }
 
-// The line being typed, top right, and the arrow at what to press. Nothing while a
+// The line being typed, on its panel, and the arrow at what to press. Nothing while a
 // card is open over the board — it has the player's attention, and the arrow would
 // be pointing at something underneath it.
 export function drawTutorial(ctx, state) {
@@ -339,19 +347,32 @@ function drawLine(ctx, state, tut, BOX) {
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
   ctx.lineJoin = 'round';
-  if (alpha > 0) {
+  if (alpha > 0 && text) {
     ctx.globalAlpha = alpha;
+    // Laid out on the whole line, so the panel is its full size from the first letter
+    // and nothing moves as it is typed.
+    const lines = wrap(ctx, text, BOX.w - 2 * PAD);
+    const h = lines.length * LINE + 2 * PAD - 4;
+    const x = BOX.cx - BOX.w / 2;
+    const top = BOX.top ?? BOX.mid - h / 2;
+    ctx.beginPath();
+    ctx.roundRect(x, top, BOX.w, h, 12);
+    ctx.fillStyle = PANEL;
+    ctx.fill();
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = RIM;
+    ctx.stroke();
     let left = shown;
-    wrap(ctx, text, BOX.w).forEach((line, i) => {
+    lines.forEach((line, i) => {
       const part = line.slice(0, Math.max(0, left));
       left -= line.length + 1;
       if (!part) return;
-      const y = BOX.y + i * LINE;
+      const y = top + PAD + i * LINE;
       ctx.lineWidth = 4;
       ctx.strokeStyle = EDGE;
-      ctx.strokeText(part, BOX.x, y);
+      ctx.strokeText(part, x + PAD, y);
       ctx.fillStyle = INK;
-      ctx.fillText(part, BOX.x, y);
+      ctx.fillText(part, x + PAD, y);
     });
     ctx.globalAlpha = 1;
   }
