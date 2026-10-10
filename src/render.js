@@ -4562,7 +4562,7 @@ function drawHits(ctx, state) {
 // THE FLAG JUST PLANTED stays RALLY_HOLD seconds where it went and fades over
 // RALLY_FADE; the red cross where a rally point was refused, the same. Both on the
 // board's own clock, so a pause holds them. See the placing tap in src/input.js.
-const RALLY_HOLD = 0.5, RALLY_FADE = 0.4;
+const RALLY_HOLD = 0.2, RALLY_FADE = 0.4;   // held 0.2s, at the owner's word, then faded
 function drawRallyMarks(ctx, state) {
   const now = state.anim || 0;
   const fade = at => {
