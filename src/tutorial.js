@@ -116,6 +116,8 @@ const itemSpot = (it, from = 'up') => ({ x: it.x, y: it.y, r: HIT_R, ring: BTN_R
 const reachSpot = t => ({ x: t.x, y: t.y, r: 0, oval: [t.def.range + 12, t.def.range * SQUASH + 10],
                           noArrow: true, width: 4 });
 const waveSpot = () => ({ ...HUD_BTN.wave, from: 'down' });
+// An exit's banner, by its foot, pointed at from below.
+const exitSpot = f => ({ x: f.x - 14, y: f.y - 50, w: 28, h: 50, from: 'down' });
 const hudSpot = key => (HUD_ICONS[key] ? { ...HUD_ICONS[key], from: 'down' } : null);
 const alertSpot = (state, match) => {
   const r = alertRects(state).find(a => match(a.id));
@@ -195,7 +197,9 @@ const STEPS = [
   { say: 'rallyWhy', lock: true },
   // THE GOLD AND THE LIVES, at the owner's word: an arrow up at each from below.
   { say: 'gold', lock: true, point: () => hudSpot('gold') },
-  { say: 'lives', lock: true, point: () => hudSpot('life') },
+  // A SECOND HAND, at the owner's word, under the exit's blue banner.
+  { say: 'lives', lock: true, point: () => hudSpot('life'),
+    marks: () => (level.exitFlags || []).map(exitSpot) },
   { say: 'call', lock: true, point: () => waveSpot(), done: s => s.called !== false },
   // THE THUG'S CARD, as he comes: raised here if the player has met him before and the
   // game did not raise it — a second try at stage 1 still teaches the card.
@@ -513,6 +517,8 @@ function drawLine(ctx, state, tut, BOX) {
   }
   const sp = tut.leaving === null && step.point && step.point(state);
   if (sp) arrowAt(ctx, sp, tut.t);
+  // More hands, only to show, where `point` is also the one a locked step lets through.
+  if (sp && step.marks) for (const m of step.marks(state)) arrowAt(ctx, m, tut.t);
   if (step.rings && tut.t < RINGS_FOR) {
     ctx.save();
     ctx.globalAlpha = Math.min(1, (RINGS_FOR - tut.t) / FADE);
