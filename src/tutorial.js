@@ -7,7 +7,7 @@
 // board answers.
 //
 //   before wave 1  — a welcome; the first plot; Archery; how to select a tower (its shadow); the
-//                    second plot; Barracks; its rally point; Next wave.
+//                    second plot; Barracks; its rally point; gold and lives; Next wave.
 //   wave 1         — the Thug's new-enemy card; then the board stays locked to the end.
 //   after wave 1   — Next wave again, early, for the gold; build more towers.
 //   after wave 2   — the tier 2 towers arrive as new-tower cards; the first archery
@@ -31,7 +31,7 @@ import { sealOf } from './score.js';
 import { alertRects } from './newfoe.js';
 import { nearestOn } from './route.js';
 import { inRange, SQUASH } from './ground.js';
-import { HUD_BTN } from './render.js';
+import { HUD_BTN, HUD_ICONS } from './render.js';
 import { BTN_R, HIT_R } from './menu.js';
 import { chime, CUE } from './audio.js';
 import { BOOK_ICON_HIT } from './book.js';
@@ -60,6 +60,8 @@ const SAY = {
   rallyBtn: '{Click} on the Rally Flag to adjust the rally point.',
   rallySet: '{Click} anywhere on the road inside the circle to move your soldiers there.',
   rallyWhy: 'Rally points are useful: they help create choke points where your ranged towers can deal more damage.',
+  gold:     'Every enemy you defeat carries a bounty that earns you gold.',
+  lives:    'Do not let enemies slip past the exit, which is marked by the blue banner. If your lives drop to 0, the game is lost.',
   call:     'When you are ready, {click} Next Wave to start the first wave.',
   foe:      'Reading the cards of new enemies helps you learn how to counter them.',
   early:    '{Click} Next wave as soon as it appears to earn extra gold.',
@@ -100,6 +102,7 @@ const itemSpot = (it, from = 'up') => ({ x: it.x, y: it.y, r: HIT_R, ring: BTN_R
 const reachSpot = t => ({ x: t.x, y: t.y, r: 0, oval: [t.def.range + 12, t.def.range * SQUASH + 10],
                           noArrow: true, width: 4 });
 const waveSpot = () => ({ ...HUD_BTN.wave, from: 'down' });
+const hudSpot = key => (HUD_ICONS[key] ? { ...HUD_ICONS[key], from: 'down' } : null);
 const alertSpot = (state, match) => {
   const r = alertRects(state).find(a => match(a.id));
   return r ? { x: r.x, y: r.y, w: r.w, h: r.h, from: 'right' } : null;
@@ -160,6 +163,9 @@ const STEPS = [
     },
     done: (s, tut) => !s.placing && (towerOn(s, SECOND) || {}).rally !== tut.rally },
   { say: 'rallyWhy', lock: true },
+  // THE GOLD AND THE LIVES, at the owner's word: an arrow up at each from below.
+  { say: 'gold', lock: true, point: () => hudSpot('gold') },
+  { say: 'lives', lock: true, point: () => hudSpot('life') },
   { say: 'call', lock: true, point: () => waveSpot(), done: s => s.called !== false },
   // THE THUG'S CARD, as he comes: raised here if the player has met him before and the
   // game did not raise it — a second try at stage 1 still teaches the card.

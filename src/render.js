@@ -5079,6 +5079,14 @@ function inkText(ctx, text, x) {
 //
 // `fillStyle` is deliberately NOT set here: what colour the readouts are is the
 // caller's business, and the drawing pass wants it inside its shadow block.
+// WHERE THE GOLD AND THE HEART ARE DRAWN, as boxes, for stage 1's tutorial to point at
+// (src/tutorial.js) — written by the readouts as they lay themselves out, since how far
+// along the heart sits depends on how wide the gold's number is.
+export const HUD_ICONS = { gold: null, life: null };
+const iconBox = (key, x) => {
+  const { w, h } = art[key] ? uiSize(key) : { w: 30, h: 24 };
+  return { x, y: 21 - h / 2, w, h };
+};
 function readouts(ctx, state, draw, segs = null) {
   ctx.font = `17px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
@@ -5087,10 +5095,12 @@ function readouts(ctx, state, draw, segs = null) {
   // `segs` collects each readout's bar: from the middle of its icon, which
   // overlaps the bar's left end, to the end of its number.
   const icon = key => art[key] ? uiSize(key).w / 2 : 0;
+  if (draw) HUD_ICONS.gold = iconBox('hud_gold', x);
   let from = x + icon('hud_gold');
   x = statValue(ctx, hudIcon(ctx, 'hud_gold', x, 'Gold', draw), state.gold, draw);
   segs?.push([from, x, false, 'hud_gold', 16]);
   const lifeX = x + SCRIM_PAD + READOUT_GAP;
+  if (draw) HUD_ICONS.life = iconBox('hud_life', lifeX);
   from = lifeX + icon('hud_life');
   x = statValue(ctx, hudIcon(ctx, 'hud_life', lifeX, 'Lives', draw), state.lives, draw);
   segs?.push([from, x, false, 'hud_life', lifeX]);
