@@ -75,7 +75,7 @@
     <button id="export">Export this device's log</button>
     <label class="btn" for="import">Import log files</label>
     <input id="import" type="file" accept=".json,application/json" multiple>
-    <button id="clear" class="danger">Clear this device's log</button>
+    <button id="clear" class="danger">Clear this device's log and replays</button>
     <a href="index.html" style="margin-left:auto;color:var(--accent)">Back to the game</a>
   </div>
 
@@ -96,6 +96,27 @@
     var m = {};
     list.forEach(function (e) { if (e.k === 'visit' && e.ver) m[e.src + e.v] = e.ver; });
     return function (e) { return m[e.src + e.v] || OLD; };
+  }
+
+  // THE REPLAYS, recorded by the game (src/replay.js) and played on replay.html.
+  var RUNS = 'medieval-td/replays';
+  function ownRuns() {
+    try { var v = JSON.parse(localStorage.getItem(RUNS) || '[]'); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+  function runs() {
+    var pick = sourceSel.value || 'all', want = versionSel.value || 'all', list = [];
+    if (pick === 'all' || pick === 'own') list = list.concat(ownRuns().map(function (r) { return { src: 'This device', key: 'own:' + r.id, run: r }; }));
+    imported.forEach(function (f, i) {
+      if (pick === 'all' || pick === 'f' + i) list = list.concat((f.replays || []).map(function (r) { return { src: f.name, key: 'f' + i + ':' + r.id, run: r }; }));
+    });
+    if (want !== 'all') list = list.filter(function (x) { return (x.run.ver || OLD) === want; });
+    return list.sort(function (a, b) { return b.run.at - a.run.at; });
+  }
+  function findRun(key) {
+    var all = runs();
+    for (var i = 0; i < all.length; i++) if (all[i].key === key) return all[i];
+    return null;
   }
 
   function own() {
@@ -123,6 +144,7 @@
     var list = events();
     versionSel.value = keep;
     var m = {};
+    runs().forEach(function (x) { var r = x.run, v = r.ver || OLD; m[v] ||= { ver: v, first: r.at, last: r.at, visits: {}, starts: 0, ends: 0, wins: 0 }; });
     list.forEach(function (e) {
       var v = m[e.ver] ||= { ver: e.ver, first: e.t, last: e.t, visits: {}, starts: 0, ends: 0, wins: 0 };
       v.last = e.t; v.visits[e.src + e.v] = 1;
@@ -190,7 +212,7 @@
   // --- the page --------------------------------------------------------------
   function render() {
     var ev = events();
-    if (!ev.length) {
+    if (!ev.length && !runs().length) {
       out.innerHTML = '<section class="empty">No events yet. Play the game in this browser, or import a log file.</section>';
       return;
     }
@@ -294,6 +316,20 @@
         '</div>';
     }
 
+    // Replays.
+    var rs = runs();
+    if (rs.length) {
+      var how = { won: '<span class="good">Won</span>', lost: '<span class="bad">Lost</span>', quit: 'Quit', restart: 'Restarted', left: 'Page closed' };
+      html += '<section style="margin-top:14px"><h2>Replays</h2>' + table(['When', 'Log', 'Stage', 'Difficulty', 'Ended', 'Length', 'Lives', 'Version', '', ''],
+        rs.map(function (x) {
+          var r = x.run, e = r.end || {};
+          return [new Date(r.at).toLocaleString(), esc(x.src), r.stage || '?', ['Normal', 'Hard'][r.difficultyIndex] || '?',
+            (how[e.how] || esc(e.how || '?')) + (e.wave ? ' (wave ' + e.wave + ')' : ''), secs((e.s || 0) / 60), e.lives != null ? e.lives : '–', esc(r.ver || OLD),
+            '<button data-watch="' + esc(x.key) + '">Watch</button>', '<button data-save="' + esc(x.key) + '">Download</button>'];
+        }), [2, 5, 6]) +
+        '<p class="note">The game keeps the last 10 games played on this device. Watch replays the whole game exactly as it happened; Download saves one as a file to send. Exporting the log above includes them too.</p></section>';
+    }
+
     // Recent events.
     html += '<section style="margin-top:14px"><h2>Latest events</h2>' + table(['When', 'Log', 'Event', 'Details'],
       ev.slice(-40).reverse().map(function (e) {
@@ -319,27 +355,43 @@
   }
 
   // --- controls ----------------------------------------------------------------
-  document.getElementById('export').onclick = function () {
-    var blob = new Blob([JSON.stringify({ game: 'medieval-td', exported: new Date().toISOString(), events: own() })], { type: 'application/json' });
+  function download(obj, name) {
+    var blob = new Blob([JSON.stringify(obj)], { type: 'application/json' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'medieval-td-log-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.download = name;
     a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  }
+  document.getElementById('export').onclick = function () {
+    download({ game: 'medieval-td', exported: new Date().toISOString(), events: own(), replays: ownRuns() },
+      'medieval-td-log-' + new Date().toISOString().slice(0, 10) + '.json');
   };
+  // WATCH AND DOWNLOAD, from the Replays table. A replay on this device is opened by
+  // its id; an imported one is handed over through this tab's session storage.
+  out.addEventListener('click', function (e) {
+    var w = e.target.closest('[data-watch]'), d = e.target.closest('[data-save]');
+    var x = w ? findRun(w.dataset.watch) : d ? findRun(d.dataset.save) : null;
+    if (!x) return;
+    if (d) { download({ game: 'medieval-td', replays: [x.run] }, 'medieval-td-replay-stage' + (x.run.stage || '') + '-' + x.run.id + '.json'); return; }
+    if (x.src === 'This device') { location.href = 'replay.html#' + encodeURIComponent(x.run.id); return; }
+    try { sessionStorage.setItem('medieval-td/replay-open', JSON.stringify(x.run)); } catch (err) { alert('This replay is too big to open here.'); return; }
+    location.href = 'replay.html#session';
+  });
   document.getElementById('import').onchange = function (e) {
     var files = Array.prototype.slice.call(e.target.files);
     Promise.all(files.map(function (f) {
       return f.text().then(function (t) {
-        var data = JSON.parse(t), list = Array.isArray(data) ? data : data.events;
-        if (!Array.isArray(list)) throw new Error('no events');
-        imported.push({ name: f.name, events: list });
+        var data = JSON.parse(t), list = Array.isArray(data) ? data : data.events || [];
+        var reps = Array.isArray(data) ? [] : data.replays || (data.seed !== undefined && data.inputs ? [data] : []);
+        if (!Array.isArray(list) || (!list.length && !reps.length)) throw new Error('nothing in it');
+        imported.push({ name: f.name, events: list, replays: reps });
       }).catch(function () { alert('Could not read ' + f.name + ' as a game log.'); });
     })).then(function () { e.target.value = ''; fillSources(); fillVersions(); render(); });
   };
   document.getElementById('clear').onclick = function () {
-    if (!confirm('Delete this device\'s player log? Imported files are not affected.')) return;
-    try { localStorage.removeItem(KEY); } catch (err) { /* nothing kept */ }
+    if (!confirm('Delete this device\'s player log and replays? Imported files are not affected.')) return;
+    try { localStorage.removeItem(KEY); localStorage.removeItem(RUNS); } catch (err) { /* nothing kept */ }
     fillVersions(); render();
   };
   sourceSel.onchange = function () { fillVersions(); render(); };

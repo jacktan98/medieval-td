@@ -26,6 +26,8 @@ import { nearestOn, at as pointOn, laneOf } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { towerBox } from './towers.js';
 import { makePerched, perchCast, perchTick, glideDist, flapped } from './enemies.js';
+import { rand } from './rng.js';
+import { gate } from './replay.js';
 
 // THE MAN HIMSELF, as a def, because that is the shape the rest of the game expects
 // a figure to be: `pickFigure` reads `def.r` and `def.spriteTrim`, and the info
@@ -841,7 +843,7 @@ function walkTo(v, pts, speed, dt) {
 // The villagers it moves are marked `work`, and the rest of this file leaves them be.
 function work(state, vp, dt) {
   const { smith, crew, hammer, angler, stuck, cook, kneel, bell } = vp.plan;
-  const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  const span = ([lo, hi]) => lo + rand() * (hi - lo);
 
   // THE CONGREGATION ON THE MAT, each on a round of his own: praying with his back to
   // the player, turned right; then kneeling up, bowed down, kneeling up again; and
@@ -850,8 +852,8 @@ function work(state, vp, dt) {
   // prayer they take no notice of a tap.
   if (kneel) {
     vp.kneel = vp.kneel || kneel.who.map(() => {
-      const step = (Math.random() * KNEEL_STEPS.length) | 0;
-      return { step, until: vp.t + Math.random() * span(kneel[KNEEL_STEPS[step]]) };
+      const step = (rand() * KNEEL_STEPS.length) | 0;
+      return { step, until: vp.t + rand() * span(kneel[KNEEL_STEPS[step]]) };
     });
     kneel.who.forEach((who, i) => {
       const v = state.villagers[who];
@@ -1263,7 +1265,7 @@ const TURN_EVERY = [2.5, 6];
 const ROAD_EDGE = 40;         // px from the middle of a road to its edge, near enough
 function hollowRound(state, vp, dt) {
   const plan = vp.plan;
-  const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  const span = ([lo, hi]) => lo + rand() * (hi - lo);
   vp.hollow = vp.hollow || {};
   const cardOf = type => ({ title: enemyTypes[type].name, sprite: enemyTypes[type].sprite,
                             trim: enemyTypes[type].spriteTrim });
@@ -1450,7 +1452,7 @@ function musterRound(state, vp, m, dt) {
   // than lost. A newer line replaces one still waiting.
   const say = cue => { vp.say = { cue, until: vp.t + SAY_WAIT }; };
   if (vp.say) {
-    if (solo(vp.say.cue, true, true, true) || vp.t > vp.say.until) vp.say = null;
+    if (gate('muster_say', solo(vp.say.cue, true, true, true)) || vp.t > vp.say.until) vp.say = null;
   }
 
   // WHICH WAVES HAVE BEGUN, and what each one starts here.
@@ -1552,7 +1554,7 @@ function musterRound(state, vp, m, dt) {
       v.flip = who !== m.captain;
       // THE CAPTAIN'S WATCH: Default for a while, then Idle for a while, and again.
       if (who === m.captain && c.phase === 'stand') {
-        const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+        const span = ([lo, hi]) => lo + rand() * (hi - lo);
         if (c.next === undefined) c.next = vp.t + span(m.watch);
         if (vp.t >= c.next) { c.idle = !c.idle; c.next = vp.t + span(c.idle ? m.idle : m.watch); }
       }
@@ -1609,7 +1611,7 @@ function perchRound(state, vp, dt) {
       v.look = 'perch';
       // TURNING LEFT AND RIGHT on the merlon, at the owner's word — a little more often
       // than the thugs (`PERCH_TURN`), since a bird this size turning is easy to miss.
-      const span = () => PERCH_TURN[0] + Math.random() * (PERCH_TURN[1] - PERCH_TURN[0]);
+      const span = () => PERCH_TURN[0] + rand() * (PERCH_TURN[1] - PERCH_TURN[0]);
       if (c.turn === undefined) c.turn = vp.t + span();
       if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + span(); }
       if (c.tapped) {
@@ -1722,7 +1724,7 @@ function roostRound(state, vp, r, dt) {
   v.card = { title: crow.name, sprite: crow.sprite, trim: crow.spriteTrim };
   if (c.phase === 'idle') {
     v.look = 'perch';
-    const span = () => PERCH_TURN[0] + Math.random() * (PERCH_TURN[1] - PERCH_TURN[0]);
+    const span = () => PERCH_TURN[0] + rand() * (PERCH_TURN[1] - PERCH_TURN[0]);
     if (c.turn === undefined) c.turn = vp.t + span();
     if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + span(); }
     const over = state.waveIndex >= state.waves.length && state.enemies.length === 0 && state.result === null;
@@ -1821,7 +1823,7 @@ function balconyRound(state, vp, b, dt) {
   // HIS LINES MUST BE HEARD, as the Captain's are: asked for again every frame for a
   // few seconds rather than lost to whatever else is speaking.
   if (vp.say) {
-    if (solo(vp.say.cue, true, true, true) || vp.t > vp.say.until) vp.say = null;
+    if (gate('balcony_say', solo(vp.say.cue, true, true, true)) || vp.t > vp.say.until) vp.say = null;
   }
 
   // WHICH WAVES HAVE BEGUN — the first enemy of a wave on the board — and the cast
@@ -1912,7 +1914,8 @@ function walkFig(e, pts, speed, dt, B) {
 // and nothing held still speaking (`talking` in src/audio.js). The moment it first is,
 // is kept on `c.doneAt`, so the wait after it is counted from the END of the line.
 function lineDone(vp, c) {
-  if (vp.say || talking()) { c.doneAt = null; return false; }
+  // `gate`: the sound's answer, written down for a replay — see src/replay.js.
+  if (vp.say || gate('talking', talking())) { c.doneAt = null; return false; }
   if (c.doneAt == null) c.doneAt = vp.t;
   return true;
 }
@@ -1982,11 +1985,11 @@ function hollowTap(vp, v) {
 // draw the leap from, and `vp.splashes` for the rings where it leaves the water and
 // where it goes back in.
 function fishJumps(vp, fs) {
-  const span = ([lo, hi]) => lo + Math.random() * (hi - lo);
+  const span = ([lo, hi]) => lo + rand() * (hi - lo);
   if (vp.fishNext === undefined) vp.fishNext = vp.t + span(fs.gap) * 0.5;
   if (vp.t >= vp.fishNext) {
-    const [x, y] = fs.spots[(Math.random() * fs.spots.length) | 0];
-    const dir = Math.random() < 0.5 ? -1 : 1;
+    const [x, y] = fs.spots[(rand() * fs.spots.length) | 0];
+    const dir = rand() < 0.5 ? -1 : 1;
     const j = { x, y, dir, at: vp.t, span: span(fs.span), height: span(fs.height), dur: fs.dur };
     vp.fishJump = j;
     vp.fishNext = vp.t + fs.dur + span(fs.gap);
@@ -2068,7 +2071,7 @@ function recruitRound(state, vp, rc, dt) {
   const v = state.villagers[rc.who];
   if (!v) return;
   v.work = true;
-  const c = vp.recruitee || (vp.recruitee = { phase: 'idle', at: vp.t, turn: vp.t + 3 + Math.random() * 3 });
+  const c = vp.recruitee || (vp.recruitee = { phase: 'idle', at: vp.t, turn: vp.t + 3 + rand() * 3 });
   const k = vp.t - c.at;
   v.voice = rc.voice;
   // His card: a villager of his own until he comes out in his gear, a musketeer's
@@ -2078,7 +2081,7 @@ function recruitRound(state, vp, rc, dt) {
   if (c.phase === 'idle') {
     v.pose = 'vm_front';
     // Turned to the right a while, and back, on no beat of his own.
-    if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + (v.flip ? 1.5 + Math.random() * 1.5 : 3 + Math.random() * 3); }
+    if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + (v.flip ? 1.5 + rand() * 1.5 : 3 + rand() * 3); }
     if (state.enemies.length) { c.phase = 'in'; c.at = vp.t; v.leg = 0; }
   } else if (c.phase === 'in') {
     // His back to the player; walkTo turns him right for the last step to the door.

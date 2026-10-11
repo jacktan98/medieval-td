@@ -16,6 +16,7 @@ import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus, s
 import { typeOf, pierceOf, stageOf, timesOf } from './data/armor.js';
 import { tickHit } from './gesture.js';
 import { track, where } from './analytics.js';
+import { rand } from './rng.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -64,14 +65,14 @@ import { track, where } from './analytics.js';
 // picks a route. The name now says so.
 function nextRoute(state) {
   const mix = level.routeMix;
-  if (!mix) return (Math.random() * level.routes.length) | 0;
+  if (!mix) return (rand() * level.routes.length) | 0;
 
   let bag = state.routeBag;
   if (!bag || bag.id !== level.id || !bag.cards.length) {
     const cards = [];
     mix.forEach((share, ri) => { for (let k = 0; k < share; k++) cards.push(ri); });
     for (let i = cards.length - 1; i > 0; i--) {
-      const j = (Math.random() * (i + 1)) | 0;
+      const j = (rand() * (i + 1)) | 0;
       [cards[i], cards[j]] = [cards[j], cards[i]];
     }
     bag = { id: level.id, cards };
@@ -607,7 +608,7 @@ function crowWork(state, e, dt) {
     e.flock.t -= dt;
     while (e.flock.left > 0 && e.flock.t <= 0) {
       const routes = level.routes || [];
-      spawn(state, d.call.type, { route: (Math.random() * routes.length) | 0, s: 0 });
+      spawn(state, d.call.type, { route: (rand() * routes.length) | 0, s: 0 });
       e.flock.left--;
       e.flock.t += d.call.gap;
     }
@@ -715,7 +716,7 @@ export function perchCast(state, e, act) {
     const pool = (state.towers || []).filter(t =>
       t.def.cooldown && !t.blinded && t.fam && d.point.families.includes(t.fam.id));
     if (!pool.length) return false;
-    const tower = pool[(Math.random() * pool.length) | 0];
+    const tower = pool[(rand() * pool.length) | 0];
     e.pointAt = tower;
     begin(e, 'point');
     turnTo(e, tower.x);

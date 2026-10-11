@@ -27,6 +27,9 @@ import { openingDelay } from '../src/data/waves.js';
 import { ABILITY_COST } from '../src/data/abilities.js';
 import { DIFFICULTIES, scaleWaves, startingGold } from '../src/data/difficulty.js';
 import { STAGES } from '../src/data/overview.js';
+import { useMathRandom } from '../src/rng.js';
+// The game's dice are Math.random's here, so fixing Math.random fixes them. See src/rng.js.
+useMathRandom();
 
 // WHICH DIFFICULTY THE SIM IS MEASURING. Every balance note in data/waves.js was
 // written before difficulty existed, so the tables are the middle and the sim

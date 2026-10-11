@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Game Replay</title>
+<link rel="icon" type="image/png" href="assets/ui/Favicon.png">
+<!--
+  THE REPLAY VIEWER, at the owner's word: a recorded game played again exactly as it
+  happened, from the recording src/replay.js keeps. The game itself runs underneath,
+  with the player's presses fed back to it on the steps they came on; nothing here
+  can change it — the board does not answer taps on this page.
+
+  WHAT IT READS: replay.html#<id> plays a recording kept in this browser;
+  replay.html#session plays one handed over by stats.html (an imported file).
+
+  AND IT CANNOT TOUCH THE REAL SAVE. The game reads its settings from storage, and
+  the replay must read the ones the RECORDING was made with — so this page puts a
+  stand-in storage in front of the game, filled from the recording, before the game
+  loads. Everything the replay writes (stars, creatures met) goes there and is gone
+  when the page closes.
+-->
+<style>
+  html, body { margin: 0; height: 100%; background: #23201c; overflow: hidden; color: #f3ead8;
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  #wrap { position: fixed; inset: 0 0 56px 0; display: grid; place-items: center; }
+  canvas { display: block; width: min(100vw, calc((100vh - 56px) * 16 / 9)); aspect-ratio: 16 / 9; }
+  #bar { position: fixed; left: 0; right: 0; bottom: 0; height: 56px; display: flex; align-items: center; gap: 10px;
+    padding: 0 16px; background: #2f2a24; border-top: 1px solid #4a4136; box-sizing: border-box; }
+  #bar button { font: inherit; color: inherit; background: #3d362d; border: 1px solid #5a4f41; border-radius: 7px;
+    padding: 5px 10px; cursor: pointer; min-width: 36px; }
+  #bar button.on { border-color: #d9a35f; color: #f7d9a8; }
+  #bar input[type=range] { flex: 1; min-width: 80px; accent-color: #d9a35f; }
+  #time, #info { white-space: nowrap; font-variant-numeric: tabular-nums; }
+  #info { color: #c9bba6; }
+  #drift { color: #f0a090; white-space: nowrap; }
+  #bar a { color: #d9a35f; white-space: nowrap; }
+  #msg { position: fixed; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; }
+  @media (max-width: 640px) { #info, .spd-x { display: none; } }
+</style>
+</head>
+<body>
+  <div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+  <div id="bar">
+    <button id="play" aria-label="Pause">❚❚</button>
+    <span class="spd">
+      <button data-speed="1" class="on">1x</button><button data-speed="2">2x</button><button data-speed="4">4x</button><button data-speed="8" class="spd-x">8x</button>
+    </span>
+    <input id="seek" type="range" min="0" max="1" value="0" aria-label="Timeline">
+    <span id="time">0:00</span>
+    <span id="info"></span>
+    <span id="drift"></span>
+    <a href="stats.html">Back to stats</a>
+  </div>
+  <div id="msg"></div>
+
+  <script>
+    // THE RECORDING, and the stand-in storage filled from it — both before the game loads.
+    (function () {
+      var id = decodeURIComponent((location.hash || '').slice(1));
+      var run = null;
+      try {
+        if (id === 'session') run = JSON.parse(sessionStorage.getItem('medieval-td/replay-open') || 'null');
+        else (JSON.parse(localStorage.getItem('medieval-td/replays') || '[]') || []).forEach(function (r) { if (r.id === id) run = r; });
+      } catch (e) { run = null; }
+      if (!run) {
+        var m = document.getElementById('msg');
+        m.style.display = 'grid';
+        m.innerHTML = '<div>No recording to play here.<br><br><a style="color:#d9a35f" href="stats.html">Open the stats page</a> and choose one under Replays.</div>';
+        document.getElementById('bar').style.display = 'none';
+        window.__noReplay = true;
+        return;
+      }
+      var data = Object.assign({}, run.storage || {});
+      var fake = {
+        getItem: function (k) { return Object.prototype.hasOwnProperty.call(data, k) ? data[k] : null; },
+        setItem: function (k, v) { data[k] = String(v); },
+        removeItem: function (k) { delete data[k]; },
+        clear: function () { data = {}; },
+        key: function (i) { return Object.keys(data)[i] || null; },
+        get length() { return Object.keys(data).length; }
+      };
+      // The real storage is still needed by this page, for the seek-by-reload below.
+      window.__realSession = sessionStorage;
+      Object.defineProperty(window, 'localStorage', { value: fake, configurable: true });
+      window.__replayRun = run;
+      var view = window.__replayView = { speed: 1, paused: false };
+      // A SEEK BACKWARDS reloads the page and skips ahead to the step asked for.
+      try {
+        var back = sessionStorage.getItem('medieval-td/replay-seek');
+        if (back) { sessionStorage.removeItem('medieval-td/replay-seek'); view.seekTo = +back; }
+      } catch (e) { /* no session storage: start from the beginning */ }
+    })();
+  </script>
+  <script>
+    (function () {
+      var stamp = Math.floor(Date.now() / 60000);
+      // AND THE SAME STAMP FOR THE ARTWORK AND THE AUDIO, which fetch themselves
+      // from inside the modules and had no version at all — see `versioned` in
+      // src/assets.js. Published rather than recomputed there so one reload gets
+      // one version for everything, even across a minute boundary.
+      window.__stamp = stamp;
+      var mods = [
+        'main', 'assets', 'enemies', 'tint', 'flag', 'towers', 'projectiles', 'waves',
+        'render', 'input', 'overview', 'motion', 'life', 'menu', 'book', 'newfoe', 'upgrades', 'upgradepage', 'admin', 'score', 'smoke', 'units', 'villagers', 'corpses', 'bombs', 'blood', 'impacts', 'gesture', 'ground', 'select', 'audio', 'route', 'level', 'status', 'crew', 'holy', 'desert', 'tutorial', 'analytics', 'rng', 'replay', 'data/ui',
+        'data/overview', 'data/level00', 'data/level01', 'data/level02', 'data/level03', 'data/level04', 'data/level05', 'data/level06', 'data/level07', 'data/level08','data/level09','data/level10','data/level11', 'data/level12', 'data/level13', 'data/level14', 'data/level15', 'data/level16', 'data/level17', 'data/level18', 'data/abilities', 'data/armor', 'data/banners', 'data/crew', 'data/difficulty', 'data/status', 'data/towers', 'data/waves', 'data/upgrades', 'data/story', 'data/bossfx'
+      ];
+      var imports = {};
+      for (var i = 0; i < mods.length; i++) {
+        imports['./src/' + mods[i] + '.js'] = './src/' + mods[i] + '.js?v=' + stamp;
+      }
+      var tag = document.createElement('script');
+      tag.type = 'importmap';
+      tag.textContent = JSON.stringify({ imports: imports });
+      document.head.appendChild(tag);
+    })();
+  </script>
+  <script type="module">if (!window.__noReplay) import('./src/main.js');</script>
+  <script>
+    // THE CONTROLS. They only write window.__replayView, which the game's loop reads;
+    // and they show what the loop reports back on it.
+    (function () {
+      if (window.__noReplay) return;
+      var view = window.__replayView, run = window.__replayRun;
+      var play = document.getElementById('play'), seek = document.getElementById('seek');
+      var time = document.getElementById('time'), info = document.getElementById('info'), drift = document.getElementById('drift');
+      var total = run.end ? run.end.s : 0, dragging = false;
+      seek.max = Math.max(1, total);
+      var clock = function (s) { s = Math.floor(s / 60); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); };
+      play.onclick = function () {
+        view.paused = !view.paused;
+        play.textContent = view.paused ? '▶' : '❚❚';
+        play.setAttribute('aria-label', view.paused ? 'Play' : 'Pause');
+      };
+      Array.prototype.forEach.call(document.querySelectorAll('[data-speed]'), function (b) {
+        b.onclick = function () {
+          view.speed = +b.dataset.speed;
+          Array.prototype.forEach.call(document.querySelectorAll('[data-speed]'), function (o) { o.classList.toggle('on', o === b); });
+        };
+      });
+      seek.oninput = function () { dragging = true; time.textContent = clock(+seek.value) + ' / ' + clock(total); };
+      seek.onchange = function () {
+        dragging = false;
+        var to = +seek.value;
+        if (to > (view.step || 0)) view.seekTo = to;
+        else {
+          try { sessionStorage.setItem('medieval-td/replay-seek', String(to)); } catch (e) { /* starts over */ }
+          location.reload();
+        }
+      };
+      function tick() {
+        if (!dragging) {
+          seek.value = view.step || 0;
+          time.textContent = clock(view.step || 0) + ' / ' + clock(total);
+        }
+        info.textContent = view.lives != null ? 'Wave ' + view.wave + '  ·  ' + view.lives + ' lives  ·  ' + view.gold + 'g' +
+          (view.seekTo != null ? '  ·  skipping ahead…' : view.ended ? '  ·  end' : '') : '';
+        drift.textContent = view.drift ? 'Drifted from the real game at ' + clock(view.drift.s) : '';
+        requestAnimationFrame(tick);
+      }
+      tick();
+    })();
+  </script>
+</body>
+</html>

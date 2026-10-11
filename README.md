@@ -20,6 +20,7 @@ Add `?debug` to the URL to hang the live game state on `window.__game`.
 ```
 index.html          the game
 stats.html          the player log: what players pressed, the tutorial, wins and losses
+replay.html         a recorded game played again, exactly as it happened
 src/                the rules and the drawing — 35 modules, no dependencies
 src/data/           the numbers: towers, waves, abilities, statuses, the maps
 assets/             every drawing and every sound, one folder per KIND of thing
@@ -38,6 +39,16 @@ button pressed and every tap that pressed nothing, how long each tutorial line w
 up, and where stages were won, lost or quit. Nothing is sent anywhere: a
 playtester exports their log from that page and the file is imported on yours. The
 admin dashboard's Stats tab opens it.
+
+`replay.html` plays back a game recorded by `src/replay.js`: the board, the dice's
+seed (`src/rng.js`), the saved settings the game read, and every tap on the step of
+the game's fixed 1/60 s clock it came on — so the same game runs again, every enemy
+and shot, with play, pause, 1x to 8x and a timeline. The last 10 games on a device are
+listed under Replays on `stats.html`, where each can be watched or downloaded, and a
+playtester's exported log carries theirs. A replay reads the recording's settings
+from a stand-in storage and never touches the real save. Random choices that change
+the game roll `rand()` from `src/rng.js`; ones that only change the look keep
+`Math.random`, so a different frame rate cannot change a game.
 
 ## The rule this repository runs on
 

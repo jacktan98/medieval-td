@@ -26,6 +26,9 @@ import { readFileSync } from 'node:fs';
 import { paths as ASSET_URLS } from '../src/assets.js';
 import { ui } from '../src/data/ui.js';
 import { boxAt, upBox, tapUpgrades, UP_BUY, UP_RESET, UP_DONE, openUpgrades, closeUpgrades } from '../src/upgradepage.js';
+import { useMathRandom } from '../src/rng.js';
+// The game's dice are Math.random's here, so fixing Math.random fixes them. See src/rng.js.
+useMathRandom();
 
 let bad = 0;
 const check = (ok, label, detail = '') => {

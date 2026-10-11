@@ -1,3 +1,4 @@
+import { rand } from './rng.js';
 // The shape of a road, and where on it a figure stands.
 //
 // A route is a polyline the artist drew, extracted by tools/trace-road.mjs. The
@@ -43,7 +44,7 @@ export const LANES = [-LANE, 0, LANE];
 // figure makes on the way in and then keeps, not something re-rolled per frame.
 // An INDEX, because a lane is a road of its own now rather than a number added
 // to a position. See prepare().
-export const randomLane = () => (Math.random() * LANES.length) | 0;
+export const randomLane = () => (rand() * LANES.length) | 0;
 
 const norm = (x, y) => {
   const L = Math.hypot(x, y) || 1;

@@ -26,6 +26,13 @@ import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
 import { makeTutorial, updateTutorial, makeMapTour, updateMapTour } from './tutorial.js';
 import { track, watchGame, gameVersion } from './analytics.js';
+import { seedRng, newSeed } from './rng.js';
+import { startRecording, stopRecording, recording, replaying, afterStep, duePresses, startPlayback, ended, drift } from './replay.js';
+import { tap } from './input.js';
+import { openMenu, closeMenu } from './menu.js';
+import { shapeMenu, setTouch, isTouch } from './tutorial.js';
+import { useLevel } from './level.js';
+import { soundLevel, setSoundLevel } from './audio.js';
 import { canvasScale } from './data/ui.js';
 
 // HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
@@ -80,7 +87,16 @@ const AMBIENT = [...new Set(levels.flatMap(l => (l.ambience || []).map(a => a.cl
 
 const state = {};
 
+// A REPLAY BEING WATCHED (replay.html), or null: the recording to play. See src/replay.js.
+const REPLAY = globalThis.__replayRun || null;
+
 function newGame() {
+  // THE DICE, SEEDED, before anything on the new board rolls them — the villagers,
+  // the prebuilt towers' men. A replay seeds them as its recording did. See src/rng.js.
+  state.seed = REPLAY ? REPLAY.seed : newSeed();
+  seedRng(state.seed);
+  // The game clock's step count — what every recorded press is timed by.
+  state.steps = 0;
   // Survives the reset: the map the player chose is a menu setting, not part of
   // the game being reset. Without this, switching to map 2 on the title screen
   // would bounce straight back to map 1, and so would losing a game on it.
@@ -325,8 +341,26 @@ function newGame() {
   }
 }
 
+// A REPLAY STARTS ON ITS OWN BOARD, at its own difficulty, and goes straight in.
+if (REPLAY) {
+  startPlayback(REPLAY);
+  state.levelIndex = REPLAY.levelIndex;
+  state.difficultyIndex = REPLAY.difficultyIndex;
+  useLevel(REPLAY.levelIndex);
+}
 newGame();
-attachInput(canvas, state, newGame);
+if (REPLAY) {
+  state.stage = 0;
+  state.anim = REPLAY.anim || 0;
+  state.pendingReveal = null;
+  state.reveal = null;
+  state.startWhenReady = true;
+  setTouch(!!REPLAY.touch);
+} else {
+  attachInput(canvas, state, newGame);
+  // A game left by closing the page is still worth watching, up to where it was left.
+  addEventListener('pagehide', () => { if (state.started && !state.result) stopRecording(state, 'left'); });
+}
 // A VISIT, into the player log: phone or mouse, and the screen it is played on.
 track('visit', { ver: gameVersion(), touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
   w: innerWidth, h: innerHeight });
@@ -357,6 +391,69 @@ if (new URLSearchParams(location.search).has('debug')) {
 }
 
 let last = performance.now();
+const STEP = 1 / 60;
+const MAX_SLICES = 3;
+let acc = 0;
+let recordedSeed = null;
+
+// --- the replay viewer's side of the loop -------------------------------------------
+//
+// The controls on replay.html write `window.__replayView` (speed, paused, seekTo) and
+// read back where the replay is. The presses are applied through the very functions
+// the player's taps went through (input.js `tap`), and a hover-opened menu as the
+// hover opened it.
+function replayView() {
+  return globalThis.__replayView || (globalThis.__replayView = { speed: 1, paused: false });
+}
+function applyPresses() {
+  for (const p of duePresses(state)) {
+    if (p.k === 'tap') {
+      setTouch(!!p.touch);
+      // A press that would leave the game (Quit, Restart, the result screen) ends the
+      // replay instead of rebuilding the board.
+      tap(state, p.x, p.y, () => { state.replayLeft = true; });
+      // AND DRAWN, before the next press: some buttons learn where they are by being
+      // drawn (the card's X, for one), and in the real game a frame always came
+      // between a press that opened something and the press on it.
+      draw(ctx, state);
+    } else if (p.k === 'hover') {
+      const plot = level.plots[p.plot];
+      if (plot && !state.menu) { openMenu(state, plot, null); shapeMenu(state); state.menu.viaHover = true; }
+    } else if (p.k === 'unhover') {
+      if (state.menu && state.menu.viaHover) closeMenu(state);
+    }
+  }
+}
+function reportReplay(view) {
+  view.step = state.steps;
+  view.total = REPLAY.end ? REPLAY.end.s : null;
+  view.drift = drift;
+  view.ended = ended(state) || !!state.result || !!state.replayLeft;
+  view.wave = (state.waveIndex || 0) + 1;
+  view.lives = state.lives;
+  view.gold = state.gold;
+  // SKIPPING AHEAD: the game run silent, as fast as it goes, a slice of it a frame so
+  // the page stays responsive, until it reaches the step asked for.
+  if (view.seekTo != null && view.seekTo > state.steps && !view.ended) {
+    const sound = view.sound ?? [soundLevel('effects'), soundLevel('ambience')];
+    view.sound = sound;
+    setSoundLevel('effects', 0); setSoundLevel('ambience', 0);
+    const until = performance.now() + 25;
+    while (state.steps < view.seekTo && performance.now() < until && !state.result && !ended(state)) {
+      applyPresses();
+      // Held (paused, a card up) with nothing more due at this step: the recording
+      // ends here, so there is nothing to skip to.
+      if (!state.started || state.paused || state.foeCard) break;
+      for (let i = 0; i < state.speed; i++) { step(state, STEP); state.steps++; afterStep(state); applyPresses(); }
+      state.anim = (state.anim || 0) + STEP;
+    }
+    if (state.steps >= view.seekTo || state.result || ended(state)) {
+      view.seekTo = null;
+      setSoundLevel('effects', sound[0]); setSoundLevel('ambience', sound[1]);
+      view.sound = null;
+    }
+  }
+}
 
 function frame(now) {
   fitToDisplay();
@@ -376,15 +473,53 @@ function frame(now) {
 
   // THE NEW-ENEMY CARD STOPS THE GAME as the pause does, at the owner's word, so
   // the player can read it; closing it with its X lets the game run again.
-  const reading = !!state.foeCard;
-  if (state.started && !state.paused && !reading && !state.result) {
-    for (let i = 0; i < state.speed; i++) step(state, real);
+  // A RECORDING BEGINS with the game — see src/replay.js.
+  // A NEW game, told by its seed: Restart goes straight from one game into the next
+  // without ever being "not started" in between.
+  if (state.started && state.seed !== recordedSeed && !REPLAY) {
+    recordedSeed = state.seed;
+    startRecording(state, { ver: gameVersion(), touch: isTouch(), stage: (state.stage ?? -1) + 1 });
   }
-  // THE BOARD'S OWN CLOCK, for what moves on it without being part of the game —
-  // fires, flags, a waving hand. It runs while a game is on and stops dead on the
-  // pause, at the owner's word: "All animations should be paused when pause button
-  // is used." Real seconds, not game ones, so 2x does not set the fires racing.
-  if (state.started && !state.paused && !reading) state.anim = (state.anim || 0) + real;
+
+  // IN FIXED STEPS OF 1/60 s, not in whatever time the frame took, so the same
+  // presses at the same steps make the same game — what a replay depends on, and
+  // the same work a second as before. `speed` steps a slice, as the 2x button asks;
+  // at most MAX_SLICES slices a frame, the old 0.05 s clamp in another form.
+  const view = REPLAY ? replayView() : null;
+  if (view && view.paused) { acc = 0; } else {
+    if (REPLAY) applyPresses();
+    const held = () => !!state.foeCard;
+    const running = () => state.started && !state.paused && !held() && !state.result && !(REPLAY && ended(state));
+    if (running()) {
+      acc += real * (view ? view.speed : 1);
+      let n = 0;
+      const most = MAX_SLICES * (view ? Math.max(1, view.speed) : 1);
+      while (acc >= STEP && n < most && running()) {
+        for (let i = 0; i < state.speed && running(); i++) {
+          step(state, STEP);
+          state.steps++;
+          afterStep(state);
+          if (REPLAY) applyPresses();
+        }
+        // THE BOARD'S OWN CLOCK, for what moves on it without being part of the game —
+        // fires, flags, a waving hand. It runs while a game is on and stops dead on the
+        // pause, at the owner's word: "All animations should be paused when pause button
+        // is used." A slice at a time, not a step, so 2x does not set the fires racing.
+        state.anim = (state.anim || 0) + STEP;
+        acc -= STEP;
+        n++;
+      }
+      if (n >= most) acc = 0;
+    } else {
+      acc = 0;
+      // After the end, the fires still burn: the board's clock on real seconds.
+      if (state.started && !state.paused && !held()) state.anim = (state.anim || 0) + real;
+    }
+  }
+  if (view) reportReplay(view);
+  // THE NEW-ENEMY CARD STOPS THE GAME as the pause does, at the owner's word — and the
+  // board's loops below hold with it.
+  const reading = !!state.foeCard;
 
   // The moment a game ends, once. Outside the step because a result can be set
   // by either of two places — updateWaves for a win, the lives check for a loss —
@@ -395,6 +530,8 @@ function frame(now) {
   // best" is true exactly once, and a summary recomputed every frame would say so
   // for one frame and then contradict itself for the rest of the panel's life.
   if (state.result && !state.summary) {
+    // The recording ends with the game. See src/replay.js.
+    stopRecording(state, state.result);
     state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex]);
 
     // AND THE PANEL ANNOUNCES ITSELF. Here rather than in `finish` because finish

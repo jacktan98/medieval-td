@@ -19,6 +19,7 @@ import { abilityById, owns } from './data/abilities.js';
 import { tick as tickStatus, clear as clearStatus, harmed, slowOf, swing } from './status.js';
 import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armor.js';
 import { struck, tickHit } from './gesture.js';
+import { rand } from './rng.js';
 
 // THE BARRACKS' STAR UPGRADES, for a man a barracks put on the road. A garrison
 // man, a villager who took up arms and a paladin at the church belong to no
@@ -188,7 +189,7 @@ const easyRoom = (state, u) => {
 // A SPELL, in seconds, somewhere between two bounds. One line so that every clock
 // in this section is drawn the same way and none of them can be the one that was
 // written as a fixed number by mistake.
-const spell = (lo, hi) => lo + Math.random() * (hi - lo);
+const spell = (lo, hi) => lo + rand() * (hi - lo);
 
 // IS HE STOOD DOWN RIGHT NOW, asked by the one thing outside this file that needs
 // to know: the renderer, which draws his third pose when he is. The answer is a
@@ -1407,7 +1408,7 @@ export function updateUnits(state, dt) {
       // AND HIS OWN WAIT IS DRAWN NOW, not when the threshold arrives, which is
       // what spreads the squad. Three men whose fight ends on the same frame get
       // three different numbers here and stand down at three different moments.
-      u.stance = Math.random() * ENTER_SPREAD;
+      u.stance = rand() * ENTER_SPREAD;
     // A MAN STANDING ON THE BOARD WITHOUT A TOWER stands about too — stage 5's
     // crossbowmen, stage 8's Pope, stage 12's musketeers — at the owner's word. None
     // has an idle drawing, so for them it is the heading coin alone: now and then he
@@ -1421,12 +1422,12 @@ export function updateUnits(state, dt) {
         u.stance -= dt;
         if (u.stance <= 0) {
           u.stance = spell(SPELL_MIN, SPELL_MAX);
-          u.away = Math.random() < AWAY_ODDS;
+          u.away = rand() < AWAY_ODDS;
           // THE COIN IS TOSSED FIRST AND THE SQUAD ASKED SECOND, in that order, so
           // that a man refused the idle pose is refused for the reason the owner
           // gave rather than simply drawing it less often. `easyRoom` counts the
           // OTHERS, so a man already at ease re-drawing it keeps his place.
-          u.easy = !!u.def.idle && Math.random() < EASY_ODDS && easyRoom(state, u);
+          u.easy = !!u.def.idle && rand() < EASY_ODDS && easyRoom(state, u);
         }
         if (u.away) u.face = u.faceIdle + Math.PI;
       }
@@ -1846,7 +1847,7 @@ export function updateUnits(state, dt) {
     // LAST STAND, the barracks' fourth star upgrade: now and then a blow that
     // would have killed him leaves him standing on 1 health instead. Rolled once
     // per killing blow, here where every way of dying is resolved.
-    if (u.hp <= 0 && upOf(u).deathSave && Math.random() < upOf(u).deathSave) u.hp = 1;
+    if (u.hp <= 0 && upOf(u).deathSave && rand() < upOf(u).deathSave) u.hp = 1;
 
     if (u.hp <= 0) {
       release(u);

@@ -22,6 +22,9 @@ import { makeTower, updateTowers, turnedAway } from '../src/towers.js';
 import { spawn } from '../src/enemies.js';
 import { useLevel, levels } from '../src/level.js';
 import { makeGarrison, updateUnits } from '../src/units.js';
+import { useMathRandom } from '../src/rng.js';
+// The game's dice are Math.random's here, so fixing Math.random fixes them. See src/rng.js.
+useMathRandom();
 
 let bad = 0;
 const ok = (cond, label, detail = '') => {

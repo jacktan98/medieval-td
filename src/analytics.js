@@ -75,7 +75,8 @@ export function gameVersion() {
 
 // Record one event. `k` is its kind; the rest is whatever it carries.
 export function track(k, data = {}) {
-  if (!store()) return;
+  // A replay being watched is not a player playing.
+  if (!store() || globalThis.__replayRun) return;
   const now = Date.now(), list = load(), last = list[list.length - 1];
   // THE SAME TAP AGAIN, on the same thing within REPEAT_MS, is counted on the one
   // before (`n`) rather than logged again: a frustrated player hammering a button the
@@ -119,7 +120,9 @@ export function layerOf(state) {
 export function watchGame(state) {
   const w = state._watch ||= { started: false, wave: -1, result: null };
   if (state.admin) return;
-  if (state.started && !w.started) {
+  // A new game, told by its seed as well: Restart never passes through "not started".
+  if (state.started && (!w.started || w.seed !== state.seed)) {
+    w.seed = state.seed;
     track('stage_start', { ...where(state), gold: state.gold, lives: state.lives });
     w.wave = -1;
     w.result = null;

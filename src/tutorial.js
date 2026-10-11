@@ -92,6 +92,7 @@ const SAY = {
 // last pressed with (setTouch, from src/input.js).
 let touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
 export const setTouch = on => { touch = !!on; };
+export const isTouch = () => touch;
 const VERB = { click: ['click', 'tap'], Click: ['Click', 'Tap'], clicking: ['clicking', 'tapping'],
                Clicking: ['Clicking', 'Tapping'] };
 

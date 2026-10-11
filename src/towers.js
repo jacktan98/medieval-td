@@ -7,6 +7,7 @@ import { inRange } from './ground.js';
 // What the player has bought with stars — see src/upgrades.js.
 import { upgradeFx } from './upgrades.js';
 import { at as pointOn, nearestOn } from './route.js';
+import { rand } from './rng.js';
 
 // A TOWER, AS THE GAME KEEPS ONE. Every field it will ever read, set here, once.
 //
@@ -662,7 +663,7 @@ function idleStep(t, dt, target) {
   const idle = t.idle;
   if (busy) {
     idle.rest = 0;
-    for (const m of idle.men) { m.away = false; m.stance = Math.random() * IDLE_SPREAD; }
+    for (const m of idle.men) { m.away = false; m.stance = rand() * IDLE_SPREAD; }
     return;
   }
   idle.rest += dt;
@@ -670,8 +671,8 @@ function idleStep(t, dt, target) {
   for (const m of idle.men) {
     m.stance -= dt;
     if (m.stance > 0) continue;
-    m.stance = SPELL_MIN + Math.random() * (SPELL_MAX - SPELL_MIN);
-    m.away = Math.random() < AWAY_ODDS;
+    m.stance = SPELL_MIN + rand() * (SPELL_MAX - SPELL_MIN);
+    m.away = rand() < AWAY_ODDS;
   }
 }
 
@@ -1190,9 +1191,9 @@ function shoot(state, t, target, special) {
   // on, a monk's bolt that slows its man. Each is the family's fourth
   // rung, so each is null until it is bought. See src/data/upgrades.js.
   const up = upgradeOf(t);
-  if (up.crit && Math.random() < up.crit.chance) shot.damage = Math.round(shot.damage * up.crit.times);
-  if (up.stun && Math.random() < up.stun.chance) shot.stun = up.stun;
-  if (up.slow && Math.random() < up.slow.chance) shot.slow = up.slow;
+  if (up.crit && rand() < up.crit.chance) shot.damage = Math.round(shot.damage * up.crit.times);
+  if (up.stun && rand() < up.stun.chance) shot.stun = up.stun;
+  if (up.slow && rand() < up.slow.chance) shot.slow = up.slow;
 
   if (ammo.lob) aim(shot, m, target);
   state.shots.push(shot);

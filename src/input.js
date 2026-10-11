@@ -23,6 +23,7 @@ import { AIM_MODES } from './data/towers.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { saveDifficulty } from './score.js';
 import { track, where, layerOf, trackLeave } from './analytics.js';
+import { recordInput, recording, stopRecording } from './replay.js';
 
 // WHICH BUTTON A TAP PRESSED, named by the branch that answered it, for the player
 // log (src/analytics.js). `press` marks it and passes the branch's own answer on.
@@ -91,6 +92,9 @@ export function attachInput(canvas, state, restart) {
     const layer = layerOf(state);
     const here = layer === 'game' || layer === 'paused' ? where(state) : null;
     pressed = null; pressedData = null;
+    // INTO THE REPLAY, before it acts (a press can end the game): every tap on a game
+    // in progress, on the step it came. See src/replay.js.
+    if (recording() && state.started && !state.result) recordInput(state, { k: 'tap', x, y, touch: e.pointerType === 'touch' });
     const did = tap(state, x, y, restart);
     if (layer !== 'admin') {
       track('tap', { b: pressed || (did ? `${layer}:${did === true ? 'tap' : did}` : 'miss'), ok: !!did, layer,
@@ -187,7 +191,10 @@ export function attachInput(canvas, state, restart) {
     if (menu && menu.viaHover) {
       const onRing = Math.hypot(menu.cx - x, menu.cy - y) <= RING_R + HOVER_SLACK;
       const onPlot = Math.hypot(menu.plot.x - x, menu.plot.y - y) <= PLOT_R + HOVER_SLACK;
-      if (!onRing && !onPlot) closeMenu(state);
+      if (!onRing && !onPlot) {
+        closeMenu(state);
+        if (recording() && state.started) recordInput(state, { k: 'unhover' });
+      }
     }
 
     if (state.menu) return;   // never steal a menu that is already up
@@ -197,6 +204,8 @@ export function attachInput(canvas, state, restart) {
       openMenu(state, plot, null);
       shapeMenu(state);
       state.menu.viaHover = true;
+      // INTO THE REPLAY: a menu the mouse opened is a menu the next click lands in.
+      if (recording() && state.started) recordInput(state, { k: 'hover', plot: level.plots.indexOf(plot) });
     }
   });
 
@@ -212,7 +221,10 @@ export function attachInput(canvas, state, restart) {
     state.ghost = null;
     state.upHover = null;
     if (state.foeCard) state.foeTip = null;
-    if (state.menu && state.menu.viaHover) closeMenu(state);
+    if (state.menu && state.menu.viaHover) {
+      closeMenu(state);
+      if (recording() && state.started) recordInput(state, { k: 'unhover' });
+    }
   });
 }
 
@@ -503,6 +515,7 @@ function tapPaused(state, x, y, restart) {
       // left. Somebody quitting has finished with this place on the road, and the
       // road is what they should be looking at.
       trackLeave(state, hit);
+      stopRecording(state, hit);
       if (hit === 'quit') state.stage = null;
       restart();
       if (hit === 'restart') state.started = true;

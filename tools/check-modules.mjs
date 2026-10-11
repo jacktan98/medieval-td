@@ -15,7 +15,7 @@
 import { readdirSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
-const PAGES = ['index.html', 'aim-test.html', 'corpse-test.html', 'tower-test.html', 'knock-test.html'];
+const PAGES = ['index.html', 'replay.html', 'aim-test.html', 'corpse-test.html', 'tower-test.html', 'knock-test.html'];
 
 function modulesOnDisk(dir = 'src', prefix = '') {
   const found = [];
