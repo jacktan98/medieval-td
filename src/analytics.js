@@ -14,6 +14,10 @@
 // Not in the admin dashboard: the owner's own testing is not a player's play.
 import { STAGES } from './data/overview.js';
 import { DIFFICULTIES } from './data/difficulty.js';
+import { levels } from './level.js';
+import { enemyTypes } from './data/waves.js';
+import { families } from './data/towers.js';
+import { UPGRADES, UPGRADE_COSTS } from './data/upgrades.js';
 
 export const EVENTS_KEY = 'medieval-td/events';
 const MAX_EVENTS = 5000;
@@ -41,6 +45,32 @@ function save() {
 if (typeof addEventListener === 'function') {
   addEventListener('pagehide', save);
   addEventListener('visibilitychange', () => { if (typeof document !== 'undefined' && document.hidden) save(); });
+}
+
+// WHICH VERSION OF THE GAME a visit played, at the owner's word, so a log from before
+// a change can be told from one after it. NOT A NUMBER ANYONE BUMPS — one that is
+// forgotten is worse than none — but a fingerprint of what a player's numbers depend
+// on: every board's waves, purse, lives and plots, every enemy's and tower's figures,
+// the difficulties, the star upgrades, and the tutorial's lines (`addToVersion`,
+// from src/tutorial.js). Change any of those and the version changes by itself;
+// change only artwork or sound and it stays.
+const extra = {};
+export function addToVersion(key, data) { extra[key] = data; }
+let version = null;
+export function gameVersion() {
+  if (version) return version;
+  const figures = d => Object.fromEntries(Object.entries(d).filter(([k, v]) =>
+    typeof v === 'number' || ['damageType', 'armour', 'soldier', 'name', 'flying', 'unseen', 'ammo'].includes(k)));
+  const what = JSON.stringify({
+    levels: levels.map(l => [l.id, l.waves, l.startGold, l.startLives, l.maxTier, l.allow, l.plots]),
+    enemies: Object.fromEntries(Object.entries(enemyTypes).map(([k, d]) => [k, figures(d)])),
+    towers: families.map(f => f.tiers.map(d => figures(d))),
+    difficulty: DIFFICULTIES, upgrades: [UPGRADES, UPGRADE_COSTS], extra
+  });
+  // FNV-1a, 32 bits, as six letters and digits.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < what.length; i++) { h ^= what.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (version = (h >>> 0).toString(36).padStart(7, '0').slice(-6));
 }
 
 // Record one event. `k` is its kind; the rest is whatever it carries.

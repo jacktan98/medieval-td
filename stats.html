@@ -71,6 +71,7 @@
 
   <div class="bar-row">
     <select id="source" aria-label="Which logs to show"></select>
+    <select id="version" aria-label="Which game version to show"></select>
     <button id="export">Export this device's log</button>
     <label class="btn" for="import">Import log files</label>
     <input id="import" type="file" accept=".json,application/json" multiple>
@@ -87,6 +88,15 @@
   var imported = [];          // [{ name, events }]
   var out = document.getElementById('out');
   var sourceSel = document.getElementById('source');
+  var versionSel = document.getElementById('version');
+  // A visit's game version, from its 'visit' event (src/analytics.js, gameVersion).
+  // Logs from before versions were recorded show as "before versions".
+  var OLD = 'before versions';
+  function verOf(list) {
+    var m = {};
+    list.forEach(function (e) { if (e.k === 'visit' && e.ver) m[e.src + e.v] = e.ver; });
+    return function (e) { return m[e.src + e.v] || OLD; };
+  }
 
   function own() {
     try { var v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : []; }
@@ -100,7 +110,33 @@
     imported.forEach(function (f, i) {
       if (pick === 'all' || pick === 'f' + i) list = list.concat(f.events.map(function (e) { return Object.assign({ src: f.name }, e); }));
     });
-    return list.sort(function (a, b) { return a.t - b.t; });
+    list.sort(function (a, b) { return a.t - b.t; });
+    var ver = verOf(list);
+    list.forEach(function (e) { e.ver = ver(e); });
+    var want = versionSel.value || 'all';
+    return want === 'all' ? list : list.filter(function (e) { return e.ver === want; });
+  }
+
+  // Every version in the chosen logs, newest first, for the filter and the table.
+  function versions() {
+    var keep = versionSel.value; versionSel.value = 'all';
+    var list = events();
+    versionSel.value = keep;
+    var m = {};
+    list.forEach(function (e) {
+      var v = m[e.ver] ||= { ver: e.ver, first: e.t, last: e.t, visits: {}, starts: 0, ends: 0, wins: 0 };
+      v.last = e.t; v.visits[e.src + e.v] = 1;
+      if (e.k === 'stage_start') v.starts++;
+      if (e.k === 'stage_end') { v.ends++; if (e.result === 'won') v.wins++; }
+    });
+    return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.first - a.first; });
+  }
+  function fillVersions() {
+    var keep = versionSel.value || 'all', vs = versions();
+    versionSel.innerHTML = '<option value="all">All versions</option>' + vs.map(function (v) {
+      return '<option value="' + esc(v.ver) + '">' + (v.ver === OLD ? 'Before versions were recorded' : 'Version ' + esc(v.ver) + ' (from ' + new Date(v.first).toLocaleDateString() + ')') + '</option>';
+    }).join('');
+    versionSel.value = vs.some(function (v) { return v.ver === keep; }) ? keep : 'all';
   }
 
   function fillSources() {
@@ -177,6 +213,17 @@
       [total(taps), 'Taps'],
       [pct(total(misses), total(taps)), 'Taps that did nothing']
     ].map(function (k) { return '<div class="kpi"><div class="n">' + k[0] + '</div><div class="l">' + k[1] + '</div></div>'; }).join('') + '</div>';
+
+    // The versions in these logs, so a change can be judged by the play before and after it.
+    var vs = versions();
+    if (vs.length) {
+      html += '<section><h2>Game versions</h2>' + table(['Version', 'First seen', 'Last seen', 'Visits', 'Stages started', 'Won / finished'],
+        vs.map(function (v) {
+          return [v.ver === OLD ? 'Before versions were recorded' : esc(v.ver), new Date(v.first).toLocaleString(), new Date(v.last).toLocaleString(), Object.keys(v.visits).length, v.starts,
+            v.wins + ' / ' + v.ends + ' (' + pct(v.wins, v.ends) + ')'];
+        }), [3, 4]) +
+        '<p class="note">The version changes by itself whenever the waves, gold, tower or enemy numbers, star upgrades or tutorial text change. Pick one in the filter above to see only its play.</p></section>';
+    }
 
     // Tutorial funnel.
     var tut = ev.filter(function (e) { return e.k === 'tutorial'; });
@@ -288,16 +335,18 @@
         if (!Array.isArray(list)) throw new Error('no events');
         imported.push({ name: f.name, events: list });
       }).catch(function () { alert('Could not read ' + f.name + ' as a game log.'); });
-    })).then(function () { e.target.value = ''; fillSources(); render(); });
+    })).then(function () { e.target.value = ''; fillSources(); fillVersions(); render(); });
   };
   document.getElementById('clear').onclick = function () {
     if (!confirm('Delete this device\'s player log? Imported files are not affected.')) return;
     try { localStorage.removeItem(KEY); } catch (err) { /* nothing kept */ }
-    render();
+    fillVersions(); render();
   };
-  sourceSel.onchange = render;
+  sourceSel.onchange = function () { fillVersions(); render(); };
+  versionSel.onchange = render;
 
   fillSources();
+  fillVersions();
   render();
 })();
 </script>

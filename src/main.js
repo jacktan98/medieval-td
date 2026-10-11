@@ -25,7 +25,7 @@ import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
 import { makeTutorial, updateTutorial, makeMapTour, updateMapTour } from './tutorial.js';
-import { track, watchGame } from './analytics.js';
+import { track, watchGame, gameVersion } from './analytics.js';
 import { canvasScale } from './data/ui.js';
 
 // HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
@@ -328,7 +328,7 @@ function newGame() {
 newGame();
 attachInput(canvas, state, newGame);
 // A VISIT, into the player log: phone or mouse, and the screen it is played on.
-track('visit', { touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
+track('visit', { ver: gameVersion(), touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
   w: innerWidth, h: innerHeight });
 
 // A window onto the live game, for `?debug` only — the same trick as render.js's

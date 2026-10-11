@@ -38,7 +38,7 @@ import { ui } from './data/ui.js';
 import { BOOK_ICON_HIT } from './book.js';
 import { UPGRADES_BTN } from './upgradepage.js';
 import { STAGES } from './data/overview.js';
-import { track } from './analytics.js';
+import { track, addToVersion } from './analytics.js';
 
 const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
 const TYPE_RATE = 32;         // characters a second, typed
@@ -315,6 +315,9 @@ const INTRO = [
     done: s => { if (s.stage !== 0) return false; saveIntro(); return true; } }
 ];
 const LISTS = { game: STEPS, map: MAP_STEPS, intro: INTRO };
+// The lines, in order, are part of the game's version in the player log: a tutorial
+// rewritten is a different tutorial to measure. See src/analytics.js.
+addToVersion('tutorial', { SAY, order: Object.fromEntries(Object.entries(LISTS).map(([k, l]) => [k, l.map(s => s.say || '')])) });
 
 const INTRO_KEY = 'medieval-td/intro';
 const store = () => { try { return globalThis.localStorage || null; } catch { return null; } };
