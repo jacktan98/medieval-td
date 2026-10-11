@@ -57,7 +57,7 @@ const SAY = {
   archery:  '{Double} on the Archery button to build it. The Archery tower is reliable and shoots enemies from afar.',
   shadow:   'To select a tower, {click} its shadow on the ground. {Clicking} the top of the tower will not select it.',
   aimTap:   'Now {click} your archery tower\'s shadow to select it and change its targeting.',
-  aimWhy:   'By default, Archery and Monastery towers attack the enemy closest to the exit.',
+  aimWhy:   'By default, archery and monastery towers attack the enemy closest to the exit.',
   aimTough: '{Click} the Targeting button to attack the enemy with the most health instead.',
   aimRanged: '{Click} it again to attack ranged enemies first.',
   aimBack:  '{Click} it once more to go back to the enemy closest to the exit.',
