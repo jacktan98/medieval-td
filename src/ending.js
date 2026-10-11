@@ -3,7 +3,8 @@
 //
 //   crows    the flock rises from the Dark Hollow and flies off the map
 //   fog      the dark over the world lifts
-//   road     the road's dots turn yellow, back from the Citadel to Oakhaven, and
+//   road     stage 16's flag lifts away; the road's dots turn yellow, back from the
+//            Citadel to Oakhaven, a flag dropping on each stage as they do, and
 //            Oakhaven's bell rings twice at the end
 //   words    the closing words, on the tutorial's paper
 //   tally    the player's own campaign in numbers
@@ -18,7 +19,8 @@
 // world map, over everything else there.
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 import { art } from './assets.js';
-import { play, slice, BELL } from './audio.js';
+import { play, slice, BELL, FLAG_PLANTED } from './audio.js';
+import { drawFlag, drawStageStars } from './overview.js';
 import { tutorialPaper, TUTORIAL_INK } from './render.js';
 import { starsEarned } from './upgrades.js';
 import { MAX_STARS } from './score.js';
@@ -138,16 +140,21 @@ export function tapSeal(state, x, y) {
 const ROAD_PACE = 240;          // px a second
 const LEG_MIN = 0.35;           // seconds, however short a leg
 const legLength = leg => leg.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - leg[i][0], p[1] - leg[i][1]), 0);
+// THE FLAGS, at the owner's word: stage 16's lifts away first (FLAG_LIFT seconds), and
+// then one comes down on every stage as the yellow reaches it — the Citadel's first.
+const FLAG_LIFT = 0.6;
 function roadPlan() {
   const legs = [];
-  let t = 0.6;
+  let t = FLAG_LIFT + 0.3;
+  const flags = { [STAGE_COUNT - 1]: t };
   for (let i = STAGE_COUNT - 1; i >= 1; i--) {
     const leg = STAGES[i].leg;
     const d = Math.max(LEG_MIN, legLength(leg) / ROAD_PACE);
     legs.push({ i, leg, from: t, to: t + d });
     t += d;
+    flags[i - 1] = t;
   }
-  return { legs, end: t, rung: {} };
+  return { legs, flags, end: t, rung: {}, dropped: {} };
 }
 // OAKHAVEN'S BELL as the light comes home, rung twice, at the owner's word — 2
 // strokes as the church bell on stage 8 rings them (BELL_STROKES: seconds after the
@@ -155,6 +162,9 @@ function roadPlan() {
 const BELL_STROKES = [[0, 1.8], [2.1, 1.8]];
 function stepRoad(E) {
   const R = E.road;
+  for (const [i, at] of Object.entries(R.flags)) {
+    if (E.t >= at && !R.dropped[i]) { R.dropped[i] = true; play(FLAG_PLANTED, 0.6); }
+  }
   BELL_STROKES.forEach(([at, d], k) => {
     if (E.t >= R.end + at && !R.rung[k]) { R.rung[k] = true; slice(BELL.key, 0, d, 1, BELL.fade); }
   });
@@ -169,6 +179,7 @@ export function drawEnding(ctx, state) {
   // THE ROAD STAYS LIT once it has been, under the panels that follow.
   const roadAt = PARTS.indexOf('road');
   if (roadAt >= 0 && E.part >= roadAt) drawRoad(ctx, E, E.part > roadAt);
+  drawFlags(ctx, E, roadAt);
   if (part === 'crows') drawCrows(ctx, E);
   if (part === 'words' || part === 'tally' || part === 'credits') {
     ctx.save();
@@ -226,8 +237,8 @@ function drawCrows(ctx, E) {
 
 // THE ROAD TURNS YELLOW, dot by dot, back from the Citadel to Oakhaven — the very
 // dots the map draws (DOT_GAP apart from each leg's start, the same size and edge),
-// painted over in yellow, at the owner's word: no light running ahead, no new dots,
-// and no flags.
+// painted over in yellow, at the owner's word: no light running ahead and no new
+// dots. (The flags are drawFlags, below.)
 const YELLOW = '#F4C842';
 function drawRoad(ctx, E, done) {
   const R = E.road;
@@ -250,6 +261,37 @@ function drawRoad(ctx, E, done) {
   }
   ctx.restore();
 }
+// THE FLAGS AND THE STARS, drawn here while the ending plays (the map leaves both to
+// it): stage 16's flag as the map has it until the road part, lifting away as it
+// begins; then a flag dropping on each stage as the yellow reaches it. Every stage's
+// stars go over its flag, so a flag never covers them.
+function drawFlags(ctx, E, roadAt) {
+  const last = STAGE_COUNT - 1, wave = performance.now() / 1000;
+  const before = roadAt < 0 || E.part < roadAt, during = E.part === roadAt;
+  const R = E.road;
+  for (let i = 0; i < STAGE_COUNT; i++) {
+    const s = STAGES[i];
+    let top = null;
+    if (before) {
+      if (i === last) top = drawFlag(ctx, s.x, s.y, 1, wave);
+    } else {
+      if (i === last && during && E.t < FLAG_LIFT) {
+        // Up and away, fading.
+        const k = E.t / FLAG_LIFT;
+        ctx.save();
+        ctx.globalAlpha = 1 - k;
+        ctx.translate(0, -40 * k * k);
+        drawFlag(ctx, s.x, s.y, 1, wave);
+        ctx.restore();
+      }
+      const at = R && R.flags[i];
+      const now = during ? E.t : Infinity;
+      if (at !== undefined && now >= at) top = drawFlag(ctx, s.x, s.y, Math.min(1, (now - at) / 1.1), wave + i);
+    }
+    drawStageStars(ctx, i, top);
+  }
+}
+
 const dotCache = new WeakMap();
 function dotsOf(pts) {
   let d = dotCache.get(pts);

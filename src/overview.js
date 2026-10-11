@@ -584,6 +584,15 @@ function drawStars(ctx, cx, cy, filled) {
 // THE FLAG, on the furthest stage reached. `t` is how planted it is: 0 while it
 // is still falling, 1 once it has settled. `wave` is wall-clock seconds and only
 // moves the cloth.
+// A STAGE'S STARS, over its flag (`flagTop`, as drawFlag returns it) or over its
+// medallion — for the ending, which puts up flags of its own. See src/ending.js.
+export function drawStageStars(ctx, i, flagTop = null) {
+  const stars = starsAt(i);
+  if (!stars) return;
+  const top = flagTop !== null ? flagTop - STAR_R - 3 : STAGES[i].y - NODE_R * NODE_SQUASH - STAR_R - 2;
+  drawStars(ctx, STAGES[i].x, top, stars);
+}
+
 export function drawFlag(ctx, x, y, t, wave) {
   const k = plant(t);
   // IT FALLS FROM ABOVE AND LANDS, at the owner's word — it used to start below
@@ -1460,7 +1469,9 @@ export function drawOverview(ctx, state) {
   // being pointed at. It waves off wall-clock time so it is alive on a screen
   // where nothing else is moving.
   let flagTop = null;
-  if (frontier >= 0 && !(r && r.stage === frontier && r.phase === 'road')) {
+  // WHILE THE ENDING PLAYS, it draws the flags and the stars itself — see src/ending.js.
+  const ending = !!state.ending;
+  if (frontier >= 0 && !ending && !(r && r.stage === frontier && r.phase === 'road')) {
     const t = r && r.stage === frontier && r.phase === 'flag' ? r.t : 1;
     flagTop = drawFlag(ctx, STAGES[frontier].x, STAGES[frontier].y, t,
       performance.now() / 1000);
@@ -1471,7 +1482,7 @@ export function drawOverview(ctx, state) {
   // medallion where there is not — so the row never lands on the cloth, and a
   // player looking down the road reads their record off it without tapping
   // anything.
-  for (let i = 0; i < unlocked; i++) {
+  for (let i = 0; i < unlocked && !ending; i++) {
     if (r && r.stage === i && r.phase === 'road') continue;
     const stars = starsAt(i);
     if (!stars) continue;

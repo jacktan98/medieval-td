@@ -52,7 +52,7 @@ the game roll `rand()` from `src/rng.js`; ones that only change the look keep
 
 THE ENDING (`src/ending.js`, its words in `src/data/ending.js`) plays on the world
 map the first time stage 16 is won: the crows leave, the fog lifts, a light runs
-back down the road to Oakhaven turning its dots yellow, then closing words, the player's campaign in
+back down the road to Oakhaven turning its dots yellow with a flag dropping on each stage, then closing words, the player's campaign in
 numbers, and credits. Each part is one name in `PARTS`, so removing a name removes
 that part. Once seen, a seal on the map plays it again, and the admin keypad's code
 1600 plays it at any time.
