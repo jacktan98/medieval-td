@@ -420,7 +420,7 @@ function drawTrail(ctx, leg, frac, yellow = Infinity) {
     if (lit) {
       ctx.fillStyle = ROAD_GLOW;
       ctx.beginPath();
-      ctx.arc(x, y, DOT_R * 2.2, 0, Math.PI * 2);
+      ctx.arc(x, y, DOT_R * 1.6, 0, Math.PI * 2);   // a thin glow, at the owner's word
       ctx.fill();
     }
     ctx.fillStyle = lit ? ROAD_LIT : '#F6E7C1';

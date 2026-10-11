@@ -77,6 +77,9 @@ export function updateEnding(state, dt) {
   // THE MAP'S FOG, lifted by the `fog` part and kept lifted after (KEEP_MAP_LIT).
   if (!E) { state.fogLift = KEEP_MAP_LIT && endingSeen() ? 1 : 0; return; }
   E.t += dt;
+  E.clock = (E.clock || 0) + dt;
+  E.rung ||= {};
+  ringBell(E);
   const part = PARTS[E.part];
   const fogAt = PARTS.indexOf('fog');
   state.fogLift = fogAt < 0 ? (KEEP_MAP_LIT ? 1 : 0)
@@ -102,6 +105,7 @@ function over(E, part) {
 
 function next(state) {
   const E = state.ending;
+  if (PARTS[E.part] === 'road' && E.bellAt === undefined) E.bellAt = E.clock || 0;
   E.part++;
   E.t = 0;
   if (E.part >= PARTS.length) finish(state);
@@ -186,8 +190,16 @@ function stepRoad(E) {
     // channel at full level (fanfare, so drops close together are not held back).
     if (E.t >= at && !R.dropped[i]) { R.dropped[i] = true; fanfare(FLAG_PLANTED); }
   }
+  // The bell's first stroke is due as the light reaches Oakhaven.
+  if (E.bellAt === undefined && E.t >= R.home) E.bellAt = E.clock;
+}
+// AND BOTH STROKES RING, whatever part is showing by then: a tap that moves on to the
+// words before the second stroke no longer cuts it off (it did, and the owner heard 1).
+// A tap that leaves the road before the light reaches Oakhaven starts the bell then.
+function ringBell(E) {
+  if (E.bellAt === undefined) return;
   BELL_STROKES.forEach(([at, d], k) => {
-    if (E.t >= R.home + at && !R.rung[k]) { R.rung[k] = true; slice(BELL.key, 0, d, 1, BELL.fade); }
+    if (E.clock >= E.bellAt + at && !E.rung[k]) { E.rung[k] = true; slice(BELL.key, 0, d, 1, BELL.fade); }
   });
 }
 
