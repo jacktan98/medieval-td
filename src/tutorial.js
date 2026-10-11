@@ -173,8 +173,8 @@ const STEPS = [
   // pulsing ring (`bare`), at the owner's word, as nothing is to be pressed yet — and
   // nothing may be (`allow`).
   { say: 'aimWhy', lock: true, spot: true, bare: true, point: aimSpot, allow: () => false },
-  { say: 'aimTough', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 1 },
-  { say: 'aimRanged', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 2 },
+  { say: 'aimTough', lock: true, settle: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 1 },
+  { say: 'aimRanged', lock: true, settle: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 2 },
   { say: 'aimBack', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 3 },
   { say: 'aimTip', lock: true },
   // The archery tower's menu, left open by its Targeting button, shut as this begins.
@@ -437,6 +437,10 @@ function ruling(state, tut) {
   if (!tut || tut.done) return null;
   const steps = stepsOf(tut);
   if (tut.begun && tut.leaving === null) return steps[tut.i];
+  // EXCEPT AFTER A STEP THAT SETTLES (`settle`): the board locked while its line fades,
+  // at the owner's word, so a double click on the Targeting button is one press and not
+  // the next step's too.
+  if (tut.begun && steps[tut.i].settle) return BLOCK;
   const up = steps[tut.leaving !== null ? tut.i + 1 : tut.i];
   if (up && (!up.when || up.when(state))) return up;
   const was = tut.leaving !== null ? steps[tut.i] : steps[tut.i - 1];
