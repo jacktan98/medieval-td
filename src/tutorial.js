@@ -466,6 +466,7 @@ function wrap(ctx, text, w) {
 // be pointing at something underneath it.
 export function drawTutorial(ctx, state) {
   if (state.foeCard || state.result) return;
+  spotlight(ctx, state, state.tutorial);
   drawLine(ctx, state, state.tutorial, BOX);
 }
 // And the world map's — not over the encyclopedia or the upgrades, which it waits on.
@@ -474,7 +475,60 @@ export function drawMapTour(ctx, state) {
   // GONE AT ONCE when a stage's panel opens, at the owner's word — not faded out over
   // the preview.
   if (state.stage !== null && state.stage !== undefined) return;
+  spotlight(ctx, state, state.mapTour);
   drawLine(ctx, state, state.mapTour, MAP_BOX);
+}
+
+// THE SPOTLIGHT, at the owner's word: while a step waits on the player to do something,
+// everything but what they are to press is darkened, and that is left as it is in a
+// clear round hole — an oval for a tower's reach. The darkness and the hole are eased
+// rather than set, so the hole glides from a plot to the button its menu opens with,
+// and the dark stays down between two steps that both ask for something.
+const DARK = 0.5;             // how dark the rest of the screen goes
+const FEATHER = 10;           // px of soft edge round the hole
+const EASE = 0.2;             // share of the way to its target the spotlight goes a frame
+const acting = (state, step) => !!(step && step.say && step.done && step.point) &&
+  (!step.when || step.when(state));
+function spotTarget(state, tut) {
+  if (!tut || tut.done) return null;
+  const steps = stepsOf(tut);
+  // Not yet begun, or the line before it fading: the step to come, if it asks for
+  // something — so the dark does not lift between two that do.
+  const step = !tut.begun ? steps[tut.i] : tut.leaving !== null ? steps[tut.i + 1] : steps[tut.i];
+  if (!acting(state, step)) return null;
+  const sp = step.point(state);
+  if (!sp) return null;
+  if (sp.r !== undefined) {
+    if (sp.noArrow && sp.oval) return { x: sp.x, y: sp.y, rx: sp.oval[0] + 10, ry: sp.oval[1] + 10 };
+    const R = (sp.oval ? sp.oval[0] : sp.ring || sp.r) + 14;
+    return { x: sp.x, y: sp.y, rx: R, ry: R };
+  }
+  const R = Math.hypot(sp.w, sp.h) / 2 + 10;
+  return { x: sp.x + sp.w / 2, y: sp.y + sp.h / 2, rx: R, ry: R };
+}
+function spotlight(ctx, state, tut) {
+  if (!tut) return;
+  const want = spotTarget(state, tut);
+  const was = tut.spot;
+  if (want) {
+    // A new hole where there was none appears in place; one already open moves.
+    if (!was || was.dark < 0.02) tut.spot = { ...want, dark: was ? was.dark : 0 };
+    else for (const k of ['x', 'y', 'rx', 'ry']) was[k] += (want[k] - was[k]) * EASE;
+  }
+  const sp = tut.spot;
+  if (!sp) return;
+  sp.dark += ((want ? 1 : 0) - sp.dark) * EASE;
+  if (sp.dark < 0.01) { if (!want) tut.spot = null; return; }
+  ctx.save();
+  ctx.translate(sp.x, sp.y);
+  ctx.scale(1, sp.ry / sp.rx);
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, sp.rx + FEATHER);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(sp.rx / (sp.rx + FEATHER), 'rgba(0,0,0,0)');
+  g.addColorStop(1, `rgba(0,0,0,${DARK * sp.dark})`);
+  ctx.fillStyle = g;
+  ctx.fillRect(-4000, -4000, 8000, 8000);
+  ctx.restore();
 }
 
 function drawLine(ctx, state, tut, BOX) {
