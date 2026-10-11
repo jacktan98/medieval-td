@@ -54,7 +54,7 @@ const FIRST = 1, SECOND = 0;
 const SAY = {
   welcome:  'Welcome, General! There is no time for pleasantries. The thugs are coming, and we need to get you up to speed.',
   plot1:    '{Click} on the empty plot to build a tower to defend the village.',
-  archery:  '{Double} on the Archery button to build it. The Archery tower is reliable and shoots enemies from afar.',
+  archery:  '{Double} on the Archery button to build it. The archery tower is reliable and shoots enemies from afar.',
   shadow:   'To select a tower, {click} its shadow on the ground. {Clicking} the top of the tower will not select it.',
   aimTap:   'Now {click} your archery tower\'s shadow to select it and change its targeting.',
   aimWhy:   'By default, archery and monastery towers attack the enemy closest to the exit.',
