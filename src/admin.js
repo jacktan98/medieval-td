@@ -58,6 +58,7 @@ import { forgetFoes, forgetTowers } from './newfoe.js';
 import { forgetIntro } from './tutorial.js';
 import { forgetEnding, startEnding } from './ending.js';
 import { resetUpgrades } from './upgrades.js';
+import { clearAchievements } from './achievements.js';
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 // The difficulties themselves, and the two rules that turn a tuned Hard number
 // into the Normal one. Imported rather than reimplemented — see the note on
@@ -1473,6 +1474,8 @@ export function tapAdmin(state, x, y, restart) {
     // AND EVERY STAR SPENT ON UPGRADES COMES BACK — there are no stars left to
     // have spent. See src/upgrades.js.
     resetUpgrades();
+    // AND NOTHING IS EARNED. See src/achievements.js.
+    clearAchievements();
     state.unlocked = 0;
     state.stage = null;
     state.pendingReveal = null;

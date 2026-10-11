@@ -56,6 +56,13 @@ back down the road to Oakhaven turning its dots yellow with a flag dropping on e
 numbers, and credits. Each part is one name in `PARTS`, so removing a name removes
 that part. The admin keypad's code 1600 plays it at any time.
 
+THE ACHIEVEMENTS (`src/achievements.js`, their names and words in
+`src/data/achievements.js`, the screen's layout in `src/achievepage.js`) are opened
+from the trophy on the world map, left of the Upgrades. 20 of them, 4 to a row: what
+each asks, and how far along the player is. One earned pops up on old paper at the
+top right for a few seconds. They count only in a game being played, never in a
+replay, and the dashboard's campaign reset clears them.
+
 ## The rule this repository runs on
 
 **Nothing about a picture is typed in by hand.** Every trim rectangle, shadow
@@ -106,6 +113,7 @@ exit non-zero when something is wrong.
 | `villager` | every stage's villagers are listed, still painted on the board, each answer a tap with his own card, and carry no statistic at all |
 | `readme` | every asset README still describes the folder it is in |
 | `story` | every stage has its story line, and each fits the paper it is shown on |
+| `achievements` | the 20 achievements' goals are the game's own numbers, their words follow the house style, and each counts what it says |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |
 | `budget` | in a second rather than minutes: each wave's health, lives and bounty against what a mixed build the player could afford by then could deal to it, measured on the board's own roads |
@@ -119,7 +127,7 @@ The checks — run them after any change:
 for t in check-modules trim shadow roof families book sound audio admin siege \
          formation facing squad svg png abilities preview plague hud-clear \
          status readme pair armor confirm campaign unseen bomb gesture villager crow \
-         newfoe upgrades story; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
+         newfoe upgrades story achievements; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
 The last six are not checks. `sim` and `sweep` answer balance questions and take

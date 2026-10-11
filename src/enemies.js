@@ -17,6 +17,7 @@ import { typeOf, pierceOf, stageOf, timesOf } from './data/armor.js';
 import { tickHit } from './gesture.js';
 import { track, where } from './analytics.js';
 import { rand } from './rng.js';
+import { note } from './achievements.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -845,6 +846,11 @@ function turnTo(e, x) {
   if (x !== e.x) e.face = x > e.x ? 1 : -1;
 }
 
+// The kills an achievement counts, by what landed the last blow: the pope's missile,
+// an assassin's thrown knife, and Deadeye's ball. See src/achievements.js.
+const KILL_COUNTS = { pope: 'pope', knife: 'knife', deadeye: 'deadeye' };
+const countKill = e => { if (KILL_COUNTS[e.killedBy]) note(KILL_COUNTS[e.killedBy]); };
+
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {
     // WHAT THIS CREATURE IS ON THIS FRAME, and for everything but the boss that is
@@ -1299,6 +1305,10 @@ export function updateEnemies(state, dt) {
     // through the same number a burn comes back through. Clamped to the ceiling
     // here rather than in status.js, because what a full health bar means belongs
     // to the army that owns the figure — see the note over tick().
+    // PLAYING WITH FIRE: what a Fiery Shot's burn takes off him this frame. Asked
+    // before the tick, which may take the burn off. See src/achievements.js.
+    const fire = e.statuses && e.statuses.find(st => st.id === 'burnt' && st.by === 'cannonball');
+    if (fire && e.hp > 0) note('fiery', Math.min(fire.dps * dt, e.hp));
     const hurt = tickStatus(e, dt);
     if (hurt) e.hp = Math.min(e.maxHp, e.hp - hurt);
   }
@@ -1374,6 +1384,7 @@ export function updateEnemies(state, dt) {
     if (e.hp <= 0 && e.def.finale && !downed(e)) {
       state.gold += e.def.bounty;
       state.slain = (state.slain || 0) + 1;   // for the villagers — see src/villagers.js
+      countKill(e);
       // At the BIRD for a crow — he dies in the air — and on the ground for the rest.
       state.hits.push({ x: e.x, y: e.y - airLift(e), life: 0.25 });
       // NO KILL LINE. Every other death in this game answers with a cry keyed to
@@ -1428,6 +1439,7 @@ export function updateEnemies(state, dt) {
     if (e.hp <= 0) {
       state.gold += e.def.bounty;
       state.slain = (state.slain || 0) + 1;   // for the villagers — see src/villagers.js
+      countKill(e);
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });
       // A kill sounds like whatever landed the last blow, and the two are
       // different sounds because they are different events to watch: an arrow

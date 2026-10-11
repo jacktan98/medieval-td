@@ -14,6 +14,7 @@
 // so input.js hit-tests exactly the rects that get drawn.
 import { UPGRADES, UPGRADE_FAMILIES } from './data/upgrades.js';
 import { canBuy, buy, resetUpgrades } from './upgrades.js';
+import { checkRecords } from './achievements.js';
 
 // THE WORLD MAP'S WAY IN: the artist's hammer, at the bottom middle of the map, with
 // "Upgrades" under it — laid out as the book is at the bottom left. See BOOK_ICON in
@@ -141,6 +142,8 @@ export function tapUpgrades(state, x, y, now = Date.now()) {
   const shown = shownRung(state);
   if (shown && inside(UP_BUY, x, y) && canBuy(shown.fam, shown.i)) {
     buy(shown.fam, shown.i);
+    // MASTER SMITH, once the last is bought. See src/achievements.js.
+    checkRecords();
     // ON TO THE NEXT RUNG, at the owner's word, so Buy can be pressed again and
     // again up a ladder; the top rung stays put.
     const next = shown.i + 1 < UPGRADES[shown.fam].length ? { fam: shown.fam, i: shown.i + 1 } : shown;

@@ -20,6 +20,7 @@ import { tick as tickStatus, clear as clearStatus, harmed, slowOf, swing } from 
 import { taken, typeOf, pierceOf, wornBy, stageOf, timesOf, busy } from './data/armor.js';
 import { struck, tickHit } from './gesture.js';
 import { rand } from './rng.js';
+import { note } from './achievements.js';
 
 // THE BARRACKS' STAR UPGRADES, for a man a barracks put on the road. A garrison
 // man, a villager who took up arms and a paladin at the church belong to no
@@ -1330,7 +1331,11 @@ export function updateUnits(state, dt) {
     if (u.hold > 0) {
       u.hold -= dt;
       if (u.healing) u.hp = Math.min(u.maxHp, u.hp + u.healing * dt);
-      if (u.hold <= 0) { u.holdArt = null; u.healing = 0; }
+      if (u.hold <= 0) {
+        // SAVING GRACE counts every Holy Light he lives to finish. See src/achievements.js.
+        if (u.healing && u.hp > 0) note('holylight');
+        u.holdArt = null; u.healing = 0;
+      }
     }
 
     const tx = u.foe ? u.foe.x : u.rx;

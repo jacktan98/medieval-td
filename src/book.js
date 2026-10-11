@@ -22,6 +22,7 @@ import { occupant, shownRange, shownDamage, attackIcon, traitRow, strikes } from
 import { PORTRAIT_SCALE, ui } from './data/ui.js';
 import { UP_DONE } from './upgradepage.js';
 import { hasMet, hasTower } from './newfoe.js';
+import { noteBookPicture } from './achievements.js';
 
 export const PAGES = 4;
 
@@ -451,6 +452,8 @@ export function tapBook(state, x, y) {
   const f = item && frameFor(item.kind);
   if (f && x >= f.x && x <= f.x + f.w && y >= f.y && y <= f.y + f.h) {
     state.zoom = zoomOf(state, item);
+    // PATRON OF THE ARTS counts each picture opened large. See src/achievements.js.
+    if (state.zoom) noteBookPicture(state.book, Math.min((state.bookPick && state.bookPick[state.book]) || 0, pageItems(state.book).length - 1));
     return !!state.zoom;
   }
   return false;

@@ -107,6 +107,7 @@ export function layerOf(state) {
   if (state.admin) return 'admin';
   if (state.book !== null && state.book !== undefined) return 'book';
   if (state.upgrades) return 'upgrades';
+  if (state.achievements) return 'achievements';
   if (state.foeCard) return 'card';
   if (!state.started) return state.stage === null || state.stage === undefined ? 'map' : 'panel';
   if (state.result) return 'result';

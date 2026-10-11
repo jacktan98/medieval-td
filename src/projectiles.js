@@ -8,6 +8,7 @@ import { taken, wornBy } from './data/armor.js';
 import { raiseGuard, airLift } from './enemies.js';
 import { struck } from './gesture.js';
 import { fixture, unseen } from './units.js';
+import { note } from './achievements.js';
 
 // TWO KINDS OF PROJECTILE, and the difference is not cosmetic.
 //
@@ -312,8 +313,11 @@ export const slowing = s => {
   if (own && ammo) return { times: Math.min(own.times, ammo.times), seconds: own.seconds + ammo.seconds };
   return own || ammo;
 };
-const slow = (s, v) =>
+const slow = (s, v) => {
+  // TIME STANDS STILL counts each enemy a monk has slowed, once however often.
+  if (s.ammo.kind === 'monk' && !v.monkSlowed) { v.monkSlowed = true; note('monks'); }
   applyStatus(v, 'slowed', slowOn(v, slowing(s).times), slowing(s).seconds, s.ammo.kind);
+};
 
 // AND A STUN, which is a slow all the way to a standstill — the artillery's star
 // upgrade, Concussion, rolled as the shot left the tower. Through slowOn like any
@@ -346,7 +350,11 @@ function hit(state, s, v) {
     // THROUGH THE ARMOUR, and this is the one line that makes twenty towers
     // differentiate. `s.damage` is what the tower hits FOR — the number on its
     // card — and this is what the man in front of it actually loses.
-    v.hp -= taken(s.damage, s.type, wornBy(v), s.pierce);
+    const lost = taken(s.damage, s.type, wornBy(v), s.pierce);
+    // RAIN OF QUARRELS: what a Crossbow Sentry's quarrel actually took off him, no
+    // more than he had left. See src/achievements.js.
+    if (s.fromTower && s.ammo.kind === 'quarrel' && v.hp > 0) note('quarrels', Math.min(lost, v.hp));
+    v.hp -= lost;
     // AND THE SHIELD GOES UP. Here rather than in the caller because this is the
     // line where a shot lands on somebody: a splash raises the shield of everyone
     // it catches, which is what "a projectile hit him" means when the projectile

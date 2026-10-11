@@ -19,6 +19,8 @@ import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { tutorialAllows, shapeMenu, mapTourAllows, setTouch } from './tutorial.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
+import { hitAchievementsButton, openAchievements, tapAchievements, hoverAchievements } from './achievepage.js';
+import { noteVillagerTap, noteTier4 } from './achievements.js';
 import { AIM_MODES } from './data/towers.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { saveDifficulty } from './score.js';
@@ -152,6 +154,12 @@ export function attachInput(canvas, state, restart) {
       hoverUpgrades(state, x, y);
       return;
     }
+    // And the achievements screen, the one under the mouse.
+    if (state.achievements) {
+      const { x, y } = at(e);
+      hoverAchievements(state, x, y);
+      return;
+    }
 
     // THE BOOK'S STAT BANDS name themselves under the mouse, as the new-enemy
     // card's icons do.
@@ -255,6 +263,8 @@ export function tap(state, x, y, restart) {
 
   // AND SO DOES THE UPGRADES SCREEN. Its answer says whether a star was spent.
   if (state.upgrades) return tapUpgrades(state, x, y);
+  // And the achievements screen.
+  if (state.achievements) return tapAchievements(state, x, y);
 
   // AND SO DOES THE NEW-ENEMY CARD, whose X is the only thing on screen that acts
   // while it is up. See src/newfoe.js.
@@ -282,6 +292,11 @@ export function tap(state, x, y, restart) {
     if ((state.stage === null || state.stage === undefined) && hitUpgradesButton(x, y)) {
       openUpgrades(state);
       return press('upgrades');
+    }
+    // AND THE ACHIEVEMENTS, left of it.
+    if ((state.stage === null || state.stage === undefined) && hitAchievementsButton(x, y)) {
+      openAchievements(state);
+      return press('achievements');
     }
 
     // The corner button, and the only way into the dashboard. Tested before the
@@ -474,7 +489,11 @@ export function tap(state, x, y, restart) {
   solo(selectionCue(sel), !!(sel && sel.kind === 'villager' &&
     (sel.ref.voice === 'enemy_villager' || sel.ref.voice === 'perched_crow')));
   // A tapped villager stops to greet the player — see src/villagers.js.
-  if (state.selected && state.selected.kind === 'villager') greetVillager(state, state.selected.ref);
+  if (state.selected && state.selected.kind === 'villager') {
+    greetVillager(state, state.selected.ref);
+    // Counted for Friend of the People, and on Dark Hollow for No Stone Unturned.
+    noteVillagerTap(level.id, state.selected.ref);
+  }
   // Picking somebody up is an action and so is putting them down; tapping bare
   // ground twice is not.
   return press(state.selected ? `select:${state.selected.kind}` : 'deselect', !!(state.selected || had));
@@ -641,6 +660,8 @@ function run(state, item) {
     state.gold -= next.cost;
     t.def = next;
     t.spent += next.cost;
+    // For Grand Arsenal: every tier 4 tower in one stage. See src/achievements.js.
+    noteTier4(state, next);
     // A NEW MACHINE COMES ONLINE LOADED, which is what a zero here means, and it
     // is the right answer for every tower but one. A Judgment Temple's men have
     // to be SEEN gathering the blast before it leaves — see `charge` in

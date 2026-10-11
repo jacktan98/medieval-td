@@ -291,7 +291,7 @@ const STEPS = [
 // opened and closed, and then the upgrades. It waits for the road to finish drawing
 // itself to stage 2, and for nothing else to be open.
 const onMap = s => !s.started && (s.stage === null || s.stage === undefined) && !s.reveal &&
-  (s.pendingReveal === null || s.pendingReveal === undefined) && s.book === null && !s.upgrades && !s.admin;
+  (s.pendingReveal === null || s.pendingReveal === undefined) && s.book === null && !s.upgrades && !s.achievements && !s.admin;
 const MAP_STEPS = [
   { say: 'book', lock: true, when: onMap, point: () => ({ ...BOOK_ICON_HIT, from: 'up' }),
     done: (s, tut) => !!tut.sawBook && s.book === null },
@@ -411,8 +411,10 @@ function advance(tut) {
   if (tut.i >= stepsOf(tut).length) tut.done = true;
 }
 
-const words = step => (step.say ? SAY[step.say] : '')
-  .replace(/\{(\w+)\}/g, (m, w) => (VERB[w] ? VERB[w][touch ? 1 : 0] : m));
+// {Click} and the rest, as this screen reads them. Exported for the achievements'
+// words, which use the same tokens — see src/data/achievements.js.
+export const verbs = text => text.replace(/\{(\w+)\}/g, (m, w) => (VERB[w] ? VERB[w][touch ? 1 : 0] : m));
+const words = step => verbs(step.say ? SAY[step.say] : '');
 const typed = step => words(step).length / TYPE_RATE;
 const lineLife = step => typed(step) + (step.read ?? READ) + FADE;
 
@@ -516,7 +518,7 @@ export function drawTutorial(ctx, state) {
 }
 // And the world map's — not over the encyclopedia or the upgrades, which it waits on.
 export function drawMapTour(ctx, state) {
-  if (state.book !== null || state.upgrades || state.admin) return;
+  if (state.book !== null || state.upgrades || state.achievements || state.admin) return;
   // GONE AT ONCE when a stage's panel opens, at the owner's word — not faded out over
   // the preview.
   if (state.stage !== null && state.stage !== undefined) return;

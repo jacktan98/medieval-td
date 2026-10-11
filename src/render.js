@@ -56,7 +56,10 @@ import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft, boughtIn } from './upgrades.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
-import { drawTutorial, drawMapTour } from './tutorial.js';
+import { drawTutorial, drawMapTour, verbs } from './tutorial.js';
+import { ACHIEVEMENTS, ACHIEVEMENTS_TITLE, UNLOCKED_TITLE } from './data/achievements.js';
+import { earned, earnedCount, progressOf, toasts, byId } from './achievements.js';
+import { ACHIEVE_ICON, ACH_SHEET, ACH_PANEL, ACH_DONE, ACH_COUNT, achBox, shownAchievement } from './achievepage.js';
 import { drawEnding } from './ending.js';
 import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS, towerNamed } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
@@ -139,7 +142,7 @@ export function draw(ctx, state) {
   if (!state.started) drawStart(ctx, state);
   // THE ENDING, once stage 16 is won, over the world map — or, after it, the seal that
   // plays it again. See src/ending.js.
-  if (!state.started && !state.book && !state.upgrades && !state.admin) drawEnding(ctx, state);
+  if (!state.started && !state.book && !state.upgrades && !state.achievements && !state.admin) drawEnding(ctx, state);
   // The world map's tour after stage 1: its line and its arrow. See src/tutorial.js.
   if (!state.started && !state.ending) drawMapTour(ctx, state);
   else if (state.result) drawResult(ctx, state);
@@ -152,10 +155,15 @@ export function draw(ctx, state) {
   if (state.book !== null) drawBook(ctx, state);
   // And the upgrades screen, opened from the world map, on the same terms.
   if (state.upgrades) drawUpgrades(ctx, state);
+  // And the achievements screen, beside it on the map and on the same terms.
+  if (state.achievements) drawAchievements(ctx, state);
 
   // And the dashboard over everything, on the same terms: it is opened from the
   // title screen, it covers the board, and it owns every tap while it is up.
   if (state.admin) drawAdmin(ctx, state);
+
+  // AN ACHIEVEMENT JUST EARNED, top right, over whatever is up. See src/achievements.js.
+  drawAchievementToast(ctx, state);
 }
 
 // The painted board. The road, the ground and the plot markers all live in this
@@ -6145,6 +6153,8 @@ function drawStart(ctx, state) {
     // THE BOOK, BOTTOM LEFT, AND THE UPGRADES, BOTTOM MIDDLE: the artist's icons
     // with their names under them.
     drawMapDoor(ctx, 'icon_book', BOOK_ICON, 'Encyclopedia');
+    // AND THE TROPHY, in the forest left of the hammer, at the owner's word.
+    drawMapDoor(ctx, 'icon_achievements', ACHIEVE_ICON, 'Achievements');
     drawUpgradesButton(ctx);
     if (!state.ending) drawAdminDoor(ctx);
     ctx.textAlign = 'left';
@@ -7200,6 +7210,196 @@ function drawUpgradePanel(ctx, state) {
     bookButton(ctx, UP_BUY, 'Purchase', 0, `23px ${MAP_TYPE}`, UI_INK);
     ctx.restore();
   }
+}
+
+// --- the achievements -------------------------------------------------------------
+//
+// The screen is the Upgrades screen's sheet, rows and panel — see src/achievepage.js
+// for the layout and the owner's words on it.
+
+// AN ACHIEVEMENT'S PICTURE in a circle `box` across: the artist's icon once it is
+// drawn, and until then the trophy from the map, smaller, on a cream disc. In black
+// and white, faded, while it is not yet earned — as an upgrade not yet bought is —
+// and in colour, less faded, while it is being read.
+function achievementFace(ctx, a, cx, cy, box, got, looked) {
+  const key = a.icon && art[a.icon] ? a.icon : null;
+  ctx.save();
+  if (!got) ctx.globalAlpha = looked ? 0.8 : 0.3;
+  if (!key) {
+    ctx.fillStyle = '#FFEFD4';
+    ctx.beginPath();
+    ctx.arc(cx, cy, box / 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = INK;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  const face = key || 'icon_achievements';
+  const size = key ? box : box * 0.62;
+  if (got || looked || !drawGray(ctx, face, cx, cy, size)) drawUi(ctx, face, cx, cy, size);
+  ctx.restore();
+}
+
+// "10,000", as the words write it.
+const grouped = n => Math.floor(n).toLocaleString('en-US');
+
+function drawAchievements(ctx, state) {
+  ctx.fillStyle = 'rgba(20,22,18,0.88)';
+  ctx.fillRect(0, 0, 960, 540);
+
+  const sh = ACH_SHEET;
+  paperRect(ctx, sh.x, sh.y, sh.w, sh.h, SHEET_SEED, SHEET_TONE, SHEET_TEAR, UP_BG_EDGE, 2);
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = UP_INK;
+  ctx.font = `28px ${MAP_TYPE}`;
+  ctx.fillText(ACHIEVEMENTS_TITLE, 480, UP_TITLE_Y);
+
+  // HOW MANY ARE EARNED, top right, on the plate the Upgrades screen keeps its stars
+  // on: the trophy and "3/20", sized to what it holds.
+  const st = ACH_COUNT;
+  const count = `${earnedCount()}/${ACHIEVEMENTS.length}`;
+  ctx.font = `23px ${MAP_TYPE}`;
+  const PAD = 12, ICON = 26, GAP = 8;
+  const plateW = PAD + ICON + GAP + ctx.measureText(count).width + PAD;
+  const px0 = st.x + st.w - plateW;
+  ctx.fillStyle = 'rgba(40,36,28,0.88)';
+  ctx.beginPath();
+  ctx.roundRect(px0, st.y, plateW, st.h, 10);
+  ctx.fill();
+  drawUi(ctx, 'icon_achievements', px0 + PAD + ICON / 2, st.y + st.h / 2, ICON);
+  ctx.fillStyle = '#F0E6D2';
+  ctx.textAlign = 'left';
+  ctx.fillText(count, px0 + PAD + ICON + GAP, st.y + st.h / 2 + 1);
+
+  const pick = state.achPick ?? 0, hover = state.achHover;
+  const glowT = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+  ACHIEVEMENTS.forEach((a, i) => {
+    const b = achBox(i);
+    const got = earned(a.id);
+    roundShadow(ctx, b.cx, b.cy, b.r);
+    ctx.fillStyle = SHEET_FILL;
+    ctx.beginPath();
+    ctx.arc(b.cx, b.cy, b.r, 0, Math.PI * 2);
+    ctx.fill();
+    achievementFace(ctx, a, b.cx, b.cy, b.r * 2, got, i === pick || i === hover);
+
+    // The Upgrades screen's ring: blue round the one being read, solid when tapped
+    // and fainter under the mouse, breathing; and a still gold one round each earned.
+    const ring = i === pick ? UP_PICK : i === hover ? 'rgba(47,95,168,0.55)' : got ? UI_GOLD : null;
+    if (ring) {
+      const pulse = ring === UI_GOLD ? 0 : 0.5 + 0.5 * Math.sin(glowT * 4 + i);
+      ctx.save();
+      ctx.strokeStyle = ring;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = ring;
+      ctx.shadowBlur = 6 + 18 * pulse;
+      ctx.beginPath();
+      ctx.arc(b.cx, b.cy, b.r + 1.5, 0, Math.PI * 2);
+      ctx.stroke();
+      if (ring !== UI_GOLD) ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  drawAchievementPanel(ctx, state);
+  bookButton(ctx, ACH_DONE, 'Done', 0, `20px ${MAP_TYPE}`, UI_INK);
+
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+}
+
+// The panel down the right: the name, whether it is earned, what it asks, and how
+// far along the player is.
+function drawAchievementPanel(ctx, state) {
+  const p = ACH_PANEL;
+  paperRect(ctx, p.x, p.y, p.w, p.h, 31, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.4, true);
+  const a = ACHIEVEMENTS[shownAchievement(state)];
+  if (!a) return;
+  const got = earned(a.id);
+  const cx = p.x + p.w / 2;
+
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  achievementFace(ctx, a, cx, p.y + 56, 72, got, true);
+  ctx.fillStyle = UP_NAME;
+  ctx.font = `25px ${MAP_TYPE}`;
+  ctx.fillText(a.name, cx, p.y + 120);
+  ctx.fillStyle = got ? UP_GREEN : UP_MUTED;
+  ctx.font = `16px ${MAP_TYPE}`;
+  ctx.fillText(got ? 'Earned' : 'Not yet earned', cx, p.y + 145);
+
+  ctx.font = `17px ${MAP_TYPE}`;
+  ctx.fillStyle = UP_INK;
+  wrapIn(ctx, verbs(a.text), p.w - 48).forEach((line, k) => ctx.fillText(line, cx, p.y + 180 + k * 23));
+
+  // HOW FAR ALONG, as a number and a bar, for those that count something.
+  const pr = progressOf(a.id);
+  if (pr) {
+    const [done, goal] = pr;
+    const bw = p.w - 90, bh = 14, bx = cx - bw / 2, by = p.y + p.h - 52;
+    ctx.fillStyle = UP_INK;
+    ctx.font = `17px ${MAP_TYPE}`;
+    ctx.fillText(`Progress: ${grouped(done)} / ${grouped(goal)}`, cx, by - 18);
+    ctx.fillStyle = 'rgba(58,48,38,0.18)';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, bh / 2);
+    ctx.fill();
+    if (done > 0) {
+      ctx.fillStyle = got ? UP_GREEN : UI_GOLD;
+      ctx.beginPath();
+      ctx.roundRect(bx, by, Math.max(bh, bw * done / goal), bh, bh / 2);
+      ctx.fill();
+    }
+    ctx.strokeStyle = 'rgba(58,48,38,0.55)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, bh / 2);
+    ctx.stroke();
+  }
+}
+
+// THE POP-UP: old paper at the top right with the icon, the name and the words, for
+// a few seconds, then fading — at the owner's word. On the wall clock, so it fades on
+// a paused game too. One at a time; the next waits for this one to go.
+// ON THE BOARD IT HANGS BELOW THE TOP BAR, clear of Pause, the speed and Next Wave.
+const TOAST = { w: 330, right: 12, top: 12, topInGame: 46, in: 0.35, hold: 4, out: 0.8 };
+function drawAchievementToast(ctx, state) {
+  const t = toasts[0];
+  if (!t) return;
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+  if (t.at === null) t.at = now;
+  const k = now - t.at;
+  if (k >= TOAST.in + TOAST.hold + TOAST.out) { toasts.shift(); return; }
+  const a = byId(t.id);
+  if (!a) { toasts.shift(); return; }
+  const alpha = k < TOAST.in ? k / TOAST.in : k > TOAST.in + TOAST.hold ? 1 - (k - TOAST.in - TOAST.hold) / TOAST.out : 1;
+  const drop = (1 - Math.min(1, k / TOAST.in)) * -14;
+
+  ctx.save();
+  ctx.font = `15px ${MAP_TYPE}`;
+  const ICON = 54, PAD = 14, textX = PAD + ICON + 12, textW = TOAST.w - textX - PAD;
+  const lines = wrapIn(ctx, verbs(a.text), textW);
+  const h = Math.max(ICON + PAD * 2, 58 + lines.length * 19 + 6);
+  const x = 960 - TOAST.right - TOAST.w, y = (state.started ? TOAST.topInGame : TOAST.top) + drop;
+  ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+  tutorialPaper(ctx, x, y, TOAST.w, h);
+  achievementFace(ctx, a, x + PAD + ICON / 2, y + h / 2, ICON, true, true);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = UP_MUTED;
+  ctx.font = `14px ${MAP_TYPE}`;
+  ctx.fillText(UNLOCKED_TITLE, x + textX, y + 18);
+  ctx.fillStyle = UP_NAME;
+  ctx.font = `20px ${MAP_TYPE}`;
+  ctx.fillText(a.name, x + textX, y + 39);
+  ctx.fillStyle = TUTORIAL_INK;
+  ctx.font = `15px ${MAP_TYPE}`;
+  lines.forEach((line, i) => ctx.fillText(line, x + textX, y + 62 + i * 19));
+  ctx.restore();
 }
 
 function drawBook(ctx, state) {

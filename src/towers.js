@@ -8,6 +8,7 @@ import { inRange } from './ground.js';
 import { upgradeFx } from './upgrades.js';
 import { at as pointOn, nearestOn } from './route.js';
 import { rand } from './rng.js';
+import { note } from './achievements.js';
 
 // A TOWER, AS THE GAME KEEPS ONE. Every field it will ever read, set here, once.
 //
@@ -1177,9 +1178,14 @@ function shoot(state, t, target, special) {
     // when the shot does: render.js draws it for every marked shot still in flight,
     // and a shot that lands is a shot off the list.
     marked: !!(special && special.lock),
+    // FROM A TOWER, which a garrison man's quarrel is not: Rain of Quarrels counts
+    // the Crossbow Sentry's. See src/achievements.js.
+    fromTower: true,
     ammo,
     speed: ammo.speed
   };
+  // HEAVY HITTER counts every Heavy Bolt that leaves a turret.
+  if (special && special.id === 'heavybolt') note('heavybolt');
 
   // `lob`, not `arc`. They were the same test until the Cannon Outpost, which is
   // thrown at the ground like a catapult's rock and flies flat like a musket

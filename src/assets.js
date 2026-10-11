@@ -665,6 +665,9 @@ export const paths = {
   // the upgrades. The hammer lives with the upgrade faces it opens.
   icon_book:       'assets/ui/Encyclopedia_Icon.png',
   icon_upgrades:   'assets/upgrades/Upgrade_Hammer_Icon.png',
+  // And the trophy between them, which opens the achievements; it lives with the
+  // achievement icons. See assets/achievements/README.md.
+  icon_achievements: 'assets/achievements/Achievements_Icon.png',
   btn_cancel:      'assets/ui/Cancel_Button_Icon.png',
   glyph_bow:       'assets/ui/Archery_Icon.png',
   glyph_swords:    'assets/ui/Barracks_Icon.png',
