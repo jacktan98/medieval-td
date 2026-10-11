@@ -95,7 +95,7 @@ exit non-zero when something is wrong.
 | `plague` | the thug throws, the flask breaks, and the spill poisons |
 | `hud-clear` | no tower or badge is drawn into the HUD or off the board |
 | `status` | a status goes on, hurts, shows and comes off, for both armies |
-| `armour` | the damage triangle: what an attack is, what it meets, what is left |
+| `armor` | the damage triangle: what an attack is, what it meets, what is left |
 | `pair` | the two men on a tower that holds two take turns, and stand where they fit |
 | `confirm` | every button that moves gold asks twice, and the dotted ring belongs to the one that is armed |
 | `campaign` | the world map's stages sit on the markers the artist drew, every road leads where it says, and a stage with no map behind it is not a button |
@@ -105,6 +105,7 @@ exit non-zero when something is wrong.
 | `crow` | the Dark Crow: only what reaches the air can hit him, no soldier holds him, and he falls onto his own shadow |
 | `villager` | every stage's villagers are listed, still painted on the board, each answer a tap with his own card, and carry no statistic at all |
 | `readme` | every asset README still describes the folder it is in |
+| `story` | every stage has its story line, and each fits the paper it is shown on |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |
 | `budget` | in a second rather than minutes: each wave's health, lives and bounty against what a mixed build the player could afford by then could deal to it, measured on the board's own roads |
@@ -112,12 +113,13 @@ exit non-zero when something is wrong.
 | `trace-road` | pulls the road out of a map SVG and writes the route |
 | `overview` | stacks the world map's layers, recolours them to parchment, lifts the region names out to a file of their own, and reads the stage markers and road lines off the guide layer |
 
-The first twenty-nine are checks — run them after any change:
+The checks — run them after any change:
 
 ```
 for t in check-modules trim shadow roof families book sound audio admin siege \
          formation facing squad svg png abilities preview plague hud-clear \
-         status readme pair armour confirm campaign unseen bomb gesture villager crow; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
+         status readme pair armor confirm campaign unseen bomb gesture villager crow \
+         newfoe upgrades story; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
 The last six are not checks. `sim` and `sweep` answer balance questions and take

@@ -83,11 +83,13 @@ const ctx = {
     });
   },
   // Gain nodes are named by creation order, because that is the only thing the
-  // module tells us about them: it builds master, then busA, then busB, and
-  // every later one is a per-play trim. Naming them is what lets the routing
-  // checks below say WHICH bus a clip went out on.
+  // module tells us about them: it builds master; the effects slider's level for
+  // the A bus (fxA), then busA; busB, then the slider's level for it (fxB), which
+  // is what a B clip connects to and so is called busB here too; then the
+  // ambience slider's two (ambB, ambA). Every later one is a per-play trim. Naming
+  // them is what lets the routing checks below say WHICH bus a clip went out on.
   createGain() {
-    const name = ['master', 'busA', 'busB'][gains.length] || 'clip';
+    const name = ['master', 'fxA', 'busA', 'busB', 'busB', 'ambB', 'ambA'][gains.length] || 'clip';
     const g = {
       _name: name,
       _out: null,
@@ -971,85 +973,37 @@ console.log('\nWhat the enemies sound like\n');
       played.filter(c => c !== 'Arrow_shot').join(', '), '');
   }
 
-  // THE RALLY THUG'S WAR CRY, at the owner's ask, and the three things about it that
-  // could each be wrong on their own.
+  // THE RALLY THUG'S WAR CRY, at the owner's word (since 2026-10-06): as he walks
+  // onto the field — on his spawn, with priority and past the repeat rules — and not,
+  // as it used to be, when his banner first takes hold of somebody, which on the late
+  // boards hardly ever happened. See the note beside it in spawn(), src/enemies.js.
   {
-    const near = 200;
-    // ONCE, when the mark goes on.
+    const { spawn } = await import('../src/enemies.js');
+    const st = world([]);
     ctx.currentTime = 30000;
     played = [];
-    const thug = foe('light_inf', near);
-    const st = world([foe('rally_inf', near), thug]);
-    updateEnemies(st, DT);
-    check('a Rally Thug cries out when his aura takes hold',
+    spawn(st, 'rally_inf');
+    check('a Rally Thug cries out as he walks onto the field',
       played.filter(c => c === 'War_cry').length, 1);
-
-    // AND NOT AGAIN on the frames that merely refresh it — which took THREE goes to
-    // ask in a way that could come back no.
-    //
-    // The first version ran 60 frames. A cry requested every frame is dropped for as
-    // long as the first one holds the channel, so one second of frames gives exactly
-    // one cry whether the rule is in the code or not. The second ran four seconds,
-    // reasoning that a dropped request never closes the gate, so the moment the gate
-    // opens the next frame's request would start another clip. It passed too, and
-    // that was the finding: the war cry has ONE take, and a single-take cue is
-    // ineligible for as long as it is the last thing `heard` — see solo() in
-    // src/audio.js, and MEMORY_S, which only clears the slate after 20s of silence.
-    // A cry asked for every frame on a quiet board is silent anyway.
-    //
-    // So this puts SOMETHING ELSE on the channel in between, which is the one thing
-    // that makes the cry eligible again without waiting out the memory. After the
-    // select clip the gate is open, the cry is no longer `last`, and it has been
-    // heard once of its allowed two. A version that asks every frame cries here. The
-    // one that ships asks only on the transition, and says nothing.
-    ctx.currentTime = 30010;
+    // NOT AGAIN as his banner takes hold of somebody, nor while he walks.
     played = [];
+    st.enemies.push(foe('light_inf', st.enemies[0].s));
     for (let i = 0; i < 60 * 2; i++) { ctx.currentTime += DT; updateEnemies(st, DT); }
-    solo(SELECT);
-    ctx.currentTime += 2;
-    for (let i = 0; i < 60 * 2; i++) { ctx.currentTime += DT; updateEnemies(st, DT); }
-    check('  and not again, for as long as the same enemy stands there',
+    check('  and not again as his banner takes hold, or while he walks',
       played.filter(c => c === 'War_cry').length, 0);
-    // ...and the clip that was supposed to clear the way really did sound, because if
-    // it had been dropped the check above would be back to proving nothing.
-    check('  (the gap was opened by something else on the channel)',
-      played.filter(c => c === 'Select_Sound').length, 1);
-
-    // AND AGAIN for somebody new. A second body walks into the same aura — and he is
-    // put down BESIDE THE FLAG rather than at the `near` the other two started from,
-    // because by now the flag has walked 180px up the road and 200 is no longer next
-    // to him. The first version of this spawned at `near`, read a silence, and was
-    // measuring the aura's 150px reach rather than the cry.
-    //
-    // Two frames, not one: a figure is placed by `s` and its x/y is whatever the last
-    // frame left there, so the frame that puts him in the right place is not
-    // necessarily the frame the aura sees him on.
-    ctx.currentTime = 30020;
+    // A SECOND Rally Thug shouts as he walks on too.
+    ctx.currentTime += 5;
     played = [];
-    st.enemies.push(foe('tough_inf', st.enemies[0].s));
-    updateEnemies(st, DT);
-    updateEnemies(st, DT);
-    check('  and again when it takes hold of a new one',
+    spawn(st, 'rally_inf');
+    check('  a second Rally Thug cries out as he walks on too',
       played.filter(c => c === 'War_cry').length, 1);
-  }
-
-  // AND IT IS CATEGORY A, at the owner's word: one at a time. Asked the way the
-  // Category A block above asks it — a second cry inside the first is dropped.
-  {
-    const near = 200;
-    const st = world([foe('rally_inf', near)]);
-    ctx.currentTime = 40000;
+    // AND NOBODY ELSE.
+    ctx.currentTime += 5;
     played = [];
-    st.enemies.push(foe('light_inf', near));
-    updateEnemies(st, DT);
-    const first = played.filter(c => c === 'War_cry').length;
-    // A second body arrives a quarter second later, while the 1.34s clip is sounding.
-    ctx.currentTime = 40000.25;
-    played = [];
-    st.enemies.push(foe('tough_inf', near));
-    updateEnemies(st, DT);
-    check('the war cry is Category A — a second inside the first is dropped',
-      `${first} then ${played.filter(c => c === 'War_cry').length}`, '1 then 0');
+    spawn(st, 'light_inf');
+    spawn(st, 'tough_inf');
+    check('  and no other enemy does',
+      played.filter(c => c === 'War_cry').length, 0);
   }
 
   // THE BOMB THUG'S BURST, and it is the other side of the line from the cry
