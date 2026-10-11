@@ -196,9 +196,9 @@ const STEPS = [
     done: rallied },
   { say: 'rallyWhy', lock: true },
   // THE GOLD AND THE LIVES, at the owner's word: an arrow up at each from below.
-  { say: 'gold', lock: true, point: () => hudSpot('gold') },
+  { say: 'gold', lock: true, spot: true, point: () => hudSpot('gold') },
   // A SECOND HAND, at the owner's word, under the exit's blue banner.
-  { say: 'lives', lock: true, point: () => hudSpot('life'),
+  { say: 'lives', lock: true, spot: true, point: () => hudSpot('life'),
     marks: () => (level.exitFlags || []).map(exitSpot) },
   { say: 'call', lock: true, point: () => waveSpot(), done: s => s.called !== false },
   // THE THUG'S CARD, as he comes: raised here if the player has met him before and the
@@ -266,7 +266,7 @@ const MAP_STEPS = [
   // AND BACK FROM THE UPGRADES, stage 2's flag, until its panel is opened.
   // NOT LOCKED, at the owner's word: the player is free from here, and the arrow is a
   // pointer rather than a gate.
-  { say: 'next', when: onMap, point: () => flagSpot(1), skip: (s, tut) => !!tut.sawNext,
+  { say: 'next', when: onMap, spot: false, point: () => flagSpot(1), skip: (s, tut) => !!tut.sawNext,
     done: (s, tut) => !!tut.sawNext }
 ];
 // A STAGE'S FLAG on the world map: the box round the flag standing on its marker (it is
@@ -481,23 +481,17 @@ export function drawMapTour(ctx, state) {
 
 // THE SPOTLIGHT, at the owner's word: while a step waits on the player to do something,
 // everything but what they are to press is darkened, and that is left as it is in a
-// clear round hole — an oval for a tower's reach. The darkness and the hole are eased
-// rather than set, so the hole glides from a plot to the button its menu opens with,
-// and the dark stays down between two steps that both ask for something.
+// clear round hole — an oval for a tower's reach. The gold and the lives, too, though
+// they ask for nothing (`spot`), and not the world map's last pointer, which is no gate.
+// The darkness and the holes are eased rather than set, so a hole glides from a plot to
+// the button its menu opens with, one that is no longer wanted closes, and the dark
+// stays down between two steps that both have one.
 const DARK = 0.5;             // how dark the rest of the screen goes
-const FEATHER = 10;           // px of soft edge round the hole
+const FEATHER = 10;           // px of soft edge round a hole
 const EASE = 0.2;             // share of the way to its target the spotlight goes a frame
-const acting = (state, step) => !!(step && step.say && step.done && step.point) &&
+const lit = (state, step) => !!(step && step.point && (step.spot ?? (step.say && step.done))) &&
   (!step.when || step.when(state));
-function spotTarget(state, tut) {
-  if (!tut || tut.done) return null;
-  const steps = stepsOf(tut);
-  // Not yet begun, or the line before it fading: the step to come, if it asks for
-  // something — so the dark does not lift between two that do.
-  const step = !tut.begun ? steps[tut.i] : tut.leaving !== null ? steps[tut.i + 1] : steps[tut.i];
-  if (!acting(state, step)) return null;
-  const sp = step.point(state);
-  if (!sp) return null;
+const holeOf = sp => {
   if (sp.r !== undefined) {
     if (sp.noArrow && sp.oval) return { x: sp.x, y: sp.y, rx: sp.oval[0] + 10, ry: sp.oval[1] + 10 };
     const R = (sp.oval ? sp.oval[0] : sp.ring || sp.r) + 14;
@@ -505,29 +499,71 @@ function spotTarget(state, tut) {
   }
   const R = Math.hypot(sp.w, sp.h) / 2 + 10;
   return { x: sp.x + sp.w / 2, y: sp.y + sp.h / 2, rx: R, ry: R };
+};
+function spotTargets(state, tut) {
+  if (!tut || tut.done) return [];
+  const steps = stepsOf(tut);
+  // Not yet begun, or the line before it fading: the step to come — so the dark does
+  // not lift between two that have a hole.
+  const step = !tut.begun ? steps[tut.i] : tut.leaving !== null ? steps[tut.i + 1] : steps[tut.i];
+  if (!lit(state, step)) return [];
+  const sp = step.point(state);
+  if (!sp) return [];
+  return [sp, ...(step.marks ? step.marks(state) : [])].map(holeOf);
 }
+let layer = null;
 function spotlight(ctx, state, tut) {
   if (!tut) return;
-  const want = spotTarget(state, tut);
-  const was = tut.spot;
-  if (want) {
-    // A new hole where there was none appears in place; one already open moves.
-    if (!was || was.dark < 0.02) tut.spot = { ...want, dark: was ? was.dark : 0 };
-    else for (const k of ['x', 'y', 'rx', 'ry']) was[k] += (want[k] - was[k]) * EASE;
+  const want = spotTargets(state, tut);
+  const sp = tut.spot ||= { dark: 0, holes: [] };
+  // A spotlight coming on from nothing opens with its holes already open.
+  const fresh = sp.dark < 0.02;
+  if (fresh && want.length) sp.holes = want.map(h => ({ ...h, k: 1 }));
+  want.forEach((h, i) => {
+    const o = sp.holes[i];
+    if (!o) { sp.holes.push({ ...h, k: 0 }); return; }
+    for (const key of ['x', 'y', 'rx', 'ry']) o[key] += (h[key] - o[key]) * EASE;
+    o.k += (1 - o.k) * EASE;
+  });
+  for (let i = want.length; i < sp.holes.length; i++) sp.holes[i].k -= sp.holes[i].k * EASE;
+  sp.holes = sp.holes.filter((o, i) => i < want.length || o.k > 0.02);
+  sp.dark += ((want.length ? 1 : 0) - sp.dark) * EASE;
+  if (sp.dark < 0.01) return;
+  // Darkened on a layer of its own, the holes rubbed out of it, then laid over the screen.
+  const c = ctx.canvas;
+  if (!layer) {
+    try { layer = globalThis.OffscreenCanvas ? new OffscreenCanvas(c.width, c.height) : document.createElement('canvas'); }
+    catch { return; }
   }
-  const sp = tut.spot;
-  if (!sp) return;
-  sp.dark += ((want ? 1 : 0) - sp.dark) * EASE;
-  if (sp.dark < 0.01) { if (!want) tut.spot = null; return; }
+  if (layer.width !== c.width || layer.height !== c.height) { layer.width = c.width; layer.height = c.height; }
+  const lc = layer.getContext('2d');
+  lc.setTransform(1, 0, 0, 1, 0, 0);
+  lc.globalCompositeOperation = 'source-over';
+  lc.clearRect(0, 0, c.width, c.height);
+  lc.fillStyle = `rgba(0,0,0,${DARK * sp.dark})`;
+  lc.fillRect(0, 0, c.width, c.height);
+  lc.setTransform(ctx.getTransform());
+  lc.globalCompositeOperation = 'destination-out';
+  for (const o of sp.holes) {
+    const rx = o.rx * o.k, ry = o.ry * o.k;
+    if (rx < 1) continue;
+    lc.save();
+    lc.translate(o.x, o.y);
+    lc.scale(1, ry / rx);
+    const g = lc.createRadialGradient(0, 0, 0, 0, 0, rx + FEATHER);
+    g.addColorStop(0, 'rgba(0,0,0,1)');
+    g.addColorStop(rx / (rx + FEATHER), 'rgba(0,0,0,1)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    lc.fillStyle = g;
+    lc.beginPath();
+    lc.arc(0, 0, rx + FEATHER, 0, Math.PI * 2);
+    lc.fill();
+    lc.restore();
+  }
   ctx.save();
-  ctx.translate(sp.x, sp.y);
-  ctx.scale(1, sp.ry / sp.rx);
-  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, sp.rx + FEATHER);
-  g.addColorStop(0, 'rgba(0,0,0,0)');
-  g.addColorStop(sp.rx / (sp.rx + FEATHER), 'rgba(0,0,0,0)');
-  g.addColorStop(1, `rgba(0,0,0,${DARK * sp.dark})`);
-  ctx.fillStyle = g;
-  ctx.fillRect(-4000, -4000, 8000, 8000);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = 1;
+  ctx.drawImage(layer, 0, 0);
   ctx.restore();
 }
 
