@@ -169,8 +169,9 @@ const STEPS = [
   // order the button has already gone past.
   { say: 'aimTap', lock: true, point: () => plotSpot(FIRST),
     done: s => !!(menuOn(s, FIRST) && menuOn(s, FIRST).tower) || aimTaps(s) > 0 },
-  // A line to read, the button shown but not yet to be pressed (`allow`).
-  { say: 'aimWhy', lock: true, spot: true, point: aimSpot, allow: () => false },
+  // A line to read: no hand and no spotlight, at the owner's word, as nothing is to be
+  // pressed — and the board locked, so the Targeting button cannot be yet.
+  { say: 'aimWhy', lock: true },
   { say: 'aimTough', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 1 },
   { say: 'aimRanged', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 2 },
   { say: 'aimBack', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 3 },
