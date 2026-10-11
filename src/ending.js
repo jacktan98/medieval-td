@@ -3,8 +3,8 @@
 //
 //   crows    the flock rises from the Dark Hollow and flies off the map
 //   fog      the dark over the world lifts
-//   road     a light runs back along the road from the Citadel to Oakhaven, each
-//            town's flag going up as it passes, and Oakhaven's bell at the end
+//   road     the road's dots turn yellow, back from the Citadel to Oakhaven, and
+//            Oakhaven's bell rings twice at the end
 //   words    the closing words, on the tutorial's paper
 //   tally    the player's own campaign in numbers
 //   credits  the credits
@@ -18,9 +18,8 @@
 // world map, over everything else there.
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 import { art } from './assets.js';
-import { play, slice, FLAG_PLANTED, BELL } from './audio.js';
+import { play, slice, BELL } from './audio.js';
 import { tutorialPaper, TUTORIAL_INK } from './render.js';
-import { drawFlag } from './overview.js';
 import { starsEarned } from './upgrades.js';
 import { MAX_STARS } from './score.js';
 import { ENDING_WORDS, TALLY_TITLE, CREDITS, SEAL_TEXT } from './data/ending.js';
@@ -93,7 +92,7 @@ function begin(state, E, part) {
 
 function over(E, part) {
   if (PART_SECONDS[part]) return E.t >= PART_SECONDS[part];
-  if (part === 'road') return E.road && E.t >= E.road.end + 1.5;
+  if (part === 'road') return E.road && E.t >= E.road.end + BELL_STROKES[BELL_STROKES.length - 1][0] + 1.5;
   if (part === 'words') return E.t >= ENDING_WORDS.length / TYPE_RATE + PANEL_HOLD;
   return E.t >= PANEL_HOLD;
 }
@@ -135,34 +134,30 @@ export function tapSeal(state, x, y) {
 // --- the road ---------------------------------------------------------------------
 //
 // Back down the road the army came up: each stage's leg walked from its far end to its
-// near one, from the Citadel to Oakhaven, at ROAD_PACE, and each flag going up as the
-// light reaches its town.
+// near one, from the Citadel to Oakhaven, at ROAD_PACE, its dots turning yellow.
 const ROAD_PACE = 240;          // px a second
 const LEG_MIN = 0.35;           // seconds, however short a leg
 const legLength = leg => leg.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - leg[i][0], p[1] - leg[i][1]), 0);
 function roadPlan() {
   const legs = [];
   let t = 0.6;
-  const flags = { [STAGE_COUNT - 1]: 0 };
   for (let i = STAGE_COUNT - 1; i >= 1; i--) {
     const leg = STAGES[i].leg;
     const d = Math.max(LEG_MIN, legLength(leg) / ROAD_PACE);
-    legs.push({ i, pts: leg.slice().reverse(), from: t, to: t + d });
+    legs.push({ i, leg, from: t, to: t + d });
     t += d;
-    flags[i - 1] = t;
   }
-  return { legs, flags, end: t, rung: {} };
+  return { legs, end: t, rung: {} };
 }
+// OAKHAVEN'S BELL as the light comes home, rung twice, at the owner's word — 2
+// strokes as the church bell on stage 8 rings them (BELL_STROKES: seconds after the
+// light arrives, and how long each is let ring).
+const BELL_STROKES = [[0, 1.8], [2.1, 1.8]];
 function stepRoad(E) {
   const R = E.road;
-  for (const [i, at] of Object.entries(R.flags)) {
-    if (E.t >= at && !R.rung[i]) {
-      R.rung[i] = true;
-      play(FLAG_PLANTED, 0.6);
-      // AND OAKHAVEN'S BELL, as the light comes home.
-      if (+i === 0) slice(BELL.key, 0, 4, 1, BELL.fade);
-    }
-  }
+  BELL_STROKES.forEach(([at, d], k) => {
+    if (E.t >= R.end + at && !R.rung[k]) { R.rung[k] = true; slice(BELL.key, 0, d, 1, BELL.fade); }
+  });
 }
 
 // --- drawing ------------------------------------------------------------------------
@@ -229,38 +224,31 @@ function drawCrows(ctx, E) {
   }
 }
 
-// THE LIGHT ALONG THE ROAD, and the gold it leaves on the dots it has passed.
-const GOLD = '#F5DB95';
+// THE ROAD TURNS YELLOW, dot by dot, back from the Citadel to Oakhaven — the very
+// dots the map draws (DOT_GAP apart from each leg's start, the same size and edge),
+// painted over in yellow, at the owner's word: no light running ahead, no new dots,
+// and no flags.
+const YELLOW = '#F4C842';
 function drawRoad(ctx, E, done) {
   const R = E.road;
   if (!R) return;
   const now = done ? Infinity : E.t;
   ctx.save();
+  ctx.lineWidth = 1.2;
+  ctx.strokeStyle = 'rgba(42,29,14,0.65)';
+  ctx.fillStyle = YELLOW;
   for (const L of R.legs) {
     if (now < L.from) continue;
     const frac = Math.min(1, (now - L.from) / (L.to - L.from));
-    const pts = dotsOf(L.pts);
-    const head = frac * (pts.length - 1);
-    pts.forEach(([x, y], j) => {
-      if (j > head) return;
-      const near = Math.max(0, 1 - (head - j) / 6) * (frac < 1 ? 1 : 0);
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = GOLD;
-      ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2); ctx.fill();
-      if (near > 0) {
-        ctx.globalAlpha = near;
-        ctx.fillStyle = '#FFF6D8';
-        ctx.beginPath(); ctx.arc(x, y, 3 + near * 3, 0, Math.PI * 2); ctx.fill();
-      }
-    });
+    // The leg's own dots, last first: the light is walking it backwards.
+    const pts = dotsOf(L.leg);
+    const lit = Math.ceil(frac * pts.length);
+    for (let j = pts.length - lit; j < pts.length; j++) {
+      const [x, y] = pts[j];
+      ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    }
   }
   ctx.restore();
-  // AND EVERY TOWN'S FLAG, going up as the light reaches it.
-  for (const [i, at] of Object.entries(R.flags)) {
-    if (now < at) continue;
-    const s = STAGES[i];
-    drawFlag(ctx, s.x, s.y, Math.min(1, (now - at) / 1.1), performance.now() / 1000 + +i);
-  }
 }
 const dotCache = new WeakMap();
 function dotsOf(pts) {

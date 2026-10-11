@@ -4,9 +4,10 @@
 
 // The closing words, on the paper panel, after the road has lit up.
 export const ENDING_WORDS =
-  'The Crow Harbinger has fallen, and the crows have left the sky for good. From the ' +
-  'Citadel to Oakhaven, every town on this road still stands because you held it. The ' +
-  'people of Oakhaven are going home, General. Rest now. You have earned it.';
+  'The Captain Thug and the Crow Harbinger have both fallen. Without their leader, the ' +
+  'thugs have laid down their weapons and gone home in peace, and the crows have left the ' +
+  'sky for good. From the Citadel to Oakhaven, every town on this road still stands because ' +
+  'you held it. The people of Oakhaven are going home, General. Rest now. You have earned it.';
 
 // The tally's heading. Its rows are the player's own numbers — see `tally` in
 // src/ending.js.
