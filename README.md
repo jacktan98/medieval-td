@@ -83,6 +83,7 @@ exit non-zero when something is wrong.
 | `readme` | every asset README still describes the folder it is in |
 | `sim` | plays whole games headless and reports what wins |
 | `sweep` | runs the sim across difficulties and prints the table |
+| `budget` | in a second rather than minutes: each wave's health, lives and bounty against what a mixed build the player could afford by then could deal to it, measured on the board's own roads |
 | `split-map` | pulls the build plots out of a map SVG |
 | `trace-road` | pulls the road out of a map SVG and writes the route |
 | `overview` | stacks the world map's layers, recolours them to parchment, lifts the region names out to a file of their own, and reads the stage markers and road lines off the guide layer |
@@ -95,8 +96,8 @@ for t in check-modules trim shadow roof families book sound audio admin siege \
          status readme pair armour confirm campaign unseen bomb gesture villager crow; do node tools/$t.mjs >/dev/null || echo "FAIL $t"; done
 ```
 
-The last five are not checks. `sim` and `sweep` answer balance questions and take
-minutes; `split-map`, `trace-road` and `overview` are run once when the artist delivers a new
+The last six are not checks. `sim` and `sweep` answer balance questions and take
+minutes, and `budget` gives a rougher answer to the same questions at once; `split-map`, `trace-road` and `overview` are run once when the artist delivers a new
 map.
 
 ## Uploading artwork
