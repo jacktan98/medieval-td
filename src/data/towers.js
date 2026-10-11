@@ -3941,13 +3941,13 @@ export const families = [
 // tools/book.mjs fails if a tower or a man on the shelf has no line here.
 export const TOWER_NOTES = {
   'Watchtower': 'A wooden lookout with a single archer. Cheap and quick to put up, it shoots steadily at ' +
-    'anything in reach, crows included. A good first tower on almost any plot.',
+    'anything in reach, flying enemies included. A good first tower on almost any plot.',
   'Archer Post': 'A sturdier post for a better archer. It shoots harder, a little faster and a little ' +
     'further than Tier 1.',
   'Crossbow Tower': 'A stone tower that holds an elite archer. The strongest of the plain archery towers, ' +
     'with the reach to cover a long stretch of road.',
   'Crossbow Sentry': 'A crossbowman on a quick reload, putting heavy quarrels into 1 target after another. ' +
-    'Like every archery tower it can shoot down crows. Its abilities stretch its reach or speed up its reload.',
+    'Like every archery tower it can shoot down flying enemies. Its abilities stretch its reach or speed up its reload.',
   'Musketeer Post': 'The longest reach of any tower. The musketeer reloads slowly, but every ball hits hard ' +
     'and breaks through 1 rank of physical armor. Set it far back and let it pick off targets from afar.',
   'Militia Camp': 'Musters 3 spearmen who stand on the road and hold enemies in place while your towers do ' +
@@ -3963,17 +3963,17 @@ export const TOWER_NOTES = {
     'first. They hit far harder than any other soldier and their blades cut through 1 rank of armor, but they ' +
     'have less health than a paladin.',
   'Catapult': 'Hurls rocks that crush everything in the blast. It reaches far, but cannot hit anything that ' +
-    'comes too close to the machine, and a rock never reaches a crow. Build it back from the road.',
+    'comes too close to the machine, and a rock never reaches a flying enemy. Build it back from the road.',
   'Mangonel': 'A bigger machine with a wider blast and more damage in every rock. It keeps the same blind ' +
     'spot up close, so give it some distance from the road.',
   'Trebuchet': 'The heaviest of the plain siege machines, with the widest blast and the longest reach of the ' +
     '3. Best behind a line of soldiers that keeps the enemy bunched together.',
   'Ballista Turret': 'A bolt thrower on a stone turret. Every bolt bursts where it lands, and unlike the other ' +
-    'machines it has no blind spot, so it can defend the road right beside it. It cannot hit crows.',
+    'machines it has no blind spot, so it can defend the road right beside it. It cannot hit flying enemies.',
   'Cannon Outpost': 'A cannon whose balls blast a wide area and break through 2 ranks of physical armor. Slow ' +
-    'to reload, but devastating against packed, armored groups. It cannot hit crows.',
+    'to reload, but devastating against packed, armored groups. It cannot hit flying enemies.',
   'Wayside Shrine': 'A priest casts bolts of magic that physical armor cannot stop, so it is the answer to ' +
-    'armored enemies. It can hit crows, but its reach is shorter than other towers\'.',
+    'armored enemies. It can hit flying enemies, but its reach is shorter than other towers\'.',
   'Chapel': 'A bishop with stronger, faster magic than Tier 1. Build it where armored enemies will pass ' +
     'within its shorter reach.',
   'Abbey': 'A cardinal whose magic hits hard enough to bring down heavy brutes on its own. The strongest of the ' +
@@ -3986,7 +3986,7 @@ export const TOWER_NOTES = {
 
 export const UNIT_NOTES = {
   'Novice Archer': 'A young archer still learning the trade. He looses an arrow every second at anything ' +
-    'in reach, crows included.',
+    'in reach, flying enemies included.',
   'Combat Archer': 'A seasoned archer who shoots harder and quicker than a novice. He stays on his post and ' +
     'cannot be reached by enemies on the road.',
   'Elite Archer': 'A veteran marksman whose arrows hit hard and fly far. The best of the plain archers.',
@@ -4016,7 +4016,7 @@ export const UNIT_NOTES = {
   'Priest': 'He casts bolts of holy magic that physical armor cannot stop. Weak against enemies warded ' +
     'against magic.',
   'Bishop': 'A senior cleric whose magic is stronger and faster than a priest\'s. Like every cleric, he ' +
-    'can hit crows.',
+    'can hit flying enemies.',
   'Cardinal': 'He calls down magic strong enough to fell armored brutes. The best of the plain clerics.',
   'Pope': 'The head of the church, casting the strongest single blast of magic in the game. It breaks through ' +
     '2 ranks of magic armor.',
