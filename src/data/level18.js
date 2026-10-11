@@ -160,7 +160,9 @@ export const level18 = {
     // the owner's word — the longer way he had, along the road, took him past the plot
     // below it, where a tower held him up before he was on it. `merge`: how far along the
     // road he runs before he is the boss (mergeOnto, src/villagers.js).
-    gate: { at: [186, 362], way: [[193, 380], [207, 398], [226, 410]], merge: 26 }
+    // `skip`: the merge starts that far along the road from its nearest spot, so he comes
+    // down onto it on one curve rather than dipping past its middle and turning back.
+    gate: { at: [186, 362], way: [[193, 380], [207, 398], [226, 410]], merge: 26, skip: 26 }
   },
   // THE CITADEL'S WALLS as one outline on the board, in game px — its two faces, off
   // Layer 3b, from the top of the walls to their foot. A crow flying off the

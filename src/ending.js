@@ -2,7 +2,7 @@
 // first time stage 16 is won, and again whenever the campaign seal is tapped.
 //
 //   crows    the flock rises from the Dark Hollow and flies off the map
-//   fog      the dark over the world lifts
+//   fog      the dark over the world lifts, and the map brightens
 //   road     stage 16's flag lifts away; the road's dots turn yellow, back from the
 //            Citadel to Oakhaven, a flag dropping on each stage as they do, and
 //            Oakhaven's bell rings twice at the end
@@ -194,6 +194,7 @@ export function drawEnding(ctx, state) {
   const part = PARTS[E.part];
   // THE ROAD STAYS LIT once it has been, under the panels that follow.
   const roadAt = PARTS.indexOf('road');
+  drawLight(ctx, E);
   drawFlags(ctx, E, roadAt);
   if (part === 'crows') drawCrows(ctx, E);
   if (part === 'words' || part === 'tally' || part === 'credits') {
@@ -207,6 +208,31 @@ export function drawEnding(ctx, state) {
     if (part === 'credits') drawCredits(ctx, E);
   }
   drawAdminDoor(ctx, 'Skip');
+}
+
+// THE WORLD BRIGHTENING as the crows go, at the owner's word ("more obvious"): the map
+// darkens while the flock is in the air, and in the fog part it lifts and a warm
+// light comes over it; the light then settles back over the first seconds of the
+// road, so the map ends as it always looks.
+const GLOOM = 0.32;            // how dark the map goes under the flock
+const GLOW = 0.22;             // how bright it goes after
+const GLOW_SETTLE = 3;         // seconds into the road part the glow takes to settle
+function drawLight(ctx, E) {
+  const part = PARTS[E.part];
+  let dark = 0, glow = 0;
+  if (part === 'crows') dark = GLOOM * ease(Math.min(1, E.t / 1.5));
+  if (part === 'fog') { const k = ease(Math.min(1, E.t / PART_SECONDS.fog)); dark = GLOOM * (1 - k); glow = GLOW * k; }
+  if (part === 'road') glow = GLOW * (1 - ease(Math.min(1, E.t / GLOW_SETTLE)));
+  if (!dark && !glow) return;
+  ctx.save();
+  if (dark) { ctx.globalAlpha = dark; ctx.fillStyle = '#120d08'; ctx.fillRect(0, 0, 960, 540); }
+  if (glow) {
+    ctx.globalCompositeOperation = 'screen';
+    ctx.globalAlpha = glow;
+    ctx.fillStyle = '#FFE7B0';
+    ctx.fillRect(0, 0, 960, 540);
+  }
+  ctx.restore();
 }
 
 // THE FLOCK: the Dark Crow's own wingbeat, small, rising out of the Dark Hollow and
