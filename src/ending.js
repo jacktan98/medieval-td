@@ -140,12 +140,11 @@ export function tapSeal(state, x, y) {
 const ROAD_PACE = 240;          // px a second
 const LEG_MIN = 0.35;           // seconds, however short a leg
 const legLength = leg => leg.slice(1).reduce((a, p, i) => a + Math.hypot(p[0] - leg[i][0], p[1] - leg[i][1]), 0);
-// THE FLAGS, at the owner's word: stage 16's lifts away first (FLAG_LIFT seconds), and
-// then one comes down on every stage as the yellow reaches it — the Citadel's first.
-const FLAG_LIFT = 0.6;
+// THE FLAGS, at the owner's word: one comes down on every stage as the yellow reaches
+// it — the Citadel's first.
 function roadPlan() {
   const legs = [];
-  let t = FLAG_LIFT + 0.3;
+  let t = 0.6;
   const flags = { [STAGE_COUNT - 1]: t };
   for (let i = STAGE_COUNT - 1; i >= 1; i--) {
     const leg = STAGES[i].leg;
@@ -178,7 +177,6 @@ export function drawEnding(ctx, state) {
   const part = PARTS[E.part];
   // THE ROAD STAYS LIT once it has been, under the panels that follow.
   const roadAt = PARTS.indexOf('road');
-  if (roadAt >= 0 && E.part >= roadAt) drawRoad(ctx, E, E.part > roadAt);
   drawFlags(ctx, E, roadAt);
   if (part === 'crows') drawCrows(ctx, E);
   if (part === 'words' || part === 'tally' || part === 'credits') {
@@ -196,12 +194,14 @@ export function drawEnding(ctx, state) {
 
 // THE FLOCK: the Dark Crow's own wingbeat, small, rising out of the Dark Hollow and
 // away off the bottom right of the map.
-const FLOCK = 48;
+const FLOCK = 64;
 const CROW_FRAMES = [['crow', [217, 180, 78, 60]], ['crow_flap1', [217, 199, 78, 41]], ['crow_flap2', [217, 212, 78, 51]], ['crow_flap1', [217, 199, 78, 41]]];
 const CROW_W = 8;
 function drawCrows(ctx, E) {
   if (!E.crows) {
-    const homes = [STAGE_COUNT - 3, STAGE_COUNT - 2, STAGE_COUNT - 1].map(i => STAGES[i]);
+    // THE DARK HOLLOW'S 3 STAGES, and its top left corner too, at the owner's word.
+    const homes = [...[STAGE_COUNT - 3, STAGE_COUNT - 2, STAGE_COUNT - 1].map(i => STAGES[i]),
+                   { x: 635, y: 398 }, { x: 690, y: 386 }];
     // Laid out the same every time, so the ending looks the same every time.
     let seed = 7;
     const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -235,77 +235,43 @@ function drawCrows(ctx, E) {
   }
 }
 
-// THE ROAD TURNS YELLOW, dot by dot, back from the Citadel to Oakhaven — the very
-// dots the map draws (DOT_GAP apart from each leg's start, the same size and edge),
-// painted over in yellow, at the owner's word: no light running ahead and no new
-// dots. (The flags are drawFlags, below.)
-const YELLOW = '#F4C842';
-function drawRoad(ctx, E, done) {
-  const R = E.road;
-  if (!R) return;
-  const now = done ? Infinity : E.t;
-  ctx.save();
-  ctx.lineWidth = 1.2;
-  ctx.strokeStyle = 'rgba(42,29,14,0.65)';
-  ctx.fillStyle = YELLOW;
-  for (const L of R.legs) {
-    if (now < L.from) continue;
-    const frac = Math.min(1, (now - L.from) / (L.to - L.from));
-    // The leg's own dots, last first: the light is walking it backwards.
-    const pts = dotsOf(L.leg);
-    const lit = Math.ceil(frac * pts.length);
-    for (let j = pts.length - lit; j < pts.length; j++) {
-      const [x, y] = pts[j];
-      ctx.beginPath(); ctx.arc(x, y, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-    }
-  }
-  ctx.restore();
+// THE ROAD TURNS YELLOW, dot by dot, back from the Citadel to Oakhaven — the map's
+// own dots, recoloured where the map draws them (under the medallions, the flags and
+// the stars), at the owner's word: nothing new drawn over anything. `yellowFrom` is
+// asked by src/overview.js for each stage's leg: the first dot that is yellow.
+const dotCount = leg => Math.floor(legLength(leg) / 10) + 1;
+export function yellowFrom(state, i) {
+  const E = state.ending;
+  if (!E || !E.road) return Infinity;
+  const roadAt = PARTS.indexOf('road');
+  if (E.part > roadAt) return 0;
+  const L = E.road.legs.find(l => l.i === i);
+  if (!L || E.t < L.from) return Infinity;
+  const n = dotCount(L.leg);
+  const frac = Math.min(1, (E.t - L.from) / (L.to - L.from));
+  return n - Math.ceil(frac * n);
 }
+
 // THE FLAGS AND THE STARS, drawn here while the ending plays (the map leaves both to
 // it): stage 16's flag as the map has it until the road part, lifting away as it
 // begins; then a flag dropping on each stage as the yellow reaches it. Every stage's
 // stars go over its flag, so a flag never covers them.
 function drawFlags(ctx, E, roadAt) {
-  const last = STAGE_COUNT - 1, wave = performance.now() / 1000;
+  const wave = performance.now() / 1000;
   const before = roadAt < 0 || E.part < roadAt, during = E.part === roadAt;
   const R = E.road;
   for (let i = 0; i < STAGE_COUNT; i++) {
     const s = STAGES[i];
     let top = null;
-    if (before) {
-      if (i === last) top = drawFlag(ctx, s.x, s.y, 1, wave);
-    } else {
-      if (i === last && during && E.t < FLAG_LIFT) {
-        // Up and away, fading.
-        const k = E.t / FLAG_LIFT;
-        ctx.save();
-        ctx.globalAlpha = 1 - k;
-        ctx.translate(0, -40 * k * k);
-        drawFlag(ctx, s.x, s.y, 1, wave);
-        ctx.restore();
-      }
+    // (NO FLAG ON STAGE 16 BEFORE THE ROAD PART, at the owner's word: the map has
+    // none there once the campaign is won — see src/overview.js.)
+    if (!before) {
       const at = R && R.flags[i];
       const now = during ? E.t : Infinity;
       if (at !== undefined && now >= at) top = drawFlag(ctx, s.x, s.y, Math.min(1, (now - at) / 1.1), wave + i);
     }
     drawStageStars(ctx, i, top);
   }
-}
-
-const dotCache = new WeakMap();
-function dotsOf(pts) {
-  let d = dotCache.get(pts);
-  if (d) return d;
-  d = [];
-  let next = 0, walked = 0;
-  for (let i = 1; i < pts.length; i++) {
-    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], seg = Math.hypot(x1 - x0, y1 - y0);
-    if (!seg) continue;
-    while (next <= walked + seg) { const f = (next - walked) / seg; d.push([x0 + (x1 - x0) * f, y0 + (y1 - y0) * f]); next += 10; }
-    walked += seg;
-  }
-  dotCache.set(pts, d);
-  return d;
 }
 
 // --- the paper panels ----------------------------------------------------------------

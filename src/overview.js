@@ -36,6 +36,7 @@ import { drawLife, drawPristine } from './life.js';
 // they go through setLoop rather than being started and stopped by hand — see the
 // note above it in src/audio.js.
 import { setLoop, solo, FLAG_PLANTED } from './audio.js';
+import { yellowFrom, endingSeen } from './ending.js';
 
 // --- how much of the road is open -------------------------------------------
 
@@ -402,12 +403,17 @@ function alongLeg(leg, frac, fn) {
   }
 }
 
-function drawTrail(ctx, leg, frac) {
+// `yellow`: the dot from which on they are the ending's yellow — see src/ending.js —
+// drawn here, in the road's own place under the medallions and the flags, rather than
+// over the top of them.
+const ROAD_YELLOW = '#F4C842';
+function drawTrail(ctx, leg, frac, yellow = Infinity) {
   ctx.save();
   ctx.lineWidth = 1.2;
   ctx.strokeStyle = 'rgba(42,29,14,0.65)';
-  ctx.fillStyle = '#F6E7C1';
+  let n = 0;
   alongLeg(leg, frac, (x, y) => {
+    ctx.fillStyle = n++ >= yellow ? ROAD_YELLOW : '#F6E7C1';
     ctx.beginPath();
     ctx.arc(x, y, DOT_R, 0, Math.PI * 2);
     ctx.fill();
@@ -1447,7 +1453,7 @@ export function drawOverview(ctx, state) {
     // it means the last third of every road is walked slower than the first. The
     // fraction here is fraction of ARC LENGTH, so a straight t is a straight pace.
     // The arrival still has its beat — the flag drops, overshoots and settles.
-    drawTrail(ctx, STAGES[i].leg, live && r.phase === 'road' ? r.t : 1);
+    drawTrail(ctx, STAGES[i].leg, live && r.phase === 'road' ? r.t : 1, yellowFrom(state, i));
   }
 
   // The medallions. A stage still having its road drawn has not been arrived at
@@ -1463,7 +1469,10 @@ export function drawOverview(ctx, state) {
   // lands on the dots, under the medallions and the flag so it cannot outshine
   // either, and only while the map is at rest — during a march the road is already
   // drawing itself and a second travelling light on the same line is a fight.
-  if (frontier >= 0 && !r && state.stage === null) drawPulse(ctx, now, STAGES[frontier].leg);
+  // (NOT ONCE THE CAMPAIGN IS OVER, at the owner's word: there is nowhere left to go,
+  // so neither the light nor the flag below points anywhere.)
+  const over = endingSeen() || !!state.pendingEnding;
+  if (frontier >= 0 && !r && state.stage === null && !over) drawPulse(ctx, now, STAGES[frontier].leg);
 
   // The flag sits on the furthest stage reached, which is the one the player is
   // being pointed at. It waves off wall-clock time so it is alive on a screen
@@ -1471,7 +1480,7 @@ export function drawOverview(ctx, state) {
   let flagTop = null;
   // WHILE THE ENDING PLAYS, it draws the flags and the stars itself — see src/ending.js.
   const ending = !!state.ending;
-  if (frontier >= 0 && !ending && !(r && r.stage === frontier && r.phase === 'road')) {
+  if (frontier >= 0 && !ending && !over && !(r && r.stage === frontier && r.phase === 'road')) {
     const t = r && r.stage === frontier && r.phase === 'flag' ? r.t : 1;
     flagTop = drawFlag(ctx, STAGES[frontier].x, STAGES[frontier].y, t,
       performance.now() / 1000);
