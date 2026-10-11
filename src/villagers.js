@@ -1432,6 +1432,7 @@ function hollowRound(state, vp, dt) {
 //            and his slot is empty again.
 // Waves are counted as they BEGIN — the first enemy of a wave on the board.
 const SAY_WAIT = 4;
+const ENTER_LINE_WAIT = 1;    // seconds into stages 15 and 16 before the boss's first line
 function musterRound(state, vp, m, dt) {
   const cardOf = type => ({ title: enemyTypes[type].name, sprite: enemyTypes[type].sprite,
                             trim: enemyTypes[type].spriteTrim });
@@ -1451,6 +1452,8 @@ function musterRound(state, vp, m, dt) {
   // speaking — is asked for again every frame for up to SAY_WAIT seconds, rather
   // than lost. A newer line replaces one still waiting.
   const say = cue => { vp.say = { cue, until: vp.t + SAY_WAIT }; };
+  // A LINE THAT WAITS (`sayLater`): asked for once its moment has come.
+  if (vp.sayLater && vp.t >= vp.sayLater.at) { say(vp.sayLater.cue); vp.sayLater = null; }
   if (vp.say) {
     if (gate('muster_say', solo(vp.say.cue, true, true, true)) || vp.t > vp.say.until) vp.say = null;
   }
@@ -1538,8 +1541,9 @@ function musterRound(state, vp, m, dt) {
       // Out of sight off the left edge, on his own row, and in.
       Object.assign(v, { x: m.from, y: at.y, leg: 0, hidden: false, live: true, alpha: 1 });
       c.phase = 'come';
-      // THE CAPTAIN'S ENTRANCE LINE as he walks in, when the stage starts.
-      if (who === m.captain) say(BOSS_ENTERS);
+      // THE CAPTAIN'S ENTRANCE LINE as he walks in, when the stage starts — a second
+      // after it does, at the owner's word.
+      if (who === m.captain) vp.sayLater = { cue: BOSS_ENTERS, at: vp.t + ENTER_LINE_WAIT };
     }
     if (c.phase === 'come') {
       v.hidden = false;
@@ -1803,18 +1807,26 @@ function joinAt(ri, s) {
 //            where he is spawned as the boss (`vp.turned`, quietly — he has spoken).
 // Until he has, the board cannot be won (`vp.holdWin`, read by src/waves.js).
 const PERCH_RETRY = 1;
+const OUT_FROM = 1;           // how far inside the doorway he starts, in door-to-spot lengths
 function balconyRound(state, vp, b, dt) {
   const at = (level.villagers || [])[b.who];
   const spot = level.balcony;
   if (!at || !spot) return;
   if (!vp.balcony) {
-    vp.balcony = { phase: 'perch', begun: 0, plan: null };
-    state.perched = makePerched(state, 'crow_harbinger', at.x, at.y, 1);
+    // OUT OF THE BALCONY'S DOORWAY as the stage begins, at the owner's word: faded in
+    // a little way inside it (`OUT_FROM` of the way from his spot to the door, beyond
+    // the door) and a short walk out to his spot — `out`, below.
+    const [dx, dy] = spot.door[spot.door.length - 1];
+    const from = [dx + (dx - at.x) * OUT_FROM, dy + (dy - at.y) * OUT_FROM];
+    vp.balcony = { phase: 'out', begun: 0, plan: null, at: vp.t, leg: 0 };
+    state.perched = makePerched(state, 'crow_harbinger', from[0], from[1], 1);
+    state.perched.alpha = 0;
     // Drawn at the depth the level gives him up there — in front of the citadel's wall.
     state.perched.g = at.g;
-    // AND HIS LINE AS THE STAGE BEGINS, at the owner's word, asked for until it is heard.
+    // AND HIS LINE AS THE STAGE BEGINS, a second after it does, at the owner's word —
+    // and then asked for until it is heard.
     const start = state.perched.def.lines && state.perched.def.lines.start;
-    if (start) vp.say = { cue: start, until: vp.t + 4 };
+    if (start) vp.sayLater = { cue: start, at: vp.t + ENTER_LINE_WAIT };
     vp.holdWin = true;
   }
   const B = vp.balcony, e = state.perched;
@@ -1822,6 +1834,7 @@ function balconyRound(state, vp, b, dt) {
 
   // HIS LINES MUST BE HEARD, as the Captain's are: asked for again every frame for a
   // few seconds rather than lost to whatever else is speaking.
+  if (vp.sayLater && vp.t >= vp.sayLater.at) { vp.say = { cue: vp.sayLater.cue, until: vp.t + 4 }; vp.sayLater = null; }
   if (vp.say) {
     if (gate('balcony_say', solo(vp.say.cue, true, true, true)) || vp.t > vp.say.until) vp.say = null;
   }
@@ -1840,7 +1853,13 @@ function balconyRound(state, vp, b, dt) {
   const running = B.plan && state.waveIndex === B.plan.wave - 1 && !state.resting;
   if (B.plan && !running) B.plan = null;
 
-  if (B.phase === 'perch') {
+  if (B.phase === 'out') {
+    e.alpha = Math.min(1, (vp.t - B.at) / DOOR_FADE);
+    if (walkFig(e, [[at.x, at.y]], b.walk, dt, B)) {
+      Object.assign(e, { x: at.x, y: at.y, alpha: 1, face: 1 });
+      B.phase = 'perch';
+    }
+  } else if (B.phase === 'perch') {
     perchTick(state, e, dt);
     const P = B.plan;
     if (P && P.left > 0 && vp.t >= P.next) {
