@@ -33,7 +33,7 @@ export const ACHIEVEMENTS = [
   { id: 'book', name: 'Patron of the Arts', icon: null, goal: 70,
     text: '{Click} on every picture in the Encyclopedia to see it up close.' },
   { id: 'villagers', name: 'Friend of the People', icon: null, goal: 100,
-    text: '{Click} on villagers 100 times.' },
+    text: '{Click} on villagers 100 times. Thugs do not count.' },
   { id: 'offroad', name: 'No Stone Unturned', icon: null, goal: 17,
     text: '{Click} on every enemy waiting off the road on stages 14, 15 and 16.' },
   { id: 'tier4', name: 'Grand Arsenal', icon: null, goal: 8,

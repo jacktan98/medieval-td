@@ -163,7 +163,7 @@ export function draw(ctx, state) {
   if (state.admin) drawAdmin(ctx, state);
 
   // AN ACHIEVEMENT JUST EARNED, top right, over whatever is up. See src/achievements.js.
-  drawAchievementToast(ctx, state);
+  drawAchievementToast(ctx);
 }
 
 // The painted board. The road, the ground and the plot markers all live in this
@@ -7365,9 +7365,12 @@ function drawAchievementPanel(ctx, state) {
 // THE POP-UP: old paper at the top right with the icon, the name and the words, for
 // a few seconds, then fading — at the owner's word. On the wall clock, so it fades on
 // a paused game too. One at a time; the next waits for this one to go.
-// ON THE BOARD IT HANGS BELOW THE TOP BAR, clear of Pause, the speed and Next Wave.
-const TOAST = { w: 330, right: 12, top: 12, topInGame: 46, in: 0.35, hold: 4, out: 0.8 };
-function drawAchievementToast(ctx, state) {
+//
+// SMALL, AND BESIDE NEXT WAVE, at the owner's word: it fills the gap between that
+// button's right end (678) and the board's edge, from the top bar down, so it covers
+// none of the buttons — the same place on the world map.
+const TOAST = { w: 258, right: 10, top: 5, in: 0.35, hold: 4, out: 0.8 };
+function drawAchievementToast(ctx) {
   const t = toasts[0];
   if (!t) return;
   const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
@@ -7377,28 +7380,28 @@ function drawAchievementToast(ctx, state) {
   const a = byId(t.id);
   if (!a) { toasts.shift(); return; }
   const alpha = k < TOAST.in ? k / TOAST.in : k > TOAST.in + TOAST.hold ? 1 - (k - TOAST.in - TOAST.hold) / TOAST.out : 1;
-  const drop = (1 - Math.min(1, k / TOAST.in)) * -14;
+  const drop = (1 - Math.min(1, k / TOAST.in)) * -10;
 
   ctx.save();
-  ctx.font = `15px ${MAP_TYPE}`;
-  const ICON = 54, PAD = 14, textX = PAD + ICON + 12, textW = TOAST.w - textX - PAD;
+  ctx.font = `12px ${MAP_TYPE}`;
+  const ICON = 38, PAD = 9, textX = PAD + ICON + 8, textW = TOAST.w - textX - PAD;
   const lines = wrapIn(ctx, verbs(a.text), textW);
-  const h = Math.max(ICON + PAD * 2, 58 + lines.length * 19 + 6);
-  const x = 960 - TOAST.right - TOAST.w, y = (state.started ? TOAST.topInGame : TOAST.top) + drop;
+  const h = Math.max(ICON + PAD * 2, 40 + lines.length * 14 + 4);
+  const x = 960 - TOAST.right - TOAST.w, y = TOAST.top + drop;
   ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
   tutorialPaper(ctx, x, y, TOAST.w, h);
   achievementFace(ctx, a, x + PAD + ICON / 2, y + h / 2, ICON, true, true);
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_MUTED;
-  ctx.font = `14px ${MAP_TYPE}`;
-  ctx.fillText(UNLOCKED_TITLE, x + textX, y + 18);
+  ctx.font = `11px ${MAP_TYPE}`;
+  ctx.fillText(UNLOCKED_TITLE, x + textX, y + 12);
   ctx.fillStyle = UP_NAME;
-  ctx.font = `20px ${MAP_TYPE}`;
-  ctx.fillText(a.name, x + textX, y + 39);
+  ctx.font = `16px ${MAP_TYPE}`;
+  ctx.fillText(a.name, x + textX, y + 27);
   ctx.fillStyle = TUTORIAL_INK;
-  ctx.font = `15px ${MAP_TYPE}`;
-  lines.forEach((line, i) => ctx.fillText(line, x + textX, y + 62 + i * 19));
+  ctx.font = `12px ${MAP_TYPE}`;
+  lines.forEach((line, i) => ctx.fillText(line, x + textX, y + 44 + i * 14));
   ctx.restore();
 }
 
