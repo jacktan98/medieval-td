@@ -258,14 +258,16 @@ export function mapAudio(state) {
   const opened = state.stage !== null && state.stage !== undefined;
   const idle = onMap && !opened && !state.reveal;
   const frontier = Math.max(0, Math.min(state.unlocked ?? 0, STAGE_COUNT) - 1);
-  const which = !onMap || marching ? -1 : opened ? state.stage : frontier;
+  // AND NOTHING WHILE THE ENDING PLAYS, at the owner's word — no Dark Hollow, no crows.
+  const ending = !!(state.ending || state.pendingEnding);
+  const which = !onMap || marching || ending ? -1 : opened ? state.stage : frontier;
   const want = which >= 0 && playable(which) ? levels[STAGES[which].level].ambience || [] : [];
   for (const clip of MAP_AMBIENT) {
     const a = want.find(x => x.clip === clip);
     setLoop(clip, !!a, a ? a.level : 1, `map_${clip}`);
   }
   setLoop('marching', marching);
-  setLoop('flag_waving', idle);
+  setLoop('flag_waving', idle && !ending);
 }
 
 // FISH IN THE RIVER UNDER OAKHAVEN'S MOUNTAINS, at the owner's ask: "add some fishes
