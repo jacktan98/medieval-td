@@ -3948,7 +3948,7 @@ export const TOWER_NOTES = {
     'with the reach to cover a long stretch of road.',
   'Crossbow Sentry': 'A crossbowman on a quick reload, putting heavy quarrels into 1 target after another. ' +
     'Like every archery tower it can shoot down flying enemies. Its abilities stretch its reach or speed up its reload.',
-  'Musketeer Post': 'The longest reach of any tower. The musketeer reloads slowly, but every ball hits hard ' +
+  'Musketeer Post': 'The longest reach of any tower. The musketeer reloads slowly, but every bullet hits hard ' +
     'and breaks through 1 rank of physical armor. Set it far back and let it pick off targets from afar.',
   'Militia Camp': 'Musters 3 spearmen who stand on the road and hold enemies in place while your towers do ' +
     'the work. A fallen man is replaced after a short wait, and the wounded slowly heal. Select the tower to ' +
