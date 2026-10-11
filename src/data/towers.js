@@ -3962,12 +3962,13 @@ export const TOWER_NOTES = {
   'Assassin Guild': 'Musters 3 assassins who stay unseen until they strike, so enemies cannot single them out ' +
     'first. They hit far harder than any other soldier and their blades cut through 1 rank of armor, but they ' +
     'have less health than a paladin.',
-  'Catapult': 'Hurls rocks that crush everything in the blast. It reaches far, but cannot hit anything that ' +
-    'comes too close to the machine, and a rock never reaches a flying enemy. Build it back from the road.',
-  'Mangonel': 'A bigger machine with a wider blast and more damage in every rock. It keeps the same blind ' +
-    'spot up close, so give it some distance from the road.',
-  'Trebuchet': 'The heaviest of the plain siege machines, with the widest blast and the longest reach of the ' +
-    '3. Best behind a line of soldiers that keeps the enemy bunched together.',
+  'Catapult': 'A catapult that hurls rocks that crush everything in the blast. It reaches far, but cannot ' +
+    'hit anything that comes too close to the machine, and a rock never reaches a flying enemy. Build it ' +
+    'back from the road.',
+  'Mangonel': 'A mangonel with a wider blast and more damage in every rock. It keeps the same blind spot ' +
+    'up close, so give it some distance from the road.',
+  'Trebuchet': 'A trebuchet, the heaviest of the plain siege machines, with the widest blast and the ' +
+    'longest reach of the 3. Best behind a line of soldiers that keeps the enemy bunched together.',
   'Ballista Turret': 'A bolt thrower on a stone turret. Every bolt bursts where it lands, and unlike the other ' +
     'machines it has no blind spot, so it can defend the road right beside it. It cannot hit flying enemies.',
   'Cannon Outpost': 'A cannon whose balls blast a wide area and break through 2 ranks of physical armor. Slow ' +
@@ -3992,7 +3993,7 @@ export const UNIT_NOTES = {
   'Elite Archer': 'A veteran marksman whose arrows hit hard and fly far. The best of the plain archers.',
   'Crossbowman': 'He winds his crossbow quickly and puts a heavy quarrel into a single target with every ' +
     'shot. Steady damage, shot after shot.',
-  'Musketeer': 'Slow to reload, but his musket reaches further than any other weapon. Every ball punches ' +
+  'Musketeer': 'Slow to reload, but his musket reaches further than any other weapon. Every bullet punches ' +
     'through 1 rank of physical armor.',
   'Spearman': 'A militiaman with a spear. He stands his ground to hold enemies up, but does little damage on ' +
     'his own.',
