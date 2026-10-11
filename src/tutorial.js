@@ -169,9 +169,10 @@ const STEPS = [
   // order the button has already gone past.
   { say: 'aimTap', lock: true, point: () => plotSpot(FIRST),
     done: s => !!(menuOn(s, FIRST) && menuOn(s, FIRST).tower) || aimTaps(s) > 0 },
-  // A line to read: no hand and no spotlight, at the owner's word, as nothing is to be
-  // pressed — and the board locked, so the Targeting button cannot be yet.
-  { say: 'aimWhy', lock: true },
+  // A line to read, the Targeting button in the spotlight but with no hand and no
+  // pulsing ring (`bare`), at the owner's word, as nothing is to be pressed yet — and
+  // nothing may be (`allow`).
+  { say: 'aimWhy', lock: true, spot: true, bare: true, point: aimSpot, allow: () => false },
   { say: 'aimTough', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 1 },
   { say: 'aimRanged', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 2 },
   { say: 'aimBack', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 3 },
@@ -636,7 +637,7 @@ function drawLine(ctx, state, tut, BOX) {
     });
     ctx.globalAlpha = 1;
   }
-  const sp = tut.leaving === null && step.point && step.point(state);
+  const sp = tut.leaving === null && !step.bare && step.point && step.point(state);
   if (sp) arrowAt(ctx, sp, tut.t);
   // More hands, only to show, where `point` is also the one a locked step lets through.
   if (sp && step.marks) for (const m of step.marks(state)) arrowAt(ctx, m, tut.t);
