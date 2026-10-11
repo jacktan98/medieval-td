@@ -8,7 +8,8 @@ be listed in the table below as it is wired in.
 ## Names
 
 `Achievement_<Name>_Icon.svg` (or `.png`), where `<Name>` is the achievement's name
-in words joined by underscores, for example `Achievement_Flawless_Victory_Icon.svg`.
+in words joined by underscores: "Flawless Victory" would be
+`Achievement_Flawless_Victory_Icon`, with `.svg` or `.png` on the end.
 One file per achievement. A file named this way can be matched to its achievement
 without anything else to look up.
 
