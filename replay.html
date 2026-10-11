@@ -36,7 +36,15 @@
   #drift { color: #f0a090; white-space: nowrap; }
   #bar a { color: #d9a35f; white-space: nowrap; }
   #msg { position: fixed; inset: 0; display: none; place-items: center; text-align: center; padding: 24px; }
-  @media (max-width: 640px) { #info, .spd-x { display: none; } }
+  #bar .spd { display: flex; gap: 4px; }
+  @media (max-width: 640px) { #info, .spd-x { display: none; } #bar { gap: 6px; padding: 0 8px; } #bar button { min-width: 30px; padding: 5px 6px; } }
+  /* A PHONE HELD UPRIGHT: the timeline on a row of its own, under the buttons. */
+  @media (max-width: 520px) {
+    #bar { height: 96px; flex-wrap: wrap; align-content: center; row-gap: 8px; }
+    #wrap { bottom: 96px; }
+    canvas { width: min(100vw, calc((100vh - 96px) * 16 / 9)); }
+    #seek { order: 10; flex-basis: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -44,7 +52,7 @@
   <div id="bar">
     <button id="play" aria-label="Pause">❚❚</button>
     <span class="spd">
-      <button data-speed="1" class="on">1x</button><button data-speed="2">2x</button><button data-speed="4">4x</button><button data-speed="8" class="spd-x">8x</button>
+      <button data-speed="0.25" class="spd-slow">¼x</button><button data-speed="0.5">½x</button><button data-speed="1" class="on">1x</button><button data-speed="2">2x</button><button data-speed="4">4x</button><button data-speed="8" class="spd-x">8x</button>
     </span>
     <input id="seek" type="range" min="0" max="1" value="0" aria-label="Timeline">
     <span id="time">0:00</span>
