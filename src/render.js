@@ -57,6 +57,7 @@ import { rungState, canBuy, starsLeft, boughtIn } from './upgrades.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
 import { drawTutorial, drawMapTour } from './tutorial.js';
+import { drawEnding } from './ending.js';
 import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS, towerNamed } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
 
@@ -136,8 +137,11 @@ export function draw(ctx, state) {
   // is not accepting the taps it normally would, and a dimmed board is how that
   // is said.
   if (!state.started) drawStart(ctx, state);
+  // THE ENDING, once stage 16 is won, over the world map — or, after it, the seal that
+  // plays it again. See src/ending.js.
+  if (!state.started && !state.book && !state.upgrades && !state.admin) drawEnding(ctx, state);
   // The world map's tour after stage 1: its line and its arrow. See src/tutorial.js.
-  if (!state.started) drawMapTour(ctx, state);
+  if (!state.started && !state.ending) drawMapTour(ctx, state);
   else if (state.result) drawResult(ctx, state);
   // And the new-enemy card over the board it stopped.
   else if (state.foeCard) drawFoeCard(ctx, state);

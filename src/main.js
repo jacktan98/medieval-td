@@ -26,6 +26,7 @@ import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
 import { makeTutorial, updateTutorial, makeMapTour, updateMapTour } from './tutorial.js';
 import { track, watchGame, gameVersion } from './analytics.js';
+import { noteBattle, startEnding, updateEnding, lastStage, endingSeen } from './ending.js';
 import { seedRng, newSeed } from './rng.js';
 import { startRecording, stopRecording, recording, replaying, afterStep, duePresses, startPlayback, ended, drift } from './replay.js';
 import { tap } from './input.js';
@@ -532,6 +533,8 @@ function frame(now) {
   if (state.result && !state.summary) {
     // The recording ends with the game. See src/replay.js.
     stopRecording(state, state.result);
+    // THE PLAYER'S CAMPAIGN, for the ending's tally — see src/ending.js.
+    if (!REPLAY) noteBattle(state, level.startLives);
     state.summary = finish(state, level, DIFFICULTIES[state.difficultyIndex]);
 
     // AND THE PANEL ANNOUNCES ITSELF. Here rather than in `finish` because finish
@@ -557,6 +560,9 @@ function frame(now) {
     if (state.result === 'won' && state.tutorial) state.mapTour = makeMapTour();
     if (state.result === 'won') {
       const here = stageOfLevel(state.levelIndex);
+      // THE LAST STAGE WON: the ending plays on the world map, the first time. See
+      // src/ending.js.
+      if (here !== null && lastStage(here) && !endingSeen() && !REPLAY) state.pendingEnding = true;
       if (here !== null && here + 1 === state.unlocked && state.unlocked < STAGE_COUNT) {
         state.unlocked += 1;
         saveUnlocked(state.unlocked);
@@ -570,7 +576,15 @@ function frame(now) {
   // so the fast-forward multiplier has no business touching it.
   if (!state.started) stepReveal(state, real);
   // And the world map's tour of the encyclopedia and the upgrades, once stage 1 is won.
-  if (!state.started) updateMapTour(state, real);
+  if (!state.started && !state.ending) updateMapTour(state, real);
+  // THE ENDING, on the world map, once the board behind it is gone and the map is at
+  // rest. See src/ending.js.
+  if (!state.started && state.pendingEnding && (state.stage === null || state.stage === undefined) &&
+      !state.reveal && state.book === null && !state.upgrades && !state.admin) {
+    state.pendingEnding = false;
+    startEnding(state);
+  }
+  if (!state.started && !state.book && !state.upgrades) updateEnding(state, real);
   // THE PLAYER LOG's stage starts, waves and results — see src/analytics.js.
   watchGame(state);
 

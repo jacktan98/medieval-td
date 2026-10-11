@@ -584,7 +584,7 @@ function drawStars(ctx, cx, cy, filled) {
 // THE FLAG, on the furthest stage reached. `t` is how planted it is: 0 while it
 // is still falling, 1 once it has settled. `wave` is wall-clock seconds and only
 // moves the cloth.
-function drawFlag(ctx, x, y, t, wave) {
+export function drawFlag(ctx, x, y, t, wave) {
   const k = plant(t);
   // IT FALLS FROM ABOVE AND LANDS, at the owner's word — it used to start below
   // the medallion and rise into place, which read as popping up out of the ground.
@@ -1410,7 +1410,14 @@ export function drawOverview(ctx, state) {
   // drawing including the names — a region nobody has reached should not be
   // announcing itself — and under everything the game draws, because the trail, the
   // medallions and the flag are the interface and are never in shadow.
-  spread(fog);
+  // LIFTED BY THE ENDING (`fogLift`, src/ending.js): the world at peace.
+  const lift = state.fogLift || 0;
+  if (lift < 1) {
+    ctx.save();
+    ctx.globalAlpha = 1 - lift;
+    spread(fog);
+    ctx.restore();
+  }
 
   // WHATEVER IS ALLOWED THROUGH THE DARK. The water used to be, and no longer is —
   // it runs under the fog now, so only water the player has reached moves; see

@@ -47,6 +47,8 @@ export const PIN = '1349';
 // left to rot, without a single other line of this project changing.
 const PARTY_PIN = '2208';
 const PARTY_HREF = 'birthday/';
+// AND A THIRD: the campaign's ending, played on the world map — see src/ending.js.
+const ENDING_PIN = '1600';
 
 import { levels } from './level.js';
 import { enemyTypes, MARCH_ORDER, defaultGap } from './data/waves.js';
@@ -54,6 +56,7 @@ import { families } from './data/towers.js';
 import { resetProgress, clearStars, saveUnlocked, bestStars, setStars, MAX_STARS } from './score.js';
 import { forgetFoes, forgetTowers } from './newfoe.js';
 import { forgetIntro } from './tutorial.js';
+import { forgetEnding, startEnding } from './ending.js';
 import { resetUpgrades } from './upgrades.js';
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 // The difficulties themselves, and the two rules that turn a tuned Hard number
@@ -1394,6 +1397,8 @@ export function tapAdmin(state, x, y, restart) {
         else if (a.typed === PARTY_PIN && typeof location !== 'undefined') {
           location.href = PARTY_HREF;
         }
+        // A LOOK AT THE ENDING, for the owner, without winning stage 16 first.
+        else if (a.typed === ENDING_PIN) { closeAdmin(state); startEnding(state); }
         else { a.wrong = true; a.typed = ''; }
       }
       return true;
@@ -1462,6 +1467,9 @@ export function tapAdmin(state, x, y, restart) {
     // AND THE WORLD MAP POINTS AT STAGE 1 AGAIN, as for a new player. See src/tutorial.js.
     forgetIntro();
     state.mapTour = null;
+    // AND THE ENDING IS UNSEEN AGAIN, its seal gone and the fog back. See src/ending.js.
+    forgetEnding();
+    state.ending = null;
     // AND EVERY STAR SPENT ON UPGRADES COMES BACK — there are no stars left to
     // have spent. See src/upgrades.js.
     resetUpgrades();

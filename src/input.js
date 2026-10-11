@@ -24,6 +24,7 @@ import { DIFFICULTIES } from './data/difficulty.js';
 import { saveDifficulty } from './score.js';
 import { track, where, layerOf, trackLeave } from './analytics.js';
 import { recordInput, recording, stopRecording } from './replay.js';
+import { tapEnding, tapSeal } from './ending.js';
 
 // WHICH BUTTON A TAP PRESSED, named by the branch that answered it, for the player
 // log (src/analytics.js). `press` marks it and passes the branch's own answer on.
@@ -267,6 +268,9 @@ export function tap(state, x, y, restart) {
     // and a player who has not is never made to sit through it twice by a stray
     // tap that did nothing.
     if (skipReveal(state)) return press('skip_reveal');
+    // THE ENDING TAKES EVERY TAP while it plays, and its seal replays it. See src/ending.js.
+    if (state.ending) return press('ending', tapEnding(state, x, y));
+    if ((state.stage === null || state.stage === undefined) && tapSeal(state, x, y)) return press('ending_seal');
     // THE WORLD MAP'S TOUR, after stage 1, lets only what its arrow is on be pressed
     // (and the dashboard). See src/tutorial.js.
     if (!mapTourAllows(state, x, y) && !inside(ADMIN_BTN, x, y)) return press('tour_blocked', false);
