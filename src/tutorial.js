@@ -31,7 +31,7 @@ import { sealOf } from './score.js';
 import { alertRects } from './newfoe.js';
 import { SQUASH } from './ground.js';
 import { HUD_BTN, HUD_ICONS, tutorialPaper, TUTORIAL_INK } from './render.js';
-import { BTN_R, HIT_R } from './menu.js';
+import { BTN_R, HIT_R, closeMenu } from './menu.js';
 import { chime, CUE } from './audio.js';
 import { art } from './assets.js';
 import { ui } from './data/ui.js';
@@ -55,6 +55,11 @@ const SAY = {
   plot1:    '{Click} on the empty plot to build a tower to defend the village.',
   archery:  'The Archery tower is reliable and shoots enemies from afar.',
   shadow:   'To select a tower, {click} its shadow on the ground. {Clicking} the top of the tower will not select it.',
+  aimTap:   'Now {click} your archery tower\'s shadow to select it and change its targeting.',
+  aimWhy:   'By default, Archery and Monastery towers attack the enemy closest to the exit.',
+  aimTough: '{Click} the Targeting button to attack the enemy with the most health instead.',
+  aimRanged: '{Click} it again to attack ranged enemies first.',
+  aimBack:  '{Click} it once more to go back to the enemy closest to the exit.',
   plot2:    '{Click} on the empty plot to build another tower to defend the village.',
   barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
   rallyTap: '{Click} your barracks again to adjust its rally point.',
@@ -99,6 +104,15 @@ const rallied = (s, tut) => {
 };
 
 // What the first archery tower's next rung costs, less the gold in hand.
+// THE ARCHERY TOWER'S TARGETING BUTTON, pointed at from below as the Rally button is
+// — it sits in the same south slot — or the tower, while its menu is shut.
+const aimSpot = s => {
+  const m = menuOn(s, FIRST);
+  const it = m && m.tower && m.items.find(i => i.act === 'target');
+  return it ? itemSpot(it, 'down') : plotSpot(FIRST);
+};
+const aimAlso = s => (menuOn(s, FIRST) ? [plotSpot(FIRST)] : []);
+const aimTaps = s => (towerOn(s, FIRST) || {}).aimTaps || 0;
 const shortOf = s => {
   const t = towerOn(s, FIRST), next = t && t.fam.tiers.find(d => d.tier === t.def.tier + 1);
   return next ? next.cost - s.gold : 0;
@@ -147,7 +161,21 @@ const STEPS = [
     also: s => { const m = menuOn(s, FIRST); return m ? [plotSpot(FIRST)] : []; },
     done: s => { const t = towerOn(s, FIRST); if (t) t.kept = true; return !!t; } },
   { say: 'shadow', lock: true, point: () => plotSpot(FIRST) },
+  // THE TARGETING BUTTON, at the owner's word: the archery tower opened again, what it
+  // aims at to begin with, and each of its three orders in turn. Counted in presses
+  // (`aimTaps`, see input.js) rather than read off the order in force, so a quick
+  // player's extra press moves the lines on rather than leaving one waiting for an
+  // order the button has already gone past.
+  { say: 'aimTap', lock: true, point: () => plotSpot(FIRST),
+    done: s => !!(menuOn(s, FIRST) && menuOn(s, FIRST).tower) || aimTaps(s) > 0 },
+  // A line to read, the button shown but not yet to be pressed (`allow`).
+  { say: 'aimWhy', lock: true, spot: true, point: aimSpot, allow: () => false },
+  { say: 'aimTough', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 1 },
+  { say: 'aimRanged', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 2 },
+  { say: 'aimBack', lock: true, point: aimSpot, also: aimAlso, done: s => aimTaps(s) >= 3 },
+  // The archery tower's menu, left open by its Targeting button, shut as this begins.
   { say: 'plot2', lock: true, point: () => plotSpot(SECOND),
+    start: s => { if (menuOn(s, FIRST)) closeMenu(s); },
     done: s => !!menuOn(s, SECOND) || !!towerOn(s, SECOND) },
   { say: 'barracks', lock: true, family: 'barracks',
     point: s => {

@@ -691,6 +691,8 @@ function run(state, item) {
   if (item.act === 'target') {
     const t = menu.tower;
     t.aimMode = ((t.aimMode || 0) + 1) % AIM_MODES.length;
+    // Counted, for stage 1's tutorial, which walks the player through all three.
+    t.aimTaps = (t.aimTaps || 0) + 1;
     const mode = AIM_MODES[t.aimMode];
     item.glyph = mode.glyph;
     item.label = mode.label;
