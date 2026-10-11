@@ -66,7 +66,7 @@ export function startEnding(state) {
 }
 export const lastStage = i => i === STAGE_COUNT - 1;
 
-const PART_SECONDS = { crows: 6, fog: 3 };
+const PART_SECONDS = { crows: 8, fog: 3 };
 const ease = k => k * k * (3 - 2 * k);
 // The words, the tally and the credits wait for a tap, or this many seconds once whole.
 const PANEL_HOLD = 12;
@@ -138,10 +138,15 @@ export function tapSeal(state, x, y) {
 
 // THE FLOCK'S CAWS, at the owner's word: the dark crow's own caw — the one a perched
 // crow gives when tapped — at its own level, as the flock goes.
-const CAWS = [0.3];           // once: the clip is 5 seconds of cawing on its own
+// 3 CAWS, at the owner's word. The clip holds 2 (at its start and 2.1 s in), so it
+// plays whole once, and its first caw again (CAW_PIECE seconds of it, at the same
+// level) for the 3rd.
+const CAWS = [0.3];
+const THIRD_CAW = 4.6, CAW_PIECE = 1.1;
 function stepCrows(E) {
   E.cawed ||= 0;
   while (E.cawed < CAWS.length && E.t >= CAWS[E.cawed]) { E.cawed++; fanfare(['dark_crow_caw']); }
+  if (!E.third && E.t >= THIRD_CAW) { E.third = true; slice('dark_crow_caw', 0, CAW_PIECE, 1, 0.15, true); }
 }
 
 // --- the road ---------------------------------------------------------------------
@@ -215,7 +220,10 @@ export function drawEnding(ctx, state) {
 // light comes over it; the light then settles back over the first seconds of the
 // road, so the map ends as it always looks.
 const GLOOM = 0.32;            // how dark the map goes under the flock
-const GLOW = 0.22;             // how bright it goes after
+const GLOW = 0.1;              // how bright it goes after — not too bright, at the owner's word
+// AND THE DARK HOLLOW LEFT IN THE LIGHT while the rest darkens, at the owner's word, so
+// the flock can be seen going: an oval with a soft edge, where the dark does not fall.
+const HOLLOW = { x: 792, y: 468, rx: 205, ry: 100, soft: 40 };
 const GLOW_SETTLE = 3;         // seconds into the road part the glow takes to settle
 function drawLight(ctx, E) {
   const part = PARTS[E.part];
@@ -225,7 +233,19 @@ function drawLight(ctx, E) {
   if (part === 'road') glow = GLOW * (1 - ease(Math.min(1, E.t / GLOW_SETTLE)));
   if (!dark && !glow) return;
   ctx.save();
-  if (dark) { ctx.globalAlpha = dark; ctx.fillStyle = '#120d08'; ctx.fillRect(0, 0, 960, 540); }
+  if (dark) {
+    // The dark everywhere but the oval: a radial gradient, clear inside, squashed to it.
+    ctx.save();
+    ctx.translate(HOLLOW.x, HOLLOW.y);
+    ctx.scale(1, HOLLOW.ry / HOLLOW.rx);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, HOLLOW.rx + HOLLOW.soft);
+    g.addColorStop(0, 'rgba(18,13,8,0)');
+    g.addColorStop(HOLLOW.rx / (HOLLOW.rx + HOLLOW.soft), 'rgba(18,13,8,0)');
+    g.addColorStop(1, `rgba(18,13,8,${dark})`);
+    ctx.fillStyle = g;
+    ctx.fillRect(-2000, -4000, 4000, 8000);
+    ctx.restore();
+  }
   if (glow) {
     ctx.globalCompositeOperation = 'screen';
     ctx.globalAlpha = glow;
@@ -240,7 +260,7 @@ function drawLight(ctx, E) {
 const FLOCK = 64;
 const CROW_FRAMES = [['crow', [217, 180, 78, 60]], ['crow_flap1', [217, 199, 78, 41]], ['crow_flap2', [217, 212, 78, 51]], ['crow_flap1', [217, 199, 78, 41]]];
 const CROW_W = 8;
-const CROW_PACE = 150;          // px a second, along the way
+const CROW_PACE = 100;          // px a second, along the way — slower, at the owner's word
 function drawCrows(ctx, E) {
   if (!E.crows) {
     // THE DARK HOLLOW'S 3 STAGES, and 2 spots further up and left inside it — all
@@ -262,7 +282,7 @@ function drawCrows(ctx, E) {
       // and 1 in 8 a little quicker or slower.
       const odd = r() < 0.125;
       const pace = CROW_PACE * (odd ? 0.8 + r() * 0.4 : 0.95 + r() * 0.1);
-      return { x0, y0, x1, y1, cx, cy, delay: r() * 2.6, dur: Math.hypot(x1 - x0, y1 - y0) * 1.1 / pace,
+      return { x0, y0, x1, y1, cx, cy, delay: r() * 2.4, dur: Math.hypot(x1 - x0, y1 - y0) * 1.1 / pace,
                beat: r() * 4, size: 0.75 + r() * 0.5 };
     });
   }

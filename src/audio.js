@@ -1915,7 +1915,9 @@ export function play(cue, level = 1) {
 // A PIECE OF A CLIP, Category B: `from` seconds into the FILE (the caller measured
 // where — no lead-in is skipped for it) for `dur` seconds, faded out over its last
 // 30ms so the cut does not click. See HAMMER.
-export function slice(key, from, dur, level = 1, fade = 0.03) {
+// `onA`: out on the A bus at its level, as fanfare plays a clip — for a piece of a
+// clip that has to sound as loud as the whole of it does (the ending's 3rd caw).
+export function slice(key, from, dur, level = 1, fade = 0.03, onA = false) {
   if (!ctx || ctx.state !== 'running') return;
   const c = clips[key];
   if (!c) return;
@@ -1927,7 +1929,7 @@ export function slice(key, from, dur, level = 1, fade = 0.03) {
   g.gain.setValueAtTime(v, now);
   g.gain.setValueAtTime(v, now + dur - fade);
   g.gain.linearRampToValueAtTime(0, now + dur);
-  src.connect(g).connect(routed(key, fxB));
+  src.connect(g).connect(routed(key, onA ? busA : fxB));
   src.start(now, from, dur);
 }
 

@@ -405,17 +405,25 @@ function alongLeg(leg, frac, fn) {
   }
 }
 
-// `yellow`: the dot from which on they are the ending's colour — the flags' blue, at
-// the owner's word; see src/ending.js — drawn here, in the road's own place under the
-// medallions and the flags, rather than over the top of them.
-const ROAD_LIT = FLAG_CLOTH;
+// `yellow`: the dot from which on they are the ending's light yellow, glowing a little
+// (at the owner's word; see src/ending.js) — drawn here, in the road's own place under
+// the medallions and the flags, rather than over the top of them.
+const ROAD_LIT = '#FFEFA0';
+const ROAD_GLOW = 'rgba(255,236,150,0.35)';
 function drawTrail(ctx, leg, frac, yellow = Infinity) {
   ctx.save();
   ctx.lineWidth = 1.2;
   ctx.strokeStyle = 'rgba(42,29,14,0.65)';
   let n = 0;
   alongLeg(leg, frac, (x, y) => {
-    ctx.fillStyle = n++ >= yellow ? ROAD_LIT : '#F6E7C1';
+    const lit = n++ >= yellow;
+    if (lit) {
+      ctx.fillStyle = ROAD_GLOW;
+      ctx.beginPath();
+      ctx.arc(x, y, DOT_R * 2.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.fillStyle = lit ? ROAD_LIT : '#F6E7C1';
     ctx.beginPath();
     ctx.arc(x, y, DOT_R, 0, Math.PI * 2);
     ctx.fill();
