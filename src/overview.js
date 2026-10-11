@@ -36,7 +36,7 @@ import { drawLife, drawPristine } from './life.js';
 // they go through setLoop rather than being started and stopped by hand — see the
 // note above it in src/audio.js.
 import { setLoop, solo, FLAG_PLANTED } from './audio.js';
-import { yellowFrom, endingSeen } from './ending.js';
+import { yellowFrom } from './ending.js';
 
 // --- how much of the road is open -------------------------------------------
 
@@ -1469,9 +1469,9 @@ export function drawOverview(ctx, state) {
   // lands on the dots, under the medallions and the flag so it cannot outshine
   // either, and only while the map is at rest — during a march the road is already
   // drawing itself and a second travelling light on the same line is a fight.
-  // (NOT ONCE THE CAMPAIGN IS OVER, at the owner's word: there is nowhere left to go,
-  // so neither the light nor the flag below points anywhere.)
-  const over = endingSeen() || !!state.pendingEnding;
+  // (NOT BETWEEN THE LAST WIN AND THE END OF THE ENDING, at the owner's word: stage 16's
+  // flag is gone as the player comes back to the map, and back once the ending is over.)
+  const over = !!state.pendingEnding;
   if (frontier >= 0 && !r && state.stage === null && !over) drawPulse(ctx, now, STAGES[frontier].leg);
 
   // The flag sits on the furthest stage reached, which is the one the player is
