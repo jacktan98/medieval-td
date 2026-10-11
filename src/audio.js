@@ -946,15 +946,18 @@ export const GAIN = {
   harbinger_picked: 0.785,
   harbinger_dying: 0.732,
   harbinger_kills: 0.859,
-  // And his wind, 60 against a voice's 100 — on the background bus, so 0.12 at the
-  // clip for 0.049 at the speaker, where the battle's other sounds sit at 0.036.
-  harbinger_wind: 1.333,
+  // And his wind, 150 against the battle's 100, at the owner's word.
+  harbinger_wind: 1.5,
   // And the shield taking a hit, a little under the shots (40 against their 45) now
   // that it sounds on every one.
   defend_walking: 0.891,
-  // A rally flag planted, half as loud again as the levelling makes it, at the owner's
-  // word: 150 against the battle's 100.
-  rally_planted: 1.5
+  // A rally flag planted, at the owner's word: 180 against the battle's 100 — past
+  // the peak ceiling, so lifted the rest of the way (LIFT) and played through a
+  // limiter (rallySound).
+  rally_planted: 1.8,
+  // The encyclopedia's page turning, at the owner's word: 65. The file is quiet enough
+  // that the leveller's GAIN_MAX holds it at 68, so this trims it down from there.
+  page_flip: 0.956
 };
 
 // A LIFT, APPLIED AFTER THE CAP, for the few clips the owner asked to be louder than
@@ -966,8 +969,13 @@ export const GAIN = {
 //                    background bus, so it still peaks under half of full scale.
 //   boss_fallen    — 75, from 73; on the voice bus, peaking at 0.98 of full scale,
 //                    which is over PEAK_OUT's margin but under full scale.
+//   rally_planted  — 180, from the 161 the cap allows; played through a limiter (see
+//                    rallySound), which holds its one sharp moment under full scale.
+//                    A little over 180's lift, for what the limiter takes back:
+//                    measured at the speaker, 0.945 peak and the body of a 180.
 const LIFT = {
   cutting_tree: 1.057,
+  rally_planted: 1.16,
   boss_fallen: 1.028
 };
 
@@ -1175,7 +1183,7 @@ export const FLAG_PLANTED = ['flag_planted'];
 export const RALLY_PLANTED = { key: 'rally_planted', from: 0.08, dur: 0.45, fade: 0.12 };
 export function rallySound() {
   const { key, from, dur, fade } = RALLY_PLANTED;
-  slice(key, from, dur, 1, fade);
+  slice(key, from, dur, 1, fade, true);
 }
 
 // --- THE VILLAGERS ------------------------------------------------------------------
@@ -1913,7 +1921,7 @@ export function play(cue, level = 1) {
 // A PIECE OF A CLIP, Category B: `from` seconds into the FILE (the caller measured
 // where — no lead-in is skipped for it) for `dur` seconds, faded out over its last
 // 30ms so the cut does not click. See HAMMER.
-export function slice(key, from, dur, level = 1, fade = 0.03) {
+export function slice(key, from, dur, level = 1, fade = 0.03, limit = false) {
   if (!ctx || ctx.state !== 'running') return;
   const c = clips[key];
   if (!c) return;
@@ -1925,7 +1933,20 @@ export function slice(key, from, dur, level = 1, fade = 0.03) {
   g.gain.setValueAtTime(v, now);
   g.gain.setValueAtTime(v, now + dur - fade);
   g.gain.linearRampToValueAtTime(0, now + dur);
-  src.connect(g).connect(routed(key, fxB));
+  // THROUGH A LIMITER, for a clip lifted past the peak ceiling (`limit`): its
+  // sharpest moment is held under full scale, and the rest of it is left as loud.
+  let out = g;
+  if (limit) {
+    const lim = ctx.createDynamicsCompressor();
+    lim.threshold.value = -2;
+    lim.knee.value = 0;
+    lim.ratio.value = 20;
+    lim.attack.value = 0.001;
+    lim.release.value = 0.03;
+    out = g.connect(lim);
+  }
+  src.connect(g);
+  out.connect(routed(key, fxB));
   src.start(now, from, dur);
 }
 
