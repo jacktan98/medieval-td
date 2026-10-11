@@ -409,16 +409,20 @@ function alongLeg(leg, frac, fn) {
 // (at the owner's word; see src/ending.js) — drawn here, in the road's own place under
 // the medallions and the flags, rather than over the top of them.
 const ROAD_LIT = '#FFEFA0';
-const ROAD_GLOW = 'rgba(255,236,150,0.35)';
+// THE GLOW PULSES, at the owner's word: its strength rising and falling every
+// GLOW_PULSE seconds, the same on every dot.
+const GLOW_PULSE = 1.6;
+const roadGlow = () => `rgba(255,236,150,${(0.18 + 0.3 * (0.5 + 0.5 * Math.sin(performance.now() / 1000 * Math.PI * 2 / GLOW_PULSE))).toFixed(3)})`;
 function drawTrail(ctx, leg, frac, yellow = Infinity) {
   ctx.save();
   ctx.lineWidth = 1.2;
   ctx.strokeStyle = 'rgba(42,29,14,0.65)';
   let n = 0;
+  const glow = yellow < Infinity ? roadGlow() : null;
   alongLeg(leg, frac, (x, y) => {
     const lit = n++ >= yellow;
     if (lit) {
-      ctx.fillStyle = ROAD_GLOW;
+      ctx.fillStyle = glow;
       ctx.beginPath();
       ctx.arc(x, y, DOT_R * 1.6, 0, Math.PI * 2);   // a thin glow, at the owner's word
       ctx.fill();

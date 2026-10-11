@@ -66,7 +66,7 @@ export function startEnding(state) {
 }
 export const lastStage = i => i === STAGE_COUNT - 1;
 
-const PART_SECONDS = { crows: 8, fog: 3 };
+const PART_SECONDS = { crows: 10.5, fog: 3 };
 const ease = k => k * k * (3 - 2 * k);
 // The words, the tally and the credits wait for a tap, or this many seconds once whole.
 const PANEL_HOLD = 12;
@@ -142,15 +142,12 @@ export function tapSeal(state, x, y) {
 
 // THE FLOCK'S CAWS, at the owner's word: the dark crow's own caw — the one a perched
 // crow gives when tapped — at its own level, as the flock goes.
-// 3 CAWS, at the owner's word. The clip holds 2 (at its start and 2.1 s in), so it
-// plays whole once, and its first caw again (CAW_PIECE seconds of it, at the same
-// level) for the 3rd.
-const CAWS = [0.3];
-const THIRD_CAW = 4.6, CAW_PIECE = 1.1;
+// 4 CAWS, at the owner's word: the clip (which holds 2, at its start and 2.1 s in)
+// played twice, the first as the flock lifts off (FLOCK_WAIT in).
+const CAWS = [1.2, 5.4];
 function stepCrows(E) {
   E.cawed ||= 0;
   while (E.cawed < CAWS.length && E.t >= CAWS[E.cawed]) { E.cawed++; fanfare(['dark_crow_caw']); }
-  if (!E.third && E.t >= THIRD_CAW) { E.third = true; slice('dark_crow_caw', 0, CAW_PIECE, 1, 0.15, true); }
 }
 
 // --- the road ---------------------------------------------------------------------
@@ -183,6 +180,7 @@ function roadPlan() {
 // strokes as the church bell on stage 8 rings them (BELL_STROKES: seconds after the
 // light arrives, and how long each is let ring).
 const BELL_STROKES = [[0, 1.8], [2.1, 1.8]];
+const BELL_LEVEL = 0.45;        // audio.js's BG_LEVEL: how loud the bell always was, undimmed
 function stepRoad(E) {
   const R = E.road;
   for (const [i, at] of Object.entries(R.flags)) {
@@ -199,7 +197,10 @@ function stepRoad(E) {
 function ringBell(E) {
   if (E.bellAt === undefined) return;
   BELL_STROKES.forEach(([at, d], k) => {
-    if (E.clock >= E.bellAt + at && !E.rung[k]) { E.rung[k] = true; slice(BELL.key, 0, d, 1, BELL.fade); }
+    // ON THE A SIDE, at the background's level (BELL_LEVEL): the B side is turned
+    // down while a flag drop sounds, and Oakhaven's flag drops with the first stroke,
+    // which came out softer than the second (at the owner's ear).
+    if (E.clock >= E.bellAt + at && !E.rung[k]) { E.rung[k] = true; slice(BELL.key, 0, d, BELL_LEVEL, BELL.fade, true); }
   });
 }
 
@@ -272,7 +273,9 @@ function drawLight(ctx, E) {
 const FLOCK = 64;
 const CROW_FRAMES = [['crow', [217, 180, 78, 60]], ['crow_flap1', [217, 199, 78, 41]], ['crow_flap2', [217, 212, 78, 51]], ['crow_flap1', [217, 199, 78, 41]]];
 const CROW_W = 8;
-const CROW_PACE = 100;          // px a second, along the way — slower, at the owner's word
+const CROW_PACE = 75;           // px a second, along the way — slower, at the owner's word
+// THE MAP DARKENS FIRST, and the flock waits this long before it lifts, at the owner's word.
+const FLOCK_WAIT = 1;
 function drawCrows(ctx, E) {
   if (!E.crows) {
     // THE DARK HOLLOW'S 3 STAGES, and 2 spots further up and left inside it — all
@@ -293,8 +296,8 @@ function drawCrows(ctx, E) {
       // MOSTLY AT ONE PACE, at the owner's word: the same speed give or take a little,
       // and 1 in 8 a little quicker or slower.
       const odd = r() < 0.125;
-      const pace = CROW_PACE * (odd ? 0.8 + r() * 0.4 : 0.95 + r() * 0.1);
-      return { x0, y0, x1, y1, cx, cy, delay: r() * 2.4, dur: Math.hypot(x1 - x0, y1 - y0) * 1.1 / pace,
+      const pace = CROW_PACE * (odd ? 0.85 + r() * 0.3 : 0.95 + r() * 0.1);
+      return { x0, y0, x1, y1, cx, cy, delay: FLOCK_WAIT + r() * 2.4, dur: Math.hypot(x1 - x0, y1 - y0) * 1.1 / pace,
                beat: r() * 4, size: 0.75 + r() * 0.5 };
     });
   }
