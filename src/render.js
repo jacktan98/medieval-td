@@ -5294,7 +5294,7 @@ function drawHud(ctx, state) {
   // No bonus on the first wave, which waits for the player (see updateWaves), so
   // no "+0g" on the button before it.
   const bonus = call ? earlyCallBonus(state) : 0;
-  hudButton(ctx, HUD_BTN.wave, 'Next wave', bonus > 0 ? `+${bonus}g` : null, call);
+  hudButton(ctx, HUD_BTN.wave, 'Next Wave', bonus > 0 ? `+${bonus}g` : null, call);
 
   drawWavePreview(ctx, state);
 }
