@@ -4,8 +4,10 @@
 //
 // The arc: the thugs come out of nowhere at Oakhaven; the player falls back town
 // by town while each one lends what it has; Sandshroud and Serene Peak are stops
-// to ask for help; the crows lead to the lair in the Dark Hollow. Some doors stay
-// shut on purpose — the oldest assassins, the elder monks, Fernshadow — for later.
+// to ask for help; the crows lead to the lair in the Dark Hollow. Fernshadow's
+// silence stays unexplained on purpose, for later.
+//
+// "Do not", not "don't": no contractions, at the owner's word, as in the tutorial.
 //
 // tools/story.mjs checks every board has a line here, and that each fits its paper.
 export const STORY = {
@@ -14,16 +16,16 @@ export const STORY = {
     'enough for its people to get away.',
   m4: 'The village has fallen, but its people are still on the road. Now the thugs have archers ' +
     'who shoot from a distance, so keep your soldiers out of their reach.',
-  m5: 'Winchester\'s gates are shut, and its guards don\'t trust a general from a burned village. ' +
+  m5: 'Winchester\'s gates are shut, and its guards do not trust a general from a burned village. ' +
     'Prove yourself at the entrance. Watch for thugs with shields: they raise them against ' +
     'arrows and come on slowly.',
-  m6: 'Winchester\'s carpenters lend you their siege machines and their workshop. You\'ll need ' +
+  m6: 'Winchester\'s carpenters lend you their siege machines and their workshop. You will need ' +
     'them, because the thugs have brought giants whose clubs break armor.',
   m7: 'The thugs throw everything at the castle walls, and Winchester fights beside you now. ' +
     'Hold the castle and the town is safe, but the army only grows, and it turns east toward ' +
     'Dawnford.',
   m8: 'Dawnford sits across the river, and the bridge is the only way in. Stop the thugs here. ' +
-    'Their plague doctors throw poison flasks that armor won\'t stop.',
+    'Their plague doctors throw poison flasks that armor will not stop.',
   m9: 'The thugs reach the town square. Dark priests walk among them, healing their wounded and ' +
     'warded against magic. Something darker than a band of thieves is behind this army.',
   m10: 'The church bell rings for every wave. Dawnford\'s clerics and paladins join your fight, ' +
@@ -31,7 +33,7 @@ export const STORY = {
     'the church, and the town stands with you.',
   m11: 'Sandshroud has held its walls for weeks, but some thugs here move unseen until a soldier ' +
     'catches them. Drive them off, and its assassins, who know how to fight from the shadows, ' +
-    'may lend you their blades. Not all of them. The oldest order keeps its own oath.',
+    'may lend you their blades.',
   m12: 'Ironforge forges the finest steel in the land, and the thugs want it. Here, close to the ' +
     'Dark Hollow, the sky is full of crows, and now they attack too. They fly over your ' +
     'soldiers, so only archers and monastery towers can bring them down.',
@@ -43,7 +45,7 @@ export const STORY = {
     'silence. Win here, and the rest fight under one banner.',
   m15: 'The monks of Serene Peak hold the only pass to the Dark Hollow, but giants hurling ' +
     'boulders have taken it. Spread your men out and clear the pass, and the monks will march ' +
-    'with you. Not the elder masters; they will not leave the high temple for any war.',
+    'with you.',
   m16: 'Follow the crows, and the road no one ever found opens into the Dark Hollow. To the west, ' +
     'Fernshadow\'s trees stand thicker still; its people watch, and do not come. Here the thugs ' +
     'wave war banners that make their friends hit harder. Cut them down first.',
