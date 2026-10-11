@@ -94,7 +94,7 @@ function begin(state, E, part) {
 
 function over(E, part) {
   if (PART_SECONDS[part]) return E.t >= PART_SECONDS[part];
-  if (part === 'road') return E.road && E.t >= E.road.end + BELL_STROKES[BELL_STROKES.length - 1][0] + 1.5;
+  if (part === 'road') return E.road && E.t >= Math.max(E.road.end, E.road.home + BELL_STROKES[BELL_STROKES.length - 1][0]) + 1.5;
   if (part === 'words') return E.t >= ENDING_WORDS.length / TYPE_RATE + PANEL_HOLD;
   return E.t >= PANEL_HOLD;
 }
@@ -146,14 +146,18 @@ function roadPlan() {
   const legs = [];
   let t = 0.6;
   const flags = { [STAGE_COUNT - 1]: t };
-  for (let i = STAGE_COUNT - 1; i >= 1; i--) {
+  // AND ON PAST OAKHAVEN, at the owner's word: stage 1's own leg, in from the map's
+  // edge, turns yellow too — after Oakhaven's flag, while its bell rings (`home`).
+  let home = t;
+  for (let i = STAGE_COUNT - 1; i >= 0; i--) {
     const leg = STAGES[i].leg;
     const d = Math.max(LEG_MIN, legLength(leg) / ROAD_PACE);
     legs.push({ i, leg, from: t, to: t + d });
     t += d;
-    flags[i - 1] = t;
+    if (i >= 1) flags[i - 1] = t;
+    if (i === 1) home = t;
   }
-  return { legs, flags, end: t, rung: {}, dropped: {} };
+  return { legs, flags, home, end: t, rung: {}, dropped: {} };
 }
 // OAKHAVEN'S BELL as the light comes home, rung twice, at the owner's word — 2
 // strokes as the church bell on stage 8 rings them (BELL_STROKES: seconds after the
@@ -165,7 +169,7 @@ function stepRoad(E) {
     if (E.t >= at && !R.dropped[i]) { R.dropped[i] = true; play(FLAG_PLANTED, 0.6); }
   }
   BELL_STROKES.forEach(([at, d], k) => {
-    if (E.t >= R.end + at && !R.rung[k]) { R.rung[k] = true; slice(BELL.key, 0, d, 1, BELL.fade); }
+    if (E.t >= R.home + at && !R.rung[k]) { R.rung[k] = true; slice(BELL.key, 0, d, 1, BELL.fade); }
   });
 }
 
