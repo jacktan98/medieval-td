@@ -21,7 +21,7 @@ import { STAGES, STAGE_COUNT } from './data/overview.js';
 import { art } from './assets.js';
 import { play, slice, BELL, FLAG_PLANTED } from './audio.js';
 import { drawFlag, drawStageStars } from './overview.js';
-import { tutorialPaper, TUTORIAL_INK } from './render.js';
+import { tutorialPaper, TUTORIAL_INK, drawAdminDoor } from './render.js';
 import { starsEarned } from './upgrades.js';
 import { MAX_STARS } from './score.js';
 import { ENDING_WORDS, TALLY_TITLE, CREDITS, SEAL_TEXT } from './data/ending.js';
@@ -31,7 +31,7 @@ export const PARTS = ['crows', 'fog', 'road', 'words', 'tally', 'credits'];
 // comes back as it was once the ending is over.
 const KEEP_MAP_LIT = true;
 // The "Campaign complete" seal on the world map, which plays the ending again.
-const SHOW_SEAL = true;
+const SHOW_SEAL = false;   // off, at the owner's word
 
 const SEEN_KEY = 'medieval-td/ending';
 const CAREER_KEY = 'medieval-td/career';
@@ -114,7 +114,9 @@ function finish(state) {
 // A TAP: Skip ends it; anywhere else moves to the next part (or, while the words are
 // still typing, finishes typing them first). Always taken: nothing under the ending
 // answers while it plays.
-export const SKIP_BTN = { x: 852, y: 494, w: 92, h: 34 };
+// IN THE ADMIN BUTTON'S PLACE AND STYLE, at the owner's word, while the ending plays
+// (src/admin.js ADMIN_BTN; render.js leaves the Admin button out meanwhile).
+export const SKIP_BTN = { x: 858, y: 484, w: 84, h: 38 };
 export function tapEnding(state, x, y) {
   const E = state.ending;
   if (!E) return false;
@@ -193,7 +195,7 @@ export function drawEnding(ctx, state) {
     if (part === 'tally') drawTally(ctx, E);
     if (part === 'credits') drawCredits(ctx, E);
   }
-  drawButton(ctx, SKIP_BTN, 'Skip');
+  drawAdminDoor(ctx, 'Skip');
 }
 
 // THE FLOCK: the Dark Crow's own wingbeat, small, rising out of the Dark Hollow and

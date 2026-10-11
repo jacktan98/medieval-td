@@ -6146,7 +6146,7 @@ function drawStart(ctx, state) {
     // with their names under them.
     drawMapDoor(ctx, 'icon_book', BOOK_ICON, 'Encyclopedia');
     drawUpgradesButton(ctx);
-    drawAdminDoor(ctx);
+    if (!state.ending) drawAdminDoor(ctx);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     return;
@@ -6369,13 +6369,17 @@ function drawSeal(ctx, cx, cy, r, word, stars) {
 // ITS OWN FUNCTION because there are two screens before a game now, the world map
 // and the stage panel, and the door is on both. Text alignment is the caller's:
 // both call sites are already centred when they get here.
-function drawAdminDoor(ctx) {
+// `label`: the ending's Skip uses this button, in its place, while it plays — see
+// src/ending.js.
+export function drawAdminDoor(ctx, label = 'Admin') {
+  ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   panelBox(ctx, ADMIN_BTN.x, ADMIN_BTN.y, ADMIN_BTN.w, ADMIN_BTN.h, { r: 9 });
   ctx.fillStyle = UI_INK;
   ctx.font = `18px ${MAP_TYPE}`;
-  ctx.fillText('Admin', ADMIN_BTN.x + ADMIN_BTN.w / 2, ADMIN_BTN.y + ADMIN_BTN.h / 2 + 1);
+  ctx.fillText(label, ADMIN_BTN.x + ADMIN_BTN.w / 2, ADMIN_BTN.y + ADMIN_BTN.h / 2 + 1);
+  ctx.restore();
 }
 
 // A row of up to MAX_STARS stars, `filled` of them lit. Used in two places and
