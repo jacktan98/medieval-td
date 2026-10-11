@@ -54,7 +54,7 @@ const FIRST = 1, SECOND = 0;
 const SAY = {
   welcome:  'Welcome, General! There is no time for pleasantries. The thugs are coming, and we need to get you up to speed.',
   plot1:    '{Click} on the empty plot to build a tower to defend the village.',
-  archery:  'The Archery tower is reliable and shoots enemies from afar.',
+  archery:  '{Double} on the Archery button to build it. The Archery tower is reliable and shoots enemies from afar.',
   shadow:   'To select a tower, {click} its shadow on the ground. {Clicking} the top of the tower will not select it.',
   aimTap:   'Now {click} your archery tower\'s shadow to select it and change its targeting.',
   aimWhy:   'By default, Archery and Monastery towers attack the enemy closest to the exit.',
@@ -63,7 +63,7 @@ const SAY = {
   aimBack:  '{Click} it once more to go back to the enemy closest to the exit.',
   aimTip:   'Changing targeting to suit the situation will help you handle trickier enemies later on.',
   plot2:    '{Click} on the empty plot to build another tower to defend the village.',
-  barracks: 'Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
+  barracks: '{Double} on the Barracks button to build it. Barracks hold soldiers who block enemies, giving your ranged towers more time to attack them.',
   rallyTap: '{Click} your barracks again to adjust its rally point.',
   rallyBtn: '{Click} on the Rally Flag button to adjust the rally point.',
   rallySet: '{Click} anywhere on the road inside the circle to move your soldiers there.',
@@ -75,7 +75,7 @@ const SAY = {
   early:    '{Click} Next Wave as soon as it appears to earn extra gold.',
   more:     'Build more towers to strengthen your defense. More enemies are coming!',
   cards:    '{Click} on the new tower alert. Reading the cards of new towers helps you learn how to use them.',
-  select:   'Time to upgrade to a Tier 2 tower. Select your archery tower. Remember, always {click} a tower\'s shadow to select it.',
+  select:   'Time to upgrade to a Tier 2 tower. {Click} on your archery tower. Remember, always {click} a tower\'s shadow to select it.',
   topUp:    'Here is more gold for your upgrade.',
   upgrade:  '{Click} the Upgrade button to turn it into a Tier 2 Archery Tower.',
   congrats: 'Great, you now have a Tier 2 Archery Tower!',
@@ -94,7 +94,7 @@ let touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').
 export const setTouch = on => { touch = !!on; };
 export const isTouch = () => touch;
 const VERB = { click: ['click', 'tap'], Click: ['Click', 'Tap'], clicking: ['clicking', 'tapping'],
-               Clicking: ['Clicking', 'Tapping'] };
+               Clicking: ['Clicking', 'Tapping'], Double: ['Double click', 'Double tap'] };
 
 const plotAt = i => level.plots[i];
 const towerOn = (state, i) => state.towers.find(t => t.plot === plotAt(i)) || null;
