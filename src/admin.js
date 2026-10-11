@@ -706,8 +706,11 @@ export const CLOSE_BTN = { x: INNER.r - CLOSE_W, y: INNER.y, w: CLOSE_W, h: TAB_
 const TAB_IDS = [
   { id: 'waves', label: 'Waves' },
   { id: 'units', label: 'Units' },
-  { id: 'road',  label: 'Road' }
+  { id: 'road',  label: 'Road' },
+  // NOT A TAB OF THIS PANEL: a door to stats.html, the player log, at the owner's word.
+  { id: 'stats', label: 'Stats' }
 ];
+const STATS_HREF = 'stats.html';
 export const TABS = TAB_IDS.map((t, i) => ({
   ...t,
   x: CLOSE_BTN.x - 24 - (TAB_IDS.length - i) * (TAB_W + TAB_GAP) + TAB_GAP,
@@ -1422,6 +1425,10 @@ export function tapAdmin(state, x, y, restart) {
 
   for (const t of TABS) {
     if (!on(t)) continue;
+    if (t.id === 'stats') {
+      if (typeof location !== 'undefined') location.href = STATS_HREF;
+      return true;
+    }
     a.tab = t.id;
     a.page = 0;
     return true;

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Player Stats</title>
+<!--
+  THE PLAYER LOG, READ. What src/analytics.js keeps in this browser's storage, laid
+  out as the owner asked for it: which buttons get pressed and which taps press
+  nothing, how long each tutorial line takes, and where stages are won, lost or
+  abandoned. Self-contained on purpose — no game modules — so it opens on its own
+  and cannot disturb the game.
+
+  Export saves this device's log as a file; Import loads such files (a playtester's,
+  say) and adds them to what is shown. Imported logs live in this page only; reload
+  and they are gone, until imported again. Clear empties THIS device's log only.
+-->
+<style>
+  :root {
+    --bg: #f3ead8; --panel: #fbf6ea; --ink: #2b2219; --muted: #75685a; --line: #ddd0b6;
+    --accent: #8a5a2b; --good: #4d7a3a; --bad: #a3392b; --bar: #c9a46a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1d1914; --panel: #27211a; --ink: #efe6d4; --muted: #a8998a; --line: #3d3428;
+      --accent: #d9a35f; --good: #8fbf73; --bad: #e07a6a; --bar: #9c7b45;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1d1914; --panel: #27211a; --ink: #efe6d4; --muted: #a8998a; --line: #3d3428;
+    --accent: #d9a35f; --good: #8fbf73; --bad: #e07a6a; --bar: #9c7b45;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  .bar-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 18px; }
+  button, label.btn, select {
+    font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  }
+  button:hover, label.btn:hover { border-color: var(--accent); }
+  button.danger { color: var(--bad); }
+  input[type=file] { display: none; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 18px; }
+  .kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .kpi .n { font-size: 24px; font-weight: 650; }
+  .kpi .l { color: var(--muted); font-size: 13px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+  .grid2 > section { margin-bottom: 0; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .meter { position: relative; height: 10px; min-width: 80px; background: var(--line); border-radius: 5px; overflow: hidden; }
+  .meter > i { position: absolute; inset: 0 auto 0 0; background: var(--bar); border-radius: 5px; }
+  .good { color: var(--good); } .bad { color: var(--bad); }
+  .note { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+  .empty { color: var(--muted); padding: 24px; text-align: center; }
+  canvas { width: 100%; height: auto; display: block; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Player Stats</h1>
+  <p class="sub">What players did, from the log the game keeps on each device. Nothing is sent anywhere.</p>
+
+  <div class="bar-row">
+    <select id="source" aria-label="Which logs to show"></select>
+    <button id="export">Export this device's log</button>
+    <label class="btn" for="import">Import log files</label>
+    <input id="import" type="file" accept=".json,application/json" multiple>
+    <button id="clear" class="danger">Clear this device's log</button>
+    <a href="index.html" style="margin-left:auto;color:var(--accent)">Back to the game</a>
+  </div>
+
+  <div id="out"></div>
+</main>
+
+<script>
+(function () {
+  var KEY = 'medieval-td/events';
+  var imported = [];          // [{ name, events }]
+  var out = document.getElementById('out');
+  var sourceSel = document.getElementById('source');
+
+  function own() {
+    try { var v = JSON.parse(localStorage.getItem(KEY) || '[]'); return Array.isArray(v) ? v : []; }
+    catch (e) { return []; }
+  }
+
+  function events() {
+    var pick = sourceSel.value || 'all';
+    var list = [];
+    if (pick === 'all' || pick === 'own') list = list.concat(own().map(function (e) { return Object.assign({ src: 'This device' }, e); }));
+    imported.forEach(function (f, i) {
+      if (pick === 'all' || pick === 'f' + i) list = list.concat(f.events.map(function (e) { return Object.assign({ src: f.name }, e); }));
+    });
+    return list.sort(function (a, b) { return a.t - b.t; });
+  }
+
+  function fillSources() {
+    var keep = sourceSel.value || 'all';
+    var opts = [['all', 'All logs'], ['own', 'This device']].concat(imported.map(function (f, i) { return ['f' + i, f.name]; }));
+    sourceSel.innerHTML = opts.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('');
+    sourceSel.value = opts.some(function (o) { return o[0] === keep; }) ? keep : 'all';
+  }
+
+  // --- small helpers -------------------------------------------------------
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  // Counted by weight: a tap repeated on the same spot is one event carrying `n`.
+  function count(list, key) { var m = {}; list.forEach(function (e) { var k = typeof key === 'function' ? key(e) : e[key]; m[k] = (m[k] || 0) + (e.n || 1); }); return m; }
+  function total(list) { return list.reduce(function (a, e) { return a + (e.n || 1); }, 0); }
+  function median(xs) { if (!xs.length) return null; var s = xs.slice().sort(function (a, b) { return a - b; }); var h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; }
+  function pct(a, b) { return b ? Math.round(100 * a / b) + '%' : '–'; }
+  function secs(s) { if (s === null || s === undefined) return '–'; s = Math.round(s); return s < 60 ? s + 's' : Math.floor(s / 60) + 'm ' + (s % 60) + 's'; }
+  function meter(v, max) { return '<div class="meter"><i style="width:' + (max ? Math.round(100 * v / max) : 0) + '%"></i></div>'; }
+  function table(head, rows, numCols) {
+    numCols = numCols || [];
+    return '<div class="scroll"><table><thead><tr>' + head.map(function (h, i) { return '<th' + (numCols.indexOf(i) >= 0 ? ' class="num"' : '') + '>' + h + '</th>'; }).join('') +
+      '</tr></thead><tbody>' + rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td' + (numCols.indexOf(i) >= 0 ? ' class="num"' : '') + '>' + c + '</td>'; }).join('') + '</tr>'; }).join('') +
+      '</tbody></table></div>';
+  }
+
+  // Friendly names for the button ids the game records.
+  function buttonName(b) {
+    var names = {
+      miss: 'Missed tap (nothing there)', tutorial_blocked: 'Tap blocked by the tutorial', tour_blocked: 'Tap blocked by the map tour',
+      next_wave: 'Next Wave', pause: 'Pause', resume: 'Resume', speed: 'Speed', alert: 'New enemy/tower alert',
+      plot: 'Empty plot', tower_select: 'Tower (select)', menu_close: 'Close menu (centre)', menu_pin: 'Pin hover menu',
+      rally_button: 'Rally Flag button', rally_set: 'Rally point set', rally_invalid: 'Rally point (invalid spot)', rally_cancel: 'Rally cancelled',
+      targeting: 'Targeting button', sell: 'Sell', start: 'Start (stage panel)', stage_flag: 'Stage flag (map)', panel_back: 'Back (stage panel)',
+      difficulty: 'Difficulty', book: 'Encyclopedia', upgrades: 'Upgrades (map)', result_continue: 'Continue (result screen)',
+      skip_reveal: 'Skip map animation', restart: 'Restart', quit: 'Quit', admin: 'Admin', deselect: 'Deselect',
+      'card:tap': 'Close alert card', 'book:close': 'Close encyclopedia', 'book:flip': 'Turn encyclopedia page', 'book:tap': 'Encyclopedia (other)',
+      'upgrades:tap': 'Upgrades screen (other)', 'upgrades:bought': 'Buy star upgrade', 'paused:tap': 'Pause menu (other)', 'map:tap': 'Map (other)', 'panel:tap': 'Stage panel (other)'
+    };
+    if (names[b]) return names[b];
+    var m = b.split(':');
+    if (m[0] === 'build') return 'Build ' + m[1];
+    if (m[0] === 'upgrade') return 'Upgrade to ' + m[1];
+    if (m[0] === 'arm') return 'First press: ' + buttonName(m.slice(1).join(':'));
+    if (m[0] === 'cannot_afford') return 'Too expensive: ' + buttonName(m.slice(1).join(':'));
+    if (m[0] === 'ability') return 'Ability ' + m[1];
+    if (m[0] === 'select') return 'Select ' + m[1];
+    if (m[0] === 'sound') return 'Sound slider (' + m[1] + ')';
+    return b;
+  }
+
+  // --- the page --------------------------------------------------------------
+  function render() {
+    var ev = events();
+    if (!ev.length) {
+      out.innerHTML = '<section class="empty">No events yet. Play the game in this browser, or import a log file.</section>';
+      return;
+    }
+    var html = '';
+    var visits = {}; ev.forEach(function (e) { var v = visits[e.src + e.v] ||= { first: e.t, last: e.t, touch: null }; v.last = e.t; if (e.k === 'visit') v.touch = e.touch; });
+    var visitList = Object.keys(visits).map(function (k) { return visits[k]; });
+    var playSecs = visitList.reduce(function (a, v) { return a + (v.last - v.first) / 1000; }, 0);
+    var taps = ev.filter(function (e) { return e.k === 'tap'; });
+    var misses = taps.filter(function (e) { return !e.ok; });
+    var starts = ev.filter(function (e) { return e.k === 'stage_start'; });
+    var ends = ev.filter(function (e) { return e.k === 'stage_end'; });
+    var wins = ends.filter(function (e) { return e.result === 'won'; });
+    var phones = visitList.filter(function (v) { return v.touch; }).length;
+
+    html += '<div class="kpis">' + [
+      [visitList.length, 'Visits (' + phones + ' on touch screens)'],
+      [secs(playSecs), 'Total time on the page'],
+      [starts.length, 'Stages started'],
+      [wins.length + ' / ' + ends.length, 'Stages won / finished (' + pct(wins.length, ends.length) + ')'],
+      [total(taps), 'Taps'],
+      [pct(total(misses), total(taps)), 'Taps that did nothing']
+    ].map(function (k) { return '<div class="kpi"><div class="n">' + k[0] + '</div><div class="l">' + k[1] + '</div></div>'; }).join('') + '</div>';
+
+    // Tutorial funnel.
+    var tut = ev.filter(function (e) { return e.k === 'tutorial'; });
+    if (tut.length) {
+      var order = { intro: 0, game: 1, map: 2 }, label = { intro: 'Map (new game)', game: 'Stage 1', map: 'Map (after stage 1)' };
+      var steps = {};
+      tut.forEach(function (e) {
+        var key = e.list + '|' + e.step;
+        var s = steps[key] ||= { list: e.list, step: e.step, say: e.say, visits: {}, secs: [], skipped: 0 };
+        s.visits[e.src + e.v] = 1;
+        if (e.skipped) s.skipped++; else s.secs.push(e.secs);
+      });
+      var list = Object.keys(steps).map(function (k) { return steps[k]; })
+        .sort(function (a, b) { return (order[a.list] - order[b.list]) || a.step - b.step; });
+      var maxMed = Math.max.apply(null, list.map(function (s) { return median(s.secs) || 0; }));
+      var first = list.length ? Object.keys(list[0].visits).length : 0;
+      html += '<section><h2>Tutorial: how far players get, and how long each line takes</h2>' +
+        table(['Where', 'Step', 'Line', 'Players', 'Reached', 'Median time', '', 'Skipped'],
+          list.filter(function (s) { return s.say !== 'wait'; }).map(function (s) {
+            var n = Object.keys(s.visits).length, m = median(s.secs);
+            return [label[s.list] || s.list, s.step, esc(s.say), n, pct(n, first), secs(m), meter(m || 0, maxMed), s.skipped];
+          }), [1, 3, 4, 5, 7]) +
+        '<p class="note">"Line" is the tutorial step\'s key in src/tutorial.js. A long median on a line that waits for a click usually means players could not find what it points at.</p></section>';
+    }
+
+    // Stages.
+    if (starts.length || ends.length) {
+      var stages = {};
+      starts.forEach(function (e) { (stages[e.stage] ||= { starts: 0, ends: [] }).starts++; });
+      ends.forEach(function (e) { (stages[e.stage] ||= { starts: 0, ends: [] }).ends.push(e); });
+      var rows = Object.keys(stages).sort(function (a, b) { return a - b; }).map(function (n) {
+        var s = stages[n], r = count(s.ends, 'result');
+        var won = s.ends.filter(function (e) { return e.result === 'won'; });
+        var lost = s.ends.filter(function (e) { return e.result === 'lost'; });
+        var lostAt = count(lost, 'wave');
+        return [n, s.starts, '<span class="good">' + (r.won || 0) + '</span>', '<span class="bad">' + (r.lost || 0) + '</span>', (r.quit || 0) + (r.restart || 0),
+          pct(r.won || 0, s.ends.length), won.length ? Math.round(won.reduce(function (a, e) { return a + e.lives; }, 0) / won.length) : '–',
+          secs(median(s.ends.map(function (e) { return e.secs; }))),
+          Object.keys(lostAt).map(function (w) { return 'wave ' + w + ' (' + lostAt[w] + ')'; }).join(', ') || '–'];
+      });
+      html += '<section><h2>Stages</h2>' + table(['Stage', 'Started', 'Won', 'Lost', 'Quit/restart', 'Win rate', 'Lives left (wins)', 'Median length', 'Lost on'], rows, [0, 1, 2, 3, 4, 5, 6, 7]) + '</section>';
+    }
+
+    html += '<div class="grid2">';
+    // Buttons.
+    var byButton = count(taps.filter(function (e) { return e.ok; }), 'b');
+    var bRows = Object.keys(byButton).sort(function (a, b) { return byButton[b] - byButton[a]; });
+    var bMax = bRows.length ? byButton[bRows[0]] : 0;
+    html += '<section><h2>Buttons pressed</h2>' + table(['Button', 'Presses', ''],
+      bRows.map(function (b) { return [esc(buttonName(b)), byButton[b], meter(byButton[b], bMax)]; }), [1]) + '</section>';
+
+    // Taps that did nothing, and taps the tutorial refused.
+    var missRows = count(misses, function (e) { return (e.b === 'miss' ? 'Nothing there' : buttonName(e.b)) + '|' + e.layer; });
+    html += '<section><h2>Taps that did nothing</h2>' + table(['What', 'Screen', 'Taps'],
+      Object.keys(missRows).sort(function (a, b) { return missRows[b] - missRows[a]; }).map(function (k) { var p = k.split('|'); return [esc(p[0]), p[1], missRows[k]]; }), [2]) +
+      '<canvas id="missmap" width="960" height="540" aria-label="Where taps on the battle screen did nothing"></canvas>' +
+      '<p class="note">Dots: taps on the battle screen that did nothing, at their place on the board. Clusters on a tower\'s roof mean players are tapping the top instead of the shadow.</p></section>';
+    html += '</div>';
+
+    // Leaks.
+    var leaks = ev.filter(function (e) { return e.k === 'leak'; });
+    if (leaks.length) {
+      var byEnemy = {}; leaks.forEach(function (e) { byEnemy[e.enemy] = (byEnemy[e.enemy] || 0) + (e.lost === 'all' ? 0 : e.lost); });
+      var byWave = count(leaks, function (e) { return 'Stage ' + e.stage + ', wave ' + e.wave + ' (' + e.diff + ')'; });
+      html += '<div class="grid2" style="margin-top:14px">' +
+        '<section><h2>What got through (lives lost)</h2>' + table(['Enemy', 'Lives'], Object.keys(byEnemy).sort(function (a, b) { return byEnemy[b] - byEnemy[a]; }).map(function (k) { return [esc(k), byEnemy[k]]; }), [1]) + '</section>' +
+        '<section><h2>Where enemies got through</h2>' + table(['Where', 'Enemies'], Object.keys(byWave).sort(function (a, b) { return byWave[b] - byWave[a]; }).slice(0, 15).map(function (k) { return [k, byWave[k]]; }), [1]) + '</section>' +
+        '</div>';
+    }
+
+    // Recent events.
+    html += '<section style="margin-top:14px"><h2>Latest events</h2>' + table(['When', 'Log', 'Event', 'Details'],
+      ev.slice(-40).reverse().map(function (e) {
+        var d = Object.keys(e).filter(function (k) { return ['t', 'v', 'k', 'src', 'last'].indexOf(k) < 0; }).map(function (k) { return k + ': ' + esc(e[k]); }).join(', ');
+        return [new Date(e.t).toLocaleString(), esc(e.src), e.k === 'tap' ? esc(buttonName(e.b)) : e.k, d];
+      })) + '</section>';
+
+    out.innerHTML = html;
+    drawMisses(misses.filter(function (e) { return e.layer === 'game' && e.x !== undefined; }));
+  }
+
+  function drawMisses(list) {
+    var c = document.getElementById('missmap');
+    if (!c) return;
+    var g = c.getContext('2d'), css = getComputedStyle(document.documentElement);
+    g.clearRect(0, 0, 960, 540);
+    g.strokeStyle = css.getPropertyValue('--line'); g.lineWidth = 2;
+    for (var x = 0; x <= 960; x += 120) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, 540); g.stroke(); }
+    for (var y = 0; y <= 540; y += 135) { g.beginPath(); g.moveTo(0, y); g.lineTo(960, y); g.stroke(); }
+    g.fillStyle = css.getPropertyValue('--bad');
+    g.globalAlpha = 0.45;
+    list.forEach(function (e) { g.beginPath(); g.arc(e.x, e.y, 9, 0, Math.PI * 2); g.fill(); });
+  }
+
+  // --- controls ----------------------------------------------------------------
+  document.getElementById('export').onclick = function () {
+    var blob = new Blob([JSON.stringify({ game: 'medieval-td', exported: new Date().toISOString(), events: own() })], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'medieval-td-log-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  };
+  document.getElementById('import').onchange = function (e) {
+    var files = Array.prototype.slice.call(e.target.files);
+    Promise.all(files.map(function (f) {
+      return f.text().then(function (t) {
+        var data = JSON.parse(t), list = Array.isArray(data) ? data : data.events;
+        if (!Array.isArray(list)) throw new Error('no events');
+        imported.push({ name: f.name, events: list });
+      }).catch(function () { alert('Could not read ' + f.name + ' as a game log.'); });
+    })).then(function () { e.target.value = ''; fillSources(); render(); });
+  };
+  document.getElementById('clear').onclick = function () {
+    if (!confirm('Delete this device\'s player log? Imported files are not affected.')) return;
+    try { localStorage.removeItem(KEY); } catch (err) { /* nothing kept */ }
+    render();
+  };
+  sourceSel.onchange = render;
+
+  fillSources();
+  render();
+})();
+</script>
+</body>
+</html>

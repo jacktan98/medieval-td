@@ -15,6 +15,7 @@ import { solo, play, alone, WINGS_RATE, CUE, FIRING, DEFEND, HEAL, WAR_CRY } fro
 import { tick as tickStatus, slowOf, apply as applyStatus, drop as dropStatus, swing } from './status.js';
 import { typeOf, pierceOf, stageOf, timesOf } from './data/armor.js';
 import { tickHit } from './gesture.js';
+import { track, where } from './analytics.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -1319,6 +1320,8 @@ export function updateEnemies(state, dt) {
     // what a boss is; the keep simply falls.
     if (e.def.ends) state.lives = 0;
     else state.lives -= e.def.leak;
+    // INTO THE PLAYER LOG: what got through, and where.
+    track('leak', { ...where(state), enemy: e.def.name, lost: e.def.ends ? 'all' : e.def.leak });
   }
 
   // Bounty is paid here rather than in projectiles.js, so a soldier's kill and

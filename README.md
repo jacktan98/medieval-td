@@ -19,6 +19,7 @@ Add `?debug` to the URL to hang the live game state on `window.__game`.
 
 ```
 index.html          the game
+stats.html          the player log: what players pressed, the tutorial, wins and losses
 src/                the rules and the drawing — 35 modules, no dependencies
 src/data/           the numbers: towers, waves, abilities, statuses, the maps
 assets/             every drawing and every sound, one folder per KIND of thing
@@ -31,6 +32,12 @@ rather than for playing: `aim-test.html` (a tower aiming both ways at every
 tier), `tower-test.html` (depth inside one sprite — add `?siege` for artillery),
 `corpse-test.html` (every death pose) and `knock-test.html` (a body being knocked
 back). Each says at the top what it is for and what a wrong drawing looks like.
+
+`stats.html` reads the log `src/analytics.js` keeps in each player's browser — every
+button pressed and every tap that pressed nothing, how long each tutorial line was
+up, and where stages were won, lost or quit. Nothing is sent anywhere: a
+playtester exports their log from that page and the file is imported on yours. The
+admin dashboard's Stats tab opens it.
 
 ## The rule this repository runs on
 

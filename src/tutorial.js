@@ -38,6 +38,7 @@ import { ui } from './data/ui.js';
 import { BOOK_ICON_HIT } from './book.js';
 import { UPGRADES_BTN } from './upgradepage.js';
 import { STAGES } from './data/overview.js';
+import { track } from './analytics.js';
 
 const PLOT_HIT = 38;          // a plot's tap radius, as input.js's (PLOT_R + 8)
 const TYPE_RATE = 32;         // characters a second, typed
@@ -394,6 +395,10 @@ function run(state, tut, dt) {
 }
 
 function advance(tut) {
+  // INTO THE PLAYER LOG: which line, and how long it was up — or that it was skipped.
+  const step = stepsOf(tut)[tut.i];
+  track('tutorial', { list: tut.list, step: tut.i + 1, say: (step && step.say) || 'wait',
+    secs: tut.begun ? Math.round(tut.t * 10) / 10 : 0, skipped: !tut.begun });
   tut.leaving = null;
   tut.i++;
   tut.begun = false;

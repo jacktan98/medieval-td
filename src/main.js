@@ -25,6 +25,7 @@ import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
 import { makeTutorial, updateTutorial, makeMapTour, updateMapTour } from './tutorial.js';
+import { track, watchGame } from './analytics.js';
 import { canvasScale } from './data/ui.js';
 
 // HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
@@ -326,6 +327,9 @@ function newGame() {
 
 newGame();
 attachInput(canvas, state, newGame);
+// A VISIT, into the player log: phone or mouse, and the screen it is played on.
+track('visit', { touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,
+  w: innerWidth, h: innerHeight });
 
 // A window onto the live game, for `?debug` only — the same trick as render.js's
 // `?muzzle`, and for the same reason: something has to be checkable from outside
@@ -430,6 +434,8 @@ function frame(now) {
   if (!state.started) stepReveal(state, real);
   // And the world map's tour of the encyclopedia and the upgrades, once stage 1 is won.
   if (!state.started) updateMapTour(state, real);
+  // THE PLAYER LOG's stage starts, waves and results — see src/analytics.js.
+  watchGame(state);
 
   // THE STARS COMING OUT, one by one, each with its own chime. Out here beside the
   // map's reveal and for the same two reasons: it is a screen animation, so it runs

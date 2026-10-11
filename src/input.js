@@ -22,6 +22,19 @@ import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './u
 import { AIM_MODES } from './data/towers.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { saveDifficulty } from './score.js';
+import { track, where, layerOf, trackLeave } from './analytics.js';
+
+// WHICH BUTTON A TAP PRESSED, named by the branch that answered it, for the player
+// log (src/analytics.js). `press` marks it and passes the branch's own answer on.
+let pressed = null, pressedData = null;
+const press = (b, r = true, data = null) => { pressed = b; pressedData = data; return r; };
+const itemName = it => it.act === 'build' ? `build:${it.family.id}`
+  : it.act === 'upgrade' ? `upgrade:${it.to ? it.to.name : '?'}`
+  : it.act === 'refund' ? 'sell'
+  : it.act === 'rally' ? 'rally_button'
+  : it.act === 'target' ? 'targeting'
+  : it.act === 'ability' ? `ability:${it.ability ? (it.ability.id || it.ability.name) : it.label || '?'}`
+  : it.act || 'menu';
 
 // How far outside the menu ring the mouse may stray before a menu that opened
 // itself on hover closes again. Without the slack, the gap between the ring and
@@ -74,7 +87,15 @@ export function attachInput(canvas, state, restart) {
     // the click means "heard you" rather than "done".
     // AN UPGRADE BOUGHT plays the purchase sound, at the owner's word, rather than
     // the ordinary click — with priority, as selling a tower does.
+    // INTO THE PLAYER LOG: what was pressed, or where a tap pressed nothing.
+    const layer = layerOf(state);
+    const here = layer === 'game' || layer === 'paused' ? where(state) : null;
+    pressed = null; pressedData = null;
     const did = tap(state, x, y, restart);
+    if (layer !== 'admin') {
+      track('tap', { b: pressed || (did ? `${layer}:${did === true ? 'tap' : did}` : 'miss'), ok: !!did, layer,
+        ...(did ? {} : { x: Math.round(x), y: Math.round(y) }), ...(here || {}), ...(pressedData || {}) });
+    }
     // A SOUND SLIDER TAPPED keeps the finger, so a drag that wanders off the track
     // or off the canvas still moves it. See hitSoundSlider in render.js.
     if (state.soundDrag) { try { canvas.setPointerCapture(e.pointerId); } catch { /* gone already */ } }
@@ -233,23 +254,23 @@ export function tap(state, x, y, restart) {
     // so a player who has seen the animation four times is never waiting on it —
     // and a player who has not is never made to sit through it twice by a stray
     // tap that did nothing.
-    if (skipReveal(state)) return true;
+    if (skipReveal(state)) return press('skip_reveal');
     // THE WORLD MAP'S TOUR, after stage 1, lets only what its arrow is on be pressed
     // (and the dashboard). See src/tutorial.js.
-    if (!mapTourAllows(state, x, y) && !inside(ADMIN_BTN, x, y)) return false;
+    if (!mapTourAllows(state, x, y) && !inside(ADMIN_BTN, x, y)) return press('tour_blocked', false);
 
     // 'open', so the book sounds rather than the click.
-    if (hitBookButton(state, x, y)) { openBook(state); return 'open'; }
+    if (hitBookButton(state, x, y)) { openBook(state); return press('book', 'open'); }
 
     // THE UPGRADES SCREEN, from the world map only — beside the book there.
     if ((state.stage === null || state.stage === undefined) && hitUpgradesButton(x, y)) {
       openUpgrades(state);
-      return true;
+      return press('upgrades');
     }
 
     // The corner button, and the only way into the dashboard. Tested before the
     // map row for the usual reason — it is drawn on top, so it answers first.
-    if (inside(ADMIN_BTN, x, y)) { openAdmin(state); return true; }
+    if (inside(ADMIN_BTN, x, y)) { openAdmin(state); return press('admin'); }
 
     // THE WORLD MAP, with nothing chosen yet. Only a stage marker answers a tap
     // here — everything else on screen is scenery, and a tap on the sea should do
@@ -263,6 +284,7 @@ export function tap(state, x, y, restart) {
       // chosen stage survives the rebuild the same way the difficulty does — see
       // newGame in main.js, which carries it across.
       state.stage = pick;
+      press('stage_flag', true, { stage: pick + 1 });
 
       // A stage with no map behind it opens its panel and stops there. There is
       // nothing to rebuild the board for, and useLevel(null) would clamp to map 1
@@ -279,7 +301,7 @@ export function tap(state, x, y, restart) {
 
     // Back out of the stage panel to the world map. Nothing is rebuilt: the
     // player has changed their mind about where, not about what.
-    if (hitBack(state, x, y)) { state.stage = null; state.startWhenReady = false; return true; }
+    if (hitBack(state, x, y)) { state.stage = null; state.startWhenReady = false; return press('panel_back'); }
 
     // Same treatment again: a difficulty scales the wave table and the purse,
     // both of which are read once at newGame.
@@ -289,14 +311,14 @@ export function tap(state, x, y, restart) {
       state.difficultyIndex = ((state.difficultyIndex ?? 0) + 1) % DIFFICULTIES.length;
       saveDifficulty(state.difficultyIndex);
       restart();
-      return true;
+      return press('difficulty', true, { to: DIFFICULTIES[state.difficultyIndex].name });
     }
 
     // Not before the board's pictures are here: until then the press is held, and
     // the game starts the moment they arrive (src/main.js).
     if (hitStart(state, x, y)) {
       if (boardReady(level)) state.started = true; else state.startWhenReady = true;
-      return true;
+      return press('start');
     }
     return false;
   }
@@ -305,16 +327,16 @@ export function tap(state, x, y, restart) {
   // from: a win has just opened the next stage, and the road drawing itself to it
   // is the reward for the run. Clearing the stage before the rebuild is what
   // newGame reads, so it carries null across rather than the stage just played.
-  if (state.result) { state.stage = null; restart(); return true; }
+  if (state.result) { state.stage = null; restart(); return press('result_continue'); }
 
   // The HUD sits above everything and is not part of the board, so it is
   // asked first — otherwise a button that happens to overlap a plot's menu
   // would lose to it.
   const hud = hitHudButton(state, x, y);
-  if (hud === 'pause') { togglePause(state); return true; }
+  if (hud === 'pause') { togglePause(state); return press(state.paused ? 'pause' : 'resume'); }
   // STAGE 1'S TUTORIAL, while it has an arrow up, lets only that thing be pressed —
   // and the pause above, and whatever a paused game offers. See src/tutorial.js.
-  if (!state.paused && !tutorialAllows(state, x, y)) return false;
+  if (!state.paused && !tutorialAllows(state, x, y)) return press('tutorial_blocked', false);
 
   // A NEW-ENEMY ALERT, under the gold. Answers on a paused board as well — reading
   // is not playing, the same argument that lets the book open there — and the card
@@ -322,7 +344,7 @@ export function tap(state, x, y, restart) {
   // Opening one turns a page — 'flip', so the tap plays the page turning rather than
   // the click, at the owner's word.
   const alert = hitAlert(state, x, y);
-  if (alert >= 0) { openFoeCard(state, alert); return 'flip'; }
+  if (alert >= 0) { openFoeCard(state, alert); return press('alert', 'flip'); }
 
   // PAUSED SWALLOWS EVERYTHING ELSE. Not just the board — the speed toggle and
   // the early wave call go too, because "paused" has to mean the game is not
@@ -336,8 +358,8 @@ export function tap(state, x, y, restart) {
   // quitting ends the game rather than advancing it.
   if (state.paused) return tapPaused(state, x, y, restart);
 
-  if (hud === 'speed') { toggleSpeed(state); return true; }
-  if (hud === 'wave') { callWaveEarly(state); return true; }
+  if (hud === 'speed') { toggleSpeed(state); return press('speed', true, { to: state.speed }); }
+  if (hud === 'wave') { const bonus = callWaveEarly(state); return press('next_wave', true, { bonus }); }
 
   // Placing a rally point swallows the tap: the whole board is the target,
   // so nothing underneath may act on it.
@@ -349,13 +371,13 @@ export function tap(state, x, y, restart) {
   // src/render.js).
   if (state.placing) {
     const t = state.placing;
-    if (Math.hypot(t.plot.x - x, t.plot.y - y) <= PLOT_R + 8) { state.placing = null; return true; }
-    if (!rallyValid(t, x, y)) { state.badTap = { x, y, at: state.anim || 0 }; return true; }
+    if (Math.hypot(t.plot.x - x, t.plot.y - y) <= PLOT_R + 8) { state.placing = null; return press('rally_cancel'); }
+    if (!rallyValid(t, x, y)) { state.badTap = { x, y, at: state.anim || 0 }; return press('rally_invalid'); }
     setRally(state, t, x, y);
     state.rallyMark = { tower: t, at: state.anim || 0 };
     state.badTap = null;
     state.placing = null;
-    return 'planted';
+    return press('rally_set', 'planted');
   }
 
   // A menu button wins over anything underneath it, including the plot ring
@@ -364,7 +386,7 @@ export function tap(state, x, y, restart) {
   if (item) {
     // An unaffordable button absorbs the tap rather than closing — and answers
     // with nothing, because nothing happened.
-    if (!canUse(state, item)) return false;
+    if (!canUse(state, item)) return press(`cannot_afford:${itemName(item)}`, false);
 
     // THE FIRST PRESS OF A PURCHASE ARMS IT AND SPENDS NOTHING. See NEEDS_CONFIRM
     // in menu.js for which buttons those are and why the other two are not.
@@ -376,11 +398,11 @@ export function tap(state, x, y, restart) {
     if (needsConfirm(item) && !armed(state, item)) {
       state.menu.arming = item;
       state.menu.viaHover = false;
-      return true;
+      return press(`arm:${itemName(item)}`);
     }
 
     run(state, item);
-    return true;
+    return press(itemName(item));
   }
 
   // Clicking the plot whose menu opened itself on hover PINS that menu rather
@@ -391,10 +413,10 @@ export function tap(state, x, y, restart) {
   if (state.menu && state.menu.viaHover &&
       Math.hypot(state.menu.plot.x - x, state.menu.plot.y - y) <= PLOT_R + 8) {
     state.menu.viaHover = false;
-    return true;
+    return press('menu_pin');
   }
 
-  if (hitCancel(state, x, y)) { closeMenu(state); return true; }
+  if (hitCancel(state, x, y)) { closeMenu(state); return press('menu_close'); }
 
   const plot = level.plots.find(p => Math.hypot(p.x - x, p.y - y) <= PLOT_R + 8);
   if (plot) {
@@ -416,7 +438,7 @@ export function tap(state, x, y, restart) {
     // those happen once each. The tap's own click is not a voice and is not
     // subject to any of that.
     state.selected = tower ? { kind: 'tower', ref: tower } : null;
-    return true;
+    return press(tower ? 'tower_select' : 'plot');
   }
 
   // Nothing to build on here, so this is a look. A figure under the tap gets
@@ -439,7 +461,7 @@ export function tap(state, x, y, restart) {
   if (state.selected && state.selected.kind === 'villager') greetVillager(state, state.selected.ref);
   // Picking somebody up is an action and so is putting them down; tapping bare
   // ground twice is not.
-  return !!(state.selected || had);
+  return press(state.selected ? `select:${state.selected.kind}` : 'deselect', !!(state.selected || had));
 }
 
 // The three controls a paused game puts on the board, and nothing else answers.
@@ -460,7 +482,7 @@ function tapPaused(state, x, y, restart) {
     state.armed = null;
     setSoundLevel(slider, soundValueAt(x));
     state.soundDrag = slider;
-    return true;
+    return press(`sound:${slider}`);
   }
 
   const hit = hitPauseButton(state, x, y);
@@ -480,13 +502,14 @@ function tapPaused(state, x, y, restart) {
       // QUIT LANDS ON THE WORLD MAP rather than on the panel for the stage being
       // left. Somebody quitting has finished with this place on the road, and the
       // road is what they should be looking at.
+      trackLeave(state, hit);
       if (hit === 'quit') state.stage = null;
       restart();
       if (hit === 'restart') state.started = true;
-      return true;
+      return press(hit);
     }
     state.armed = { id: hit, until: now + ARM_WINDOW };
-    return true;
+    return press(`arm:${hit}`);
   }
 
   state.armed = null;
