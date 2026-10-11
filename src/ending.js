@@ -65,7 +65,7 @@ export function startEnding(state) {
 }
 export const lastStage = i => i === STAGE_COUNT - 1;
 
-const PART_SECONDS = { crows: 5.5, fog: 3 };
+const PART_SECONDS = { crows: 6, fog: 3 };
 const ease = k => k * k * (3 - 2 * k);
 // The words, the tally and the credits wait for a tap, or this many seconds once whole.
 const PANEL_HOLD = 12;
@@ -189,10 +189,10 @@ export function drawEnding(ctx, state) {
 }
 
 // THE FLOCK: the Dark Crow's own wingbeat, small, rising out of the Dark Hollow and
-// away off the top right of the map.
-const FLOCK = 18;
+// away off the bottom right of the map.
+const FLOCK = 48;
 const CROW_FRAMES = [['crow', [217, 180, 78, 60]], ['crow_flap1', [217, 199, 78, 41]], ['crow_flap2', [217, 212, 78, 51]], ['crow_flap1', [217, 199, 78, 41]]];
-const CROW_W = 18;
+const CROW_W = 8;
 function drawCrows(ctx, E) {
   if (!E.crows) {
     const homes = [STAGE_COUNT - 3, STAGE_COUNT - 2, STAGE_COUNT - 1].map(i => STAGES[i]);
@@ -201,15 +201,20 @@ function drawCrows(ctx, E) {
     const r = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
     E.crows = Array.from({ length: FLOCK }, (_, k) => {
       const h = homes[k % homes.length];
-      return { x0: h.x + (r() - 0.5) * 60, y0: h.y + (r() - 0.5) * 30, x1: 1000 + r() * 80, y1: -60 + r() * 220,
-               delay: r() * 1.6, dur: 3 + r() * 1.2, beat: r() * 4, size: 0.8 + r() * 0.4 };
+      // OFF THE BOTTOM RIGHT, at the owner's word: away to the right and curving
+      // down off the corner, each on its own line.
+      const x0 = h.x + (r() - 0.5) * 50, y0 = h.y + (r() - 0.5) * 24;
+      const x1 = 900 + r() * 160, y1 = 560 + r() * 60;
+      return { x0, y0, x1, y1, cx: x0 + (x1 - x0) * 0.75 + 20, cy: y0 + (y1 - y0) * 0.1 - 10,
+               delay: r() * 2.6, dur: 2.2 + r() * 1.1, beat: r() * 4, size: 0.75 + r() * 0.5 };
     });
   }
   for (const c of E.crows) {
     const k = (E.t - c.delay) / c.dur;
     if (k <= 0 || k >= 1) continue;
-    const u = k * k * (3 - 2 * k);
-    const x = c.x0 + (c.x1 - c.x0) * u, y = c.y0 + (c.y1 - c.y0) * u - Math.sin(u * Math.PI) * 40;
+    // Along a gentle curve (a quadratic through `cx, cy`), gathering speed.
+    const u = k * (0.6 + 0.4 * k), v = 1 - u;
+    const x = v * v * c.x0 + 2 * v * u * c.cx + u * u * c.x1, y = v * v * c.y0 + 2 * v * u * c.cy + u * u * c.y1;
     const [key, [sx, sy, sw, sh]] = CROW_FRAMES[Math.floor(E.t * 9 + c.beat) % CROW_FRAMES.length];
     const img = art[key];
     if (!img) continue;
