@@ -19,7 +19,7 @@
 // world map, over everything else there.
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 import { art } from './assets.js';
-import { play, slice, BELL, FLAG_PLANTED } from './audio.js';
+import { play, slice, fanfare, BELL, FLAG_PLANTED } from './audio.js';
 import { drawFlag, drawStageStars } from './overview.js';
 import { tutorialPaper, TUTORIAL_INK, drawAdminDoor } from './render.js';
 import { starsEarned } from './upgrades.js';
@@ -83,11 +83,12 @@ export function updateEnding(state, dt) {
     : E.part > fogAt ? 1 : E.part < fogAt ? 0 : ease(Math.min(1, E.t / PART_SECONDS.fog));
   if (E.begun !== E.part) { E.begun = E.part; begin(state, E, part); }
   if (part === 'road') stepRoad(E);
+  if (part === 'crows') stepCrows(E);
   if (over(E, part)) next(state);
 }
 
 function begin(state, E, part) {
-  if (part === 'crows') play(['crows_cawing'], 0.8);
+  // (The caws are stepCrows: the dark crow's own caw, as the flock goes.)
   if (part === 'road') E.road = roadPlan();
   if (part === 'words' || part === 'tally' || part === 'credits') play(['page_flip']);
 }
@@ -135,6 +136,14 @@ export function tapSeal(state, x, y) {
   return true;
 }
 
+// THE FLOCK'S CAWS, at the owner's word: the dark crow's own caw — the one a perched
+// crow gives when tapped — at its own level, as the flock goes.
+const CAWS = [0.3];           // once: the clip is 5 seconds of cawing on its own
+function stepCrows(E) {
+  E.cawed ||= 0;
+  while (E.cawed < CAWS.length && E.t >= CAWS[E.cawed]) { E.cawed++; fanfare(['dark_crow_caw']); }
+}
+
 // --- the road ---------------------------------------------------------------------
 //
 // Back down the road the army came up: each stage's leg walked from its far end to its
@@ -168,7 +177,9 @@ const BELL_STROKES = [[0, 1.8], [2.1, 1.8]];
 function stepRoad(E) {
   const R = E.road;
   for (const [i, at] of Object.entries(R.flags)) {
-    if (E.t >= at && !R.dropped[i]) { R.dropped[i] = true; play(FLAG_PLANTED, 0.6); }
+    // AS LOUD AS THE MAP'S OWN FLAG, at the owner's word: the same clip on the same
+    // channel at full level (fanfare, so drops close together are not held back).
+    if (E.t >= at && !R.dropped[i]) { R.dropped[i] = true; fanfare(FLAG_PLANTED); }
   }
   BELL_STROKES.forEach(([at, d], k) => {
     if (E.t >= R.home + at && !R.rung[k]) { R.rung[k] = true; slice(BELL.key, 0, d, 1, BELL.fade); }
