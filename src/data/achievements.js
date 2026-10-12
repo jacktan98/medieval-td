@@ -30,15 +30,6 @@ export const ACHIEVEMENTS = [
   { id: 'hollow', name: 'Dawn over the Hollow', icon: null, goal: 3,
     text: 'Complete every Dark Hollow stage with 3 stars.' },
 
-  { id: 'book', name: 'Patron of the Arts', icon: null, goal: 70,
-    text: '{Click} on every picture in the Encyclopedia to see it up close.' },
-  { id: 'villagers', name: 'Friend of the People', icon: null, goal: 100,
-    text: '{Click} on villagers 100 times. Thugs do not count.' },
-  { id: 'offroad', name: 'No Stone Unturned', icon: null, goal: 17,
-    text: '{Click} on every enemy waiting off the road on stages 14, 15 and 16.' },
-  { id: 'tier4', name: 'Grand Arsenal', icon: null, goal: 8,
-    text: 'Build all 8 tier 4 towers in one stage.' },
-
   { id: 'quarrels', name: 'Rain of Quarrels', icon: null, goal: 10000,
     text: 'Have your crossbowmen deal 10,000 damage in total.' },
   { id: 'heavykill', name: 'Heavy Hitter', icon: null, goal: 100,
@@ -55,7 +46,16 @@ export const ACHIEVEMENTS = [
   { id: 'fiery', name: 'Playing with Fire', icon: null, goal: 2000,
     text: 'Have your cannoneers deal 2,000 burn damage with Fiery Shot.' },
   { id: 'monks', name: 'Time Stands Still', icon: null, goal: 300,
-    text: 'Have your monks slow 300 enemies.' }
+    text: 'Have your monks slow 300 enemies.' },
+
+  { id: 'book', name: 'Patron of the Arts', icon: null, goal: 70,
+    text: '{Click} on every picture in the Encyclopedia to see it up close.' },
+  { id: 'villagers', name: 'Friend of the People', icon: null, goal: 100,
+    text: '{Click} on villagers 100 times. Thugs do not count.' },
+  { id: 'offroad', name: 'No Stone Unturned', icon: null, goal: 17,
+    text: '{Click} on every enemy waiting off the road on stages 14, 15 and 16.' },
+  { id: 'tier4', name: 'Grand Arsenal', icon: null, goal: 8,
+    text: 'Build all 8 tier 4 towers in one stage.' }
 ];
 
 // The page's title and the pop-up's heading.
