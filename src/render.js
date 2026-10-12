@@ -7286,10 +7286,11 @@ function drawAchievements(ctx, state) {
     achievementFace(ctx, a, b.cx, b.cy, b.r * 2, got, i === pick || i === hover);
 
     // The Upgrades screen's ring: blue round the one being read, solid when tapped
-    // and fainter under the mouse, breathing; and a still gold one round each earned.
-    const ring = i === pick ? UP_PICK : i === hover ? 'rgba(47,95,168,0.55)' : got ? UI_GOLD : null;
+    // and fainter under the mouse, breathing. None round an earned one, at the
+    // owner's word — its colour says so.
+    const ring = i === pick ? UP_PICK : i === hover ? 'rgba(47,95,168,0.55)' : null;
     if (ring) {
-      const pulse = ring === UI_GOLD ? 0 : 0.5 + 0.5 * Math.sin(glowT * 4 + i);
+      const pulse = 0.5 + 0.5 * Math.sin(glowT * 4 + i);
       ctx.save();
       ctx.strokeStyle = ring;
       ctx.lineWidth = 3;
@@ -7298,7 +7299,7 @@ function drawAchievements(ctx, state) {
       ctx.beginPath();
       ctx.arc(b.cx, b.cy, b.r + 1.5, 0, Math.PI * 2);
       ctx.stroke();
-      if (ring !== UI_GOLD) ctx.stroke();
+      ctx.stroke();
       ctx.shadowBlur = 0;
       ctx.stroke();
       ctx.restore();

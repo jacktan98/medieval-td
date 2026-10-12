@@ -1135,12 +1135,23 @@ export function discFace(key, trim) {
 
 // One picture into `art`. Resolves either way: a missing file is a console line
 // and an absent picture, never a stalled game.
+//
+// AND A PICTURE THAT FAILS IS ASKED FOR AGAIN, twice, a moment apart, before it is
+// given up on: one download dropped on a busy connection left an achievement drawn
+// with the stand-in trophy for the whole visit while the file itself was fine. An
+// optional picture, expected to be missing, is asked for once.
+const RETRIES = 2, RETRY_WAIT = 1200;
 function loadOne(key, absent = null) {
   const src = paths[key];
   return new Promise(resolve => {
+    let tries = 0;
     const img = new Image();
     img.onload = () => { art[key] = img; resolve(); };
     img.onerror = () => {
+      if (!OPTIONAL.has(key) && tries++ < RETRIES) {
+        setTimeout(() => { img.src = `${versioned(src)}${stamp ? '&' : '?'}retry=${tries}`; }, RETRY_WAIT);
+        return;
+      }
       failed.add(key);
       if (OPTIONAL.has(key) && absent) absent.push(src);
       else console.warn('Missing sprite:', src);
