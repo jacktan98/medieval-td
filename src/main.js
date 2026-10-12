@@ -1,6 +1,7 @@
-import { loadArt, ensureBoard, boardReady } from './assets.js';
+import { loadArt, ensureBoard, boardReady, prefetchBoards } from './assets.js';
 import { loadAudio, fanfare, setLoop, chime, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
 import { level, levels } from './level.js';
+import { STAGES } from './data/overview.js';
 import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
@@ -20,7 +21,7 @@ import { updateSplats } from './blood.js';
 import { updateImpacts } from './impacts.js';
 import { updateSmoke } from './smoke.js';
 import { updateWaves } from './waves.js';
-import { draw, tierMarks, setDeviceScale } from './render.js';
+import { draw, tierMarks, setDeviceScale, stagePhoto } from './render.js';
 import { attachInput } from './input.js';
 import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
@@ -733,5 +734,48 @@ function step(state, dt) {
 // was broken, and every clip is optional at every call site — one still in
 // flight simply does not play. It starts alongside the art rather than after
 // it, so in practice it is all there before the Start button is pressed.
+//
+// AND WHILE IT LOADS, A BAR: the game's name and how much of its art has arrived, on
+// the page's own dark colour, so the first few seconds are a loading screen rather
+// than an empty box. Drawn straight onto the canvas as each picture lands; the first
+// frame of the game paints over it.
+function drawLoading(frac) {
+  fitToDisplay();
+  ctx.save();
+  ctx.fillStyle = '#23201c';
+  ctx.fillRect(0, 0, 960, 540);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#F0E6D2';
+  ctx.font = '44px Lobster, Georgia, serif';
+  ctx.fillText('Medieval TD', 480, 226);
+  const w = 360, h = 14, x = 480 - w / 2, y = 284;
+  ctx.fillStyle = 'rgba(240,230,210,0.15)';
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, h / 2);
+  ctx.fill();
+  if (frac > 0) {
+    ctx.fillStyle = '#E0B24C';
+    ctx.beginPath();
+    ctx.roundRect(x, y, Math.max(h, w * frac), h, h / 2);
+    ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(240,230,210,0.7)';
+  ctx.font = '16px Lobster, Georgia, serif';
+  ctx.fillText(`Loading… ${Math.round(frac * 100)}%`, 480, 322);
+  ctx.restore();
+}
+drawLoading(0);
 loadAudio();
-loadArt().then(() => requestAnimationFrame(frame));
+loadArt(drawLoading).then(() => {
+  requestAnimationFrame(frame);
+  // THEN EVERY STAGE'S BOARD, quietly, the furthest stage reached first and back down
+  // the road, then the ones still ahead — and each one's preview photo made as it
+  // lands, so tapping a stage on the map shows it at once. Not in a replay, which
+  // plays one board it has already asked for.
+  if (REPLAY) return;
+  const reached = Math.max(1, Math.min(STAGES.length, state.unlocked || 1));
+  const order = [...Array(reached).keys()].reverse().concat([...Array(STAGES.length).keys()].slice(reached));
+  const keys = order.map(i => STAGES[i].level === null ? null : levels[STAGES[i].level].art).filter(Boolean);
+  prefetchBoards(keys, stagePhoto);
+});

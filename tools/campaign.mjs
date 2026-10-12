@@ -3652,13 +3652,17 @@ console.log('\n--- the stage panel stands on its own board ---\n');
 
   // CLIPPED, or the board is a rectangle over a rounded panel and the corners show.
   const clipAt = body.search(/ctx\.clip\(\)/);
-  const drawAt = body.search(/drawImage\(board/);
+  // The board itself, or the preview photo baked from it — see stagePhoto, which is
+  // where the cover-fit below now lives.
+  const drawAt = body.search(/drawImage\((stagePhoto\()?board/);
+  const photoFn = rd.slice(rd.indexOf('export function stagePhoto'));
+  const photo = photoFn.slice(0, photoFn.indexOf('\n}\n') + 2);
   ok(clipAt >= 0 && drawAt > clipAt, 'and cut to the panel rather than overhanging it',
     'clipped before the board is drawn');
 
   // COVER-FITTED into its photograph: fitting the width leaves the print half
   // empty, and stretching bends roads that are never drawn bent.
-  ok(/Math\.max\(iw \/ 960, ih \/ 540\)/.test(body),
+  ok(/Math\.max\(iw \/ 960, ih \/ 540\)/.test(body) || /Math\.max\(iw \/ 960, ih \/ 540\)/.test(photo),
     'and scaled to cover it rather than stretched to fit',
     'one scale for both axes, the larger');
 

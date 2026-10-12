@@ -6002,6 +6002,30 @@ const COL_PAD = 24;
 export const STAGE_PHOTO = { x: STAGE_PANEL.x + COL_PAD, y: COL_TOP, w: 348, h: 236 };
 const PHOTO_BORDER = 12;
 
+// THE PREVIEW'S PICTURE, MADE ONCE PER BOARD: the board cover-fitted into the photo's
+// window at the screen's own density, kept. A stage's board is a large SVG, and
+// rasterizing it for the first time is the stall a tap on a stage used to show; main.js
+// bakes each one in the background after the game has started, as its board arrives
+// (prefetchBoards in src/assets.js), so the panel opens with its picture already made.
+const photoCache = new Map();
+export function stagePhoto(board) {
+  const iw = STAGE_PHOTO.w - 2 * PHOTO_BORDER, ih = STAGE_PHOTO.h - 2 * PHOTO_BORDER;
+  const S = Math.min(3, Math.max(2, device));
+  const key = `${board.src}|${S}`;
+  let c = photoCache.get(key);
+  if (!c) {
+    c = document.createElement('canvas');
+    c.width = Math.round(iw * S);
+    c.height = Math.round(ih * S);
+    const g = c.getContext('2d');
+    g.scale(S, S);
+    const k = Math.max(iw / 960, ih / 540);
+    g.drawImage(board, (iw - 960 * k) / 2, (ih - 540 * k) / 2, 960 * k, 540 * k);
+    photoCache.set(key, c);
+  }
+  return c;
+}
+
 // THE RIGHT COLUMN: everything the player reads and decides.
 const STAGE_RIGHT = {
   x: STAGE_PHOTO.x + STAGE_PHOTO.w + 20,
@@ -6214,8 +6238,9 @@ function drawStart(ctx, state) {
   ctx.rect(ix, iy, iw, ih);
   ctx.clip();
   if (board) {
-    const k = Math.max(iw / 960, ih / 540);
-    ctx.drawImage(board, ix + (iw - 960 * k) / 2, iy + (ih - 540 * k) / 2, 960 * k, 540 * k);
+    // From the photo baked for it — see stagePhoto — rather than the board's own SVG
+    // drawn small every frame.
+    ctx.drawImage(stagePhoto(board), ix, iy, iw, ih);
     // WARMED (a sepia wash, multiplied in) and FADED (a little of the paper over
     // it), which is what years do to a print. By compositing rather than a canvas
     // filter, which not every phone's browser draws.

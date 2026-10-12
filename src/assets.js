@@ -1181,10 +1181,37 @@ export function ensureBoard(lv) {
 }
 export const boardReady = lv => !lv || boardArt(lv).every(key => art[key] || failed.has(key));
 
-export function loadArt() {
+// THE STAGES' BOARDS, FETCHED IN THE BACKGROUND once the game is up, one at a time in
+// the order given — so a stage tapped on the world map shows its picture at once,
+// rather than after its board has downloaded. One at a time and only after the first
+// frame, so it never slows the start; a board already fetched or in flight is skipped,
+// and `each` is told every one that arrives (main.js bakes its preview photo).
+export async function prefetchBoards(keys, each = null) {
+  for (const key of keys) {
+    if (!paths[key] || failed.has(key)) continue;
+    if (!art[key]) {
+      if (!boardJobs.has(key)) boardJobs.set(key, loadOne(key));
+      await boardJobs.get(key);
+    }
+    if (art[key] && each) {
+      try { each(art[key]); } catch { /* a photo that cannot be baked is drawn live */ }
+    }
+    // A breath between boards, so the game's own frames keep coming.
+    await new Promise(r => setTimeout(r, 30));
+  }
+}
+
+// `onProgress`, if given, is told the share loaded, 0 to 1, as each picture lands —
+// the loading bar main.js draws before the first frame.
+export function loadArt(onProgress = null) {
   const absent = [];
 
-  const jobs = Object.keys(paths).filter(key => !BOARD_ART.test(key)).map(key => loadOne(key, absent));
+  const keys = Object.keys(paths).filter(key => !BOARD_ART.test(key));
+  let done = 0;
+  const jobs = keys.map(key => loadOne(key, absent).then(() => {
+    done++;
+    if (onProgress) onProgress(done / keys.length);
+  }));
 
   return Promise.all(jobs).then(() => {
     if (absent.length) console.info('Not drawn yet:', absent.join(', '));
