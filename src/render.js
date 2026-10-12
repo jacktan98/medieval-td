@@ -7215,7 +7215,8 @@ function drawUpgradePanel(ctx, state) {
 // --- the achievements -------------------------------------------------------------
 //
 // The screen is the Upgrades screen's sheet, rows and panel — see src/achievepage.js
-// for the layout and the owner's words on it.
+// for the layout and the owner's words on it. `state.achAll` is the dashboard's look
+// at every one earned (code 2020), which saves nothing.
 
 // AN ACHIEVEMENT'S PICTURE in a circle `box` across: the artist's icon once it is
 // drawn, and until then the trophy from the map, smaller, on a cream disc. In black
@@ -7259,7 +7260,7 @@ function drawAchievements(ctx, state) {
   // HOW MANY ARE EARNED, top right, on the plate the Upgrades screen keeps its stars
   // on: the trophy and "3/20", sized to what it holds.
   const st = ACH_COUNT;
-  const count = `${earnedCount()}/${ACHIEVEMENTS.length}`;
+  const count = `${state.achAll ? ACHIEVEMENTS.length : earnedCount()}/${ACHIEVEMENTS.length}`;
   ctx.font = `23px ${MAP_TYPE}`;
   const PAD = 12, ICON = 26, GAP = 8;
   const plateW = PAD + ICON + GAP + ctx.measureText(count).width + PAD;
@@ -7277,7 +7278,7 @@ function drawAchievements(ctx, state) {
   const glowT = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
   ACHIEVEMENTS.forEach((a, i) => {
     const b = achBox(i);
-    const got = earned(a.id);
+    const got = state.achAll || earned(a.id);
     roundShadow(ctx, b.cx, b.cy, b.r);
     ctx.fillStyle = SHEET_FILL;
     ctx.beginPath();
@@ -7320,7 +7321,7 @@ function drawAchievementPanel(ctx, state) {
   paperRect(ctx, p.x, p.y, p.w, p.h, 31, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.4, true);
   const a = ACHIEVEMENTS[shownAchievement(state)];
   if (!a) return;
-  const got = earned(a.id);
+  const got = state.achAll || earned(a.id);
   const cx = p.x + p.w / 2;
 
   ctx.textAlign = 'center';
@@ -7338,7 +7339,7 @@ function drawAchievementPanel(ctx, state) {
   wrapIn(ctx, verbs(a.text), p.w - 48).forEach((line, k) => ctx.fillText(line, cx, p.y + 180 + k * 23));
 
   // HOW FAR ALONG, as a number and a bar, for those that count something.
-  const pr = progressOf(a.id);
+  const pr = state.achAll && a.goal ? [a.goal, a.goal] : progressOf(a.id);
   if (pr) {
     const [done, goal] = pr;
     const bw = p.w - 90, bh = 14, bx = cx - bw / 2, by = p.y + p.h - 52;

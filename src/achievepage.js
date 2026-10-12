@@ -53,14 +53,18 @@ export function achAt(x, y) {
 export const shownAchievement = state =>
   state.achHover !== null && state.achHover !== undefined ? state.achHover : state.achPick ?? 0;
 
-export function openAchievements(state) {
+export function openAchievements(state, all = false) {
   state.achievements = true;
+  // EVERY ONE SHOWN AS EARNED, for the owner, from the dashboard's code 2020: a look
+  // at the whole set in colour. Nothing is saved; Done puts the real ones back.
+  state.achAll = all;
   state.achPick = 0;
   state.achHover = null;
 }
 
 export function closeAchievements(state) {
   state.achievements = false;
+  state.achAll = false;
   state.achHover = null;
 }
 

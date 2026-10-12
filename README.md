@@ -61,7 +61,8 @@ THE ACHIEVEMENTS (`src/achievements.js`, their names and words in
 from the trophy on the world map, left of the Upgrades. 20 of them, 4 to a row: what
 each asks, and how far along the player is. One earned pops up on old paper at the
 top right for a few seconds. They count only in a game being played, never in a
-replay, and the dashboard's campaign reset clears them.
+replay, and the dashboard's campaign reset clears them. The admin keypad's code
+2020 shows the screen with every one earned, saving nothing.
 
 ## The rule this repository runs on
 

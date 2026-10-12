@@ -49,6 +49,8 @@ const PARTY_PIN = '2208';
 const PARTY_HREF = 'birthday/';
 // AND A THIRD: the campaign's ending, played on the world map — see src/ending.js.
 const ENDING_PIN = '1600';
+// AND A FOURTH: every achievement shown as earned, saving nothing — see src/achievepage.js.
+const ACHIEVE_PIN = '2020';
 
 import { levels } from './level.js';
 import { enemyTypes, MARCH_ORDER, defaultGap } from './data/waves.js';
@@ -59,6 +61,7 @@ import { forgetIntro } from './tutorial.js';
 import { forgetEnding, startEnding } from './ending.js';
 import { resetUpgrades } from './upgrades.js';
 import { clearAchievements } from './achievements.js';
+import { openAchievements } from './achievepage.js';
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 // The difficulties themselves, and the two rules that turn a tuned Hard number
 // into the Normal one. Imported rather than reimplemented — see the note on
@@ -1400,6 +1403,8 @@ export function tapAdmin(state, x, y, restart) {
         }
         // A LOOK AT THE ENDING, for the owner, without winning stage 16 first.
         else if (a.typed === ENDING_PIN) { closeAdmin(state); startEnding(state); }
+        // A LOOK AT EVERY ACHIEVEMENT EARNED, in colour, without earning them.
+        else if (a.typed === ACHIEVE_PIN) { closeAdmin(state); openAchievements(state, true); }
         else { a.wrong = true; a.typed = ''; }
       }
       return true;
