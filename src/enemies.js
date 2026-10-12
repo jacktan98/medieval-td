@@ -846,10 +846,15 @@ function turnTo(e, x) {
   if (x !== e.x) e.face = x > e.x ? 1 : -1;
 }
 
-// The kills an achievement counts, by what landed the last blow: the pope's missile,
-// an assassin's thrown knife, and Deadeye's ball. See src/achievements.js.
-const KILL_COUNTS = { pope: 'pope', knife: 'knife', deadeye: 'deadeye' };
-const countKill = e => { if (KILL_COUNTS[e.killedBy]) note(KILL_COUNTS[e.killedBy]); };
+// The kills an achievement counts, by what landed the last blow: an assassin's thrown
+// knife, Deadeye's ball, and a Heavy Bolt — the bolt itself or the fire it leaves,
+// both of which are the ballista's `bolt`, told from a plain one by `killedWith`.
+// See src/achievements.js.
+const KILL_COUNTS = { knife: 'knife', deadeye: 'deadeye' };
+export const countKill = e => {
+  if (KILL_COUNTS[e.killedBy]) note(KILL_COUNTS[e.killedBy]);
+  else if (e.killedBy === 'bolt' && e.killedWith === 'heavybolt') note('heavykill');
+};
 
 export function updateEnemies(state, dt) {
   for (const e of state.enemies) {

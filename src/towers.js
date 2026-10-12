@@ -610,7 +610,20 @@ const FIRE = 2;      // the arm comes over, and the rock leaves on this beat
 // the arrow in data/towers.js.
 const reachesAir = t => !!(t.def.ammo && t.def.ammo.air);
 
+// DIVINE BLESSING: while a High Altar that knows both Holy Wrath and Divine Fortitude
+// stands on the map, every other tower on it is empowered by both — and each one
+// counts once, however long it stands there. See src/achievements.js.
+function blessings(state) {
+  if (!state.towers.some(t => owns(t, 'wrath') && owns(t, 'fortitude'))) return;
+  for (const t of state.towers) {
+    if (t.blessed || (owns(t, 'wrath') && owns(t, 'fortitude'))) continue;
+    t.blessed = true;
+    note('blessing');
+  }
+}
+
 export function updateTowers(state, dt) {
+  blessings(state);
   for (const t of state.towers) {
     // Barracks have no weapon — their range is rally reach, not a firing arc,
     // and they carry no mount or muzzle to aim with.
@@ -1184,8 +1197,6 @@ function shoot(state, t, target, special) {
     ammo,
     speed: ammo.speed
   };
-  // HEAVY HITTER counts every Heavy Bolt that leaves a turret.
-  if (special && special.id === 'heavybolt') note('heavybolt');
 
   // `lob`, not `arc`. They were the same test until the Cannon Outpost, which is
   // thrown at the ground like a catapult's rock and flies flat like a musket

@@ -145,6 +145,9 @@ export const deadeyeBall = {
 export const heavyBolt = {
   ...bolt,
   sprite: 'heavy_bolt',
+  // WHAT THE KILL IS CREDITED TO, beside the ballista's `kind`: Heavy Hitter counts
+  // the men a Heavy Bolt brings down. See `killedWith` in src/projectiles.js.
+  credit: 'heavybolt',
   // NOTHING BUT THE SPRITE KEY, and that is a finding rather than a tidy-up.
   //
   // This entry used to restate three numbers — `trim` [172, 148, 196, 190],

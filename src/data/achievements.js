@@ -41,12 +41,12 @@ export const ACHIEVEMENTS = [
 
   { id: 'quarrels', name: 'Rain of Quarrels', icon: null, goal: 10000,
     text: 'Have your crossbowmen deal 10,000 damage in total.' },
-  { id: 'heavybolt', name: 'Heavy Hitter', icon: null, goal: 100,
-    text: 'Have your ballista engineers fire Heavy Bolt 100 times.' },
+  { id: 'heavykill', name: 'Heavy Hitter', icon: null, goal: 100,
+    text: 'Have your ballista engineers kill 100 enemies with Heavy Bolt.' },
   { id: 'holylight', name: 'Saving Grace', icon: null, goal: 200,
     text: 'Have your paladins heal themselves fully with Holy Light 200 times.' },
-  { id: 'pope', name: 'Divine Judgment', icon: null, goal: 200,
-    text: 'Have your popes kill 200 enemies.' },
+  { id: 'blessing', name: 'Divine Blessing', icon: null, goal: 50,
+    text: 'Have your popes empower 50 towers with both Holy Wrath and Divine Fortitude.' },
 
   { id: 'knife', name: 'Knives Out', icon: null, goal: 100,
     text: 'Have your assassins kill 100 enemies with Knife Throw.' },

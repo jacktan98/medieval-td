@@ -25,8 +25,9 @@ import { levels } from '../src/level.js';
 import { setStars, clearStars } from '../src/score.js';
 import { paths as ASSET_URLS } from '../src/assets.js';
 import { updateTowers } from '../src/towers.js';
+import { countKill } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
-import { archery, siege, monastery } from '../src/data/towers.js';
+import { archery, barracks, siege, monastery } from '../src/data/towers.js';
 import { useMathRandom } from '../src/rng.js';
 useMathRandom();
 
@@ -182,13 +183,38 @@ function battle(t, seconds, enemies) {
   return state;
 }
 {
+  // Heavy Hitter: a man brought down by a Heavy Bolt, or by the fire it left, counts;
+  // one brought down by a plain bolt does not.
   const def = siege.find(d => d.name === 'Ballista Turret');
-  battle(tower('siege', def, ['heavybolt']), 30, [dummy({ x: 300, y: 300 }, 150)]);
-  const n = A.progressOf('heavybolt')[0];
-  check(n > 0, 'a Ballista Turret with Heavy Bolt counts its heavy bolts', String(n));
+  const marks = new Set();
+  const man = dummy({ x: 300, y: 300 }, 150);
+  const st = { towers: [tower('siege', def, ['heavybolt'])], enemies: [man], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
+  for (let i = 0; i < 30 * 60; i++) { updateTowers(st, 1 / 60); updateShots(st, 1 / 60); marks.add(`${man.killedBy}/${man.killedWith}`); }
+  check(marks.has('bolt/heavybolt') && marks.has('bolt/null'), 'a Heavy Bolt marks its man as its own, and a plain bolt does not', [...marks].join(' '));
   A.clearAchievements();
-  battle(tower('siege', def), 30, [dummy({ x: 300, y: 300 }, 150)]);
-  check(A.progressOf('heavybolt')[0] === 0, 'and one without it counts none');
+  countKill({ killedBy: 'bolt', killedWith: 'heavybolt' });
+  countKill({ killedBy: 'bolt', killedWith: null });
+  countKill({ killedBy: 'melee', killedWith: 'heavybolt' });
+  check(A.progressOf('heavykill')[0] === 1, 'only the Heavy Bolt\'s kill counts for Heavy Hitter', String(A.progressOf('heavykill')[0]));
+  countKill({ killedBy: 'knife' });
+  countKill({ killedBy: 'deadeye' });
+  check(A.progressOf('knife')[0] === 1 && A.progressOf('deadeye')[0] === 1, 'a Knife Throw kill and a Deadeye kill count for theirs');
+}
+{
+  // Divine Blessing: a High Altar with both Holy Wrath and Divine Fortitude empowers
+  // every other tower on the map, each counted once.
+  const altar = monastery.find(d => d.name === 'High Altar');
+  const others = () => [tower('archery', archery[0]), tower('siege', siege[0]), tower('monastery', monastery[0])];
+  A.clearAchievements();
+  const one = { towers: [tower('monastery', altar, ['wrath']), ...others()], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
+  updateTowers(one, 1 / 60);
+  check(A.progressOf('blessing')[0] === 0, 'a High Altar with only Holy Wrath empowers nothing for Divine Blessing');
+  const both = { towers: [tower('monastery', altar, ['wrath', 'fortitude']), ...others()], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
+  for (let i = 0; i < 120; i++) updateTowers(both, 1 / 60);
+  check(A.progressOf('blessing')[0] === 3, 'with both, the 3 towers beside it count once each', String(A.progressOf('blessing')[0]));
+  both.towers.push(tower('barracks', barracks[0]));
+  updateTowers(both, 1 / 60);
+  check(A.progressOf('blessing')[0] === 4, 'and a tower built later counts too');
 }
 {
   const def = archery.find(d => d.name === 'Crossbow Sentry');
@@ -217,7 +243,7 @@ A.countAchievements(false);
 const src = f => readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
 const hooks = [
   ['enemies.js', /st\.id === 'burnt' && st\.by === 'cannonball'/, 'Fiery Shot\'s burn damage'],
-  ['enemies.js', /KILL_COUNTS = \{ pope: 'pope', knife: 'knife', deadeye: 'deadeye' \}/, 'pope, Knife Throw and Deadeye kills'],
+  ['enemies.js', /countKill\(e\);/, 'Knife Throw, Deadeye and Heavy Bolt kills'],
   ['units.js', /note\('holylight'\)/, 'a Holy Light finished'],
   ['input.js', /noteVillagerTap\(level\.id/, 'a villager tapped'],
   ['input.js', /noteTier4\(state, next\)/, 'a tier 4 tower built'],

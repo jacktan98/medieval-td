@@ -10,7 +10,7 @@ The 20 achievements, in the order the page shows them, which is the name each
 icon's file takes: Fast Learner, Seasoned General, Legend of the Realm, Master
 Smith, Shield of Winchester, Light of Dawnford, Steel of Ironforge, Dawn over the
 Hollow, Patron of the Arts, Friend of the People, No Stone Unturned, Grand Arsenal,
-Rain of Quarrels, Heavy Hitter, Saving Grace, Divine Judgment, Knives Out, One Shot,
+Rain of Quarrels, Heavy Hitter, Saving Grace, Divine Blessing, Knives Out, One Shot,
 One Kill (its file drops the comma), Playing with Fire, Time Stands Still.
 
 ## Names
