@@ -728,6 +728,29 @@ export const paths = {
   // for the foot of its ladder. Each is a whole button — the artist's own coloured
   // disc and rim — so nothing is drawn under it. Keyed by family id and rung,
   // which is how src/upgrades.js names a rung.
+  // THE ACHIEVEMENTS' FACES, in assets/achievements: one per achievement, each a
+  // whole button like the upgrades' — numbered in the order the screen shows them.
+  // See `icon` in src/data/achievements.js.
+  ach_1: 'assets/achievements/Achievements_1.png',
+  ach_2: 'assets/achievements/Achievements_2.png',
+  ach_3: 'assets/achievements/Achievements_3.png',
+  ach_4: 'assets/achievements/Achievements_4.png',
+  ach_5: 'assets/achievements/Achievements_5.png',
+  ach_6: 'assets/achievements/Achievements_6.png',
+  ach_7: 'assets/achievements/Achievements_7.png',
+  ach_8: 'assets/achievements/Achievements_8.png',
+  ach_9: 'assets/achievements/Achievements_9.png',
+  ach_10: 'assets/achievements/Achievements_10.png',
+  ach_11: 'assets/achievements/Achievements_11.png',
+  ach_12: 'assets/achievements/Achievements_12.png',
+  ach_13: 'assets/achievements/Achievements_13.png',
+  ach_14: 'assets/achievements/Achievements_14.png',
+  ach_15: 'assets/achievements/Achievements_15.png',
+  ach_16: 'assets/achievements/Achievements_16.png',
+  ach_17: 'assets/achievements/Achievements_17.png',
+  ach_18: 'assets/achievements/Achievements_18.png',
+  ach_19: 'assets/achievements/Achievements_19.png',
+  ach_20: 'assets/achievements/Achievements_20.png',
   up_archery: 'assets/upgrades/Upgrade_Archery_Icon.svg',
   up_archery_1: 'assets/upgrades/Upgrade_Archery_1_Icon.svg',
   up_archery_2: 'assets/upgrades/Upgrade_Archery_2_Icon.svg',

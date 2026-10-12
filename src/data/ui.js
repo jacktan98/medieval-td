@@ -303,6 +303,29 @@ export const ui = {
   // larger than the ability faces' 186, at the owner's word, so the Upgrades
   // screen can draw them bigger. Drawn at UP_ICON across (src/upgradepage.js),
   // which keeps a source pixel to at most one screen pixel on a 3x display.
+  // THE ACHIEVEMENTS' FACES, the same 248px disc as the upgrades', drawn at the same
+  // 72 across on the Achievements screen (src/achievepage.js). Numbered as the
+  // artist numbered the files, which is the order the screen shows them.
+  ach_1: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_2: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_3: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_4: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_5: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_6: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_7: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_8: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_9: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_10: { trim: [131, 132, 248, 248], fit: 72 },   // drawn 1px further left than the rest
+  ach_11: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_12: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_13: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_14: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_15: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_16: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_17: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_18: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_19: { trim: [132, 132, 248, 248], fit: 72 },
+  ach_20: { trim: [132, 132, 248, 248], fit: 72 },
   up_archery: { trim: [132, 132, 248, 248], fit: 72 },
   up_archery_1: { trim: [132, 132, 248, 248], fit: 72 },
   up_archery_2: { trim: [132, 132, 248, 248], fit: 72 },

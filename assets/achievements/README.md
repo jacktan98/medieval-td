@@ -1,41 +1,50 @@
 # Achievement icons
 
 The pictures for the game's achievements: one icon per achievement, shown on the
-achievements page and in the pop-up when one is earned, and the trophy that opens
-the page from the world map. Until an achievement's own icon is uploaded, the page
-and the pop-up draw the trophy in its place. Each icon is listed in the table below
-as it is wired in (its `icon` in `src/data/achievements.js`).
-
-The 20 achievements, in the order the page shows them, which is the name each
-icon's file takes: Fast Learner, Seasoned General, Legend of the Realm, Master
-Smith, Shield of Winchester, Light of Dawnford, Steel of Ironforge, Dawn over the
-Hollow, Rain of Quarrels, Heavy Hitter, Saving Grace, Divine Blessing, Knives Out,
-One Shot, One Kill (its file drops the comma), Playing with Fire, Time Stands Still,
-Patron of the Arts, Friend of the People, No Stone Unturned, Grand Arsenal.
+Achievements screen and in the pop-up when one is earned, and the trophy that opens
+the screen from the world map. Each is wired in by its `icon` in
+`src/data/achievements.js`; an achievement without one is drawn with the trophy.
 
 ## Names
 
-`Achievement_<Name>_Icon.svg` (or `.png`), where `<Name>` is the achievement's name
-in words joined by underscores: "Flawless Victory" would be
-`Achievement_Flawless_Victory_Icon`, with `.svg` or `.png` on the end.
-One file per achievement. A file named this way can be matched to its achievement
-without anything else to look up.
+`Achievements_<number>.png`, numbered in the order the screen shows them, left to
+right and top to bottom, 4 to a row. Moving an achievement on the screen means
+renumbering its file too, or changing its `icon`.
 
 | File | What it is |
 |------|------------|
-| `Achievements_Icon.png` | the world map's Achievements button, left of the Upgrades hammer, with the word under it (61 x 55: 0.3 per source px, the same scale as the Encyclopedia book and the hammer); also the stand-in on every achievement until its own icon arrives |
+| `Achievements_Icon.png` | the world map's Achievements button, left of the Upgrades hammer, with the word under it (61 x 55: 0.3 per source px, the same scale as the Encyclopedia book and the hammer); also the stand-in for any achievement without an icon of its own |
+| `Achievements_1.png` | Fast Learner |
+| `Achievements_2.png` | Seasoned General |
+| `Achievements_3.png` | Legend of the Realm |
+| `Achievements_4.png` | Master Smith |
+| `Achievements_5.png` | Shield of Winchester |
+| `Achievements_6.png` | Light of Dawnford |
+| `Achievements_7.png` | Steel of Ironforge |
+| `Achievements_8.png` | Dawn over the Hollow |
+| `Achievements_9.png` | Rain of Quarrels |
+| `Achievements_10.png` | Heavy Hitter |
+| `Achievements_11.png` | Saving Grace |
+| `Achievements_12.png` | Divine Blessing |
+| `Achievements_13.png` | Knives Out |
+| `Achievements_14.png` | One Shot, One Kill |
+| `Achievements_15.png` | Playing with Fire |
+| `Achievements_16.png` | Time Stands Still |
+| `Achievements_17.png` | Patron of the Arts |
+| `Achievements_18.png` | Friend of the People |
+| `Achievements_19.png` | No Stone Unturned |
+| `Achievements_20.png` | Grand Arsenal |
 
 ## How to draw them
 
-- **SVG on a 512 × 512 canvas is best**, as the upgrade icons are (see
-  `assets/upgrades/README.md`): it stays sharp at any size and its edges stay clean.
-  A PNG at 512 × 512 works too.
-- **Fill the canvas the same way in every icon**, the picture centred with a
-  similar margin all round, so a row of them reads as a set.
-- **Transparent background.** The game draws its own plate or medallion behind each
-  icon, and greys it out while the achievement is still locked, so there is no need
-  for a separate "locked" drawing. If you would rather draw one, name it
-  `Achievement_<Name>_Locked_Icon.svg` and it will be used instead.
+- **512 × 512, with the button a 248px disc in the middle**, its own colour and rim,
+  as the upgrade faces are (see `assets/upgrades/README.md`). It is drawn 72 across,
+  whole, so nothing is drawn under it. Number 10 sits 1px left of the rest; the trim
+  in `src/data/ui.js` follows it.
+- **Transparent outside the disc.** The game shows a not-yet-earned achievement in
+  black and white, faded, so there is no need for a separate "locked" drawing.
+- Run `node tools/trim.mjs` after uploading: it measures each disc and says if the
+  trim no longer matches.
 
 ## Uploading
 
