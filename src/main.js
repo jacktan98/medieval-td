@@ -1,5 +1,5 @@
 import { loadArt, ensureBoard, boardReady } from './assets.js';
-import { loadAudio, fanfare, setLoop, chime, CUE, VICTORY, LOST, STAR } from './audio.js';
+import { loadAudio, fanfare, setLoop, chime, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
 import { level, levels } from './level.js';
 import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
@@ -35,7 +35,7 @@ import { shapeMenu, setTouch, isTouch } from './tutorial.js';
 import { useLevel } from './level.js';
 import { soundLevel, setSoundLevel } from './audio.js';
 import { canvasScale } from './data/ui.js';
-import { countAchievements, checkRecords, flushAchievements } from './achievements.js';
+import { countAchievements, checkRecords, flushAchievements, toasts } from './achievements.js';
 
 // HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
 const TOWER_ALERT_DELAY = 1;
@@ -350,6 +350,11 @@ function newGame() {
   }
 }
 
+// HOW LONG AN ACHIEVEMENT'S POP-UP WAITS after the result's last star has rung, in
+// ms, and the wall-clock time before which it may not come in. See below in frame.
+const TOAST_AFTER_STARS = 1000;
+let toastHold = 0;
+
 // THE ACHIEVEMENTS COUNT IN A GAME BEING PLAYED, and not in one being watched again.
 // Anything the save already shows — the stars, the upgrades — is given now, quietly,
 // to a player who did it before achievements existed. See src/achievements.js.
@@ -605,6 +610,15 @@ function frame(now) {
   if (!state.started && !state.book && !state.upgrades && !state.achievements) updateEnding(state, real);
   // The achievements' counts, saved now and then rather than every frame.
   flushAchievements();
+  // AND THE NEXT POP-UP COMES IN WITH ITS SOUND — but not over the result's stars:
+  // an achievement a stage's stars earned waits until the last one has rung, and a
+  // second beat after it. render.js draws only a pop-up that has been let in here.
+  const wall = performance.now();
+  if (state.summary && state.starsShown < state.summary.stars) toastHold = wall + TOAST_AFTER_STARS;
+  if (toasts[0] && !toasts[0].heard && wall >= toastHold) {
+    toasts[0].heard = true;
+    fanfare(ACHIEVED);
+  }
   // THE PLAYER LOG's stage starts, waves and results — see src/analytics.js.
   watchGame(state);
 

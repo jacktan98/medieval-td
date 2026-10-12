@@ -628,7 +628,11 @@ const paths = {
   //            free to be tuned by ear. See STAR_GAP in score.js.
   victory:         'assets/audio/map/Victory_sound.mp3',
   lost:            'assets/audio/map/Lost_sound.mp3',
-  star:            'assets/audio/map/Star_sound.mp3'
+  star:            'assets/audio/map/Star_sound.mp3',
+  // AN ACHIEVEMENT EARNED, as its pop-up comes in at the top right (src/render.js):
+  // 4.42s of file, about 3s of sound from 0.18. One per pop-up, so a run of them
+  // earned at once is heard one at a time with the cards. See ACHIEVED below.
+  achievement:     'assets/audio/map/Achievement_unlocked.mp3'
 };
 
 // The clip table, by the name the game calls each one. See the note above `paths`
@@ -1238,6 +1242,8 @@ export const FACTORY = { key: 'factory', len: 5.38, dur: 5.1 };
 export const VICTORY = ['victory'];
 export const LOST    = ['lost'];
 export const STAR    = ['star'];
+// And an achievement's pop-up, over the battle as the result's are — see src/main.js.
+export const ACHIEVED = ['achievement'];
 
 // --- THE BOSS ------------------------------------------------------------------
 //

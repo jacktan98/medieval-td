@@ -7372,7 +7372,8 @@ function drawAchievementPanel(ctx, state) {
 const TOAST = { w: 258, right: 10, top: 5, in: 0.35, hold: 4, out: 0.8 };
 function drawAchievementToast(ctx) {
   const t = toasts[0];
-  if (!t) return;
+  // Not until main.js has let it in, with its sound.
+  if (!t || !t.heard) return;
   const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
   if (t.at === null) t.at = now;
   const k = now - t.at;
