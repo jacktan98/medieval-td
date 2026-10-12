@@ -8,7 +8,6 @@ import { inRange } from './ground.js';
 import { upgradeFx } from './upgrades.js';
 import { at as pointOn, nearestOn } from './route.js';
 import { rand } from './rng.js';
-import { note } from './achievements.js';
 
 // A TOWER, AS THE GAME KEEPS ONE. Every field it will ever read, set here, once.
 //
@@ -610,20 +609,7 @@ const FIRE = 2;      // the arm comes over, and the rock leaves on this beat
 // the arrow in data/towers.js.
 const reachesAir = t => !!(t.def.ammo && t.def.ammo.air);
 
-// DIVINE BLESSING: while a High Altar that knows both Holy Wrath and Divine Fortitude
-// stands on the map, every other tower on it is empowered by both — and each one
-// counts once, however long it stands there. See src/achievements.js.
-function blessings(state) {
-  if (!state.towers.some(t => owns(t, 'wrath') && owns(t, 'fortitude'))) return;
-  for (const t of state.towers) {
-    if (t.blessed || (owns(t, 'wrath') && owns(t, 'fortitude'))) continue;
-    t.blessed = true;
-    note('blessing');
-  }
-}
-
 export function updateTowers(state, dt) {
-  blessings(state);
   for (const t of state.towers) {
     // Barracks have no weapon — their range is rally reach, not a firing arc,
     // and they carry no mount or muzzle to aim with.

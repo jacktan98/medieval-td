@@ -20,7 +20,7 @@ import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { tutorialAllows, shapeMenu, mapTourAllows, setTouch } from './tutorial.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { hitAchievementsButton, openAchievements, tapAchievements, hoverAchievements } from './achievepage.js';
-import { noteVillagerTap, noteTier4 } from './achievements.js';
+import { noteVillagerTap, noteTier4, note } from './achievements.js';
 import { AIM_MODES } from './data/towers.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { saveDifficulty } from './score.js';
@@ -728,6 +728,10 @@ function run(state, item) {
   if (item.act === 'ability') {
     const t = menu.tower;
     t.abilities.push(item.ability.id);
+    // DIVINE BLESSING counts each High Altar the moment it knows both of its
+    // abilities, whichever was bought second. See src/achievements.js.
+    if (['wrath', 'fortitude'].includes(item.ability.id) && t.abilities.includes('wrath') &&
+        t.abilities.includes('fortitude')) note('blessing');
     state.gold -= item.cost;
     t.spent += item.cost;
     item.owned = true;

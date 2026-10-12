@@ -27,7 +27,7 @@ import { paths as ASSET_URLS } from '../src/assets.js';
 import { updateTowers } from '../src/towers.js';
 import { countKill } from '../src/enemies.js';
 import { updateShots } from '../src/projectiles.js';
-import { archery, barracks, siege, monastery } from '../src/data/towers.js';
+import { archery, siege, monastery } from '../src/data/towers.js';
 import { useMathRandom } from '../src/rng.js';
 useMathRandom();
 
@@ -201,22 +201,6 @@ function battle(t, seconds, enemies) {
   check(A.progressOf('knife')[0] === 1 && A.progressOf('deadeye')[0] === 1, 'a Knife Throw kill and a Deadeye kill count for theirs');
 }
 {
-  // Divine Blessing: a High Altar with both Holy Wrath and Divine Fortitude empowers
-  // every other tower on the map, each counted once.
-  const altar = monastery.find(d => d.name === 'High Altar');
-  const others = () => [tower('archery', archery[0]), tower('siege', siege[0]), tower('monastery', monastery[0])];
-  A.clearAchievements();
-  const one = { towers: [tower('monastery', altar, ['wrath']), ...others()], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
-  updateTowers(one, 1 / 60);
-  check(A.progressOf('blessing')[0] === 0, 'a High Altar with only Holy Wrath empowers nothing for Divine Blessing');
-  const both = { towers: [tower('monastery', altar, ['wrath', 'fortitude']), ...others()], enemies: [], units: [], shots: [], hits: [], corpses: [], splats: [], impacts: [] };
-  for (let i = 0; i < 120; i++) updateTowers(both, 1 / 60);
-  check(A.progressOf('blessing')[0] === 3, 'with both, the 3 towers beside it count once each', String(A.progressOf('blessing')[0]));
-  both.towers.push(tower('barracks', barracks[0]));
-  updateTowers(both, 1 / 60);
-  check(A.progressOf('blessing')[0] === 4, 'and a tower built later counts too');
-}
-{
   const def = archery.find(d => d.name === 'Crossbow Sentry');
   A.clearAchievements();
   const st = battle(tower('archery', def), 10, [dummy({ x: 300, y: 300 }, 120)]);
@@ -247,6 +231,7 @@ const hooks = [
   ['units.js', /note\('holylight'\)/, 'a Holy Light finished'],
   ['input.js', /noteVillagerTap\(level\.id/, 'a villager tapped'],
   ['input.js', /noteTier4\(state, next\)/, 'a tier 4 tower built'],
+  ['input.js', /t\.abilities\.includes\('fortitude'\)\) note\('blessing'\)/, 'a pope given both Holy Wrath and Divine Fortitude'],
   ['book.js', /noteBookPicture\(/, 'a picture opened'],
   ['upgradepage.js', /checkRecords\(\)/, 'an upgrade bought'],
   ['main.js', /countAchievements\(true\)/, 'counting on in the game'],

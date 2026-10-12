@@ -45,8 +45,8 @@ export const ACHIEVEMENTS = [
     text: 'Have your ballista engineers kill 100 enemies with Heavy Bolt.' },
   { id: 'holylight', name: 'Saving Grace', icon: null, goal: 200,
     text: 'Have your paladins heal themselves fully with Holy Light 200 times.' },
-  { id: 'blessing', name: 'Divine Blessing', icon: null, goal: 50,
-    text: 'Have your popes empower 50 towers with both Holy Wrath and Divine Fortitude.' },
+  { id: 'blessing', name: 'Divine Blessing', icon: null, goal: 30,
+    text: 'Have a pope learn both Holy Wrath and Divine Fortitude 30 times.' },
 
   { id: 'knife', name: 'Knives Out', icon: null, goal: 100,
     text: 'Have your assassins kill 100 enemies with Knife Throw.' },
