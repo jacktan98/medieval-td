@@ -7161,28 +7161,37 @@ function drawUpgradePanel(ctx, state) {
   const u = UPGRADES[fam][i];
   const st8 = rungState(fam, i);
 
+  // THE RUNG'S OWN FACE AT THE TOP, in colour, as the Achievements screen's panel
+  // shows its own — at the owner's word.
+  if (!drawUi(ctx, `up_${fam}_${i + 1}`, cx, p.y + 56, 72)) {
+    ctx.fillStyle = '#FFEFD4';
+    ctx.beginPath();
+    ctx.arc(cx, p.y + 56, 36, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   ctx.fillStyle = UP_NAME;
   ctx.font = `25px ${MAP_TYPE}`;
-  ctx.fillText(u.name, cx, p.y + 34);
+  ctx.fillText(u.name, cx, p.y + 120);
   ctx.fillStyle = UP_MUTED;
   ctx.font = `15px ${MAP_TYPE}`;
-  ctx.fillText(UP_FAMILY_NAME[fam], cx, p.y + 58);
+  ctx.fillText(UP_FAMILY_NAME[fam], cx, p.y + 144);
 
   // The price, a star and a number.
   // Cream-edged, as the map's stars are, with a dark ring outside the cream so
   // it stands out on the pale paper — both at the owner's word.
-  starShape(ctx, cx - 12, p.y + 86, 10, 'map', UI_INK, '#3A2410');
+  starShape(ctx, cx - 12, p.y + 172, 10, 'map', UI_INK, '#3A2410');
   ctx.fillStyle = UP_INK;
   ctx.font = `21px ${MAP_TYPE}`;
   ctx.textAlign = 'left';
-  ctx.fillText(String(UPGRADE_COSTS[i]), cx + 2, p.y + 87);
+  ctx.fillText(String(UPGRADE_COSTS[i]), cx + 2, p.y + 173);
 
   // What it does, in the owner's words — wrapped in the face it is set in.
   ctx.font = `17px ${MAP_TYPE}`;
   const lines = wrapIn(ctx, u.text, p.w - 48);
   ctx.textAlign = 'center';
   ctx.fillStyle = UP_INK;
-  lines.forEach((line, k) => ctx.fillText(line, cx, p.y + 124 + k * 23));
+  lines.forEach((line, k) => ctx.fillText(line, cx, p.y + 206 + k * 23));
 
   // Where it stands, over the button.
   // BOUGHT SITS WHERE BUY DID, the same size, at the owner's word — the button
@@ -7269,7 +7278,13 @@ function drawAchievements(ctx, state) {
   ctx.beginPath();
   ctx.roundRect(px0, st.y, plateW, st.h, 10);
   ctx.fill();
-  drawUi(ctx, 'icon_achievements', px0 + PAD + ICON / 2, st.y + st.h / 2, ICON);
+  // WITH THE MAP DOOR'S CREAM BORDER round the trophy, at the owner's word, so it
+  // reads against the dark plate as it does against the forest.
+  if (art.icon_achievements) {
+    const { w, h } = uiSize('icon_achievements', ICON);
+    drawHaloed(ctx, art.icon_achievements, ui.icon_achievements.trim,
+      px0 + PAD + ICON / 2 - w / 2, st.y + st.h / 2 - h / 2, w, h, 1.5);
+  }
   ctx.fillStyle = '#F0E6D2';
   ctx.textAlign = 'left';
   ctx.fillText(count, px0 + PAD + ICON + GAP, st.y + st.h / 2 + 1);

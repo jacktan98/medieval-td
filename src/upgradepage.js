@@ -57,7 +57,9 @@ export function upBox(col, i) {
 // they built one. It replaced a name plate, at the owner's word.
 export const upFamily = col => ({ cx: COL_X + col * COL_W + COL_W / 2, cy: BOTTOM_CY + STEP_Y, r: UP_R });
 
-export const UP_PANEL = { x: 600, y: 84, w: 330, h: 340 };
+// 370 TALL, AND IT WAS 340: the rung's own face now heads the panel, as an
+// achievement's does on the screen beside it, at the owner's word.
+export const UP_PANEL = { x: 600, y: 84, w: 330, h: 370 };
 export const UP_BUY = { x: UP_PANEL.x + 45, y: UP_PANEL.y + UP_PANEL.h - 66, w: UP_PANEL.w - 90, h: 44 };
 // RESET BESIDE DONE at the bottom right, at the owner's word, and it was at the
 // bottom left. 20px of drawn gap keeps their padded tap boxes apart.
