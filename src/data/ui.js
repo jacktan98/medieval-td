@@ -315,7 +315,7 @@ export const ui = {
   ach_7: { trim: [132, 132, 248, 248], fit: 72 },
   ach_8: { trim: [132, 132, 248, 248], fit: 72 },
   ach_9: { trim: [132, 132, 248, 248], fit: 72 },
-  ach_10: { trim: [131, 132, 248, 248], fit: 72 },   // drawn 1px further left than the rest
+  ach_10: { trim: [132, 132, 248, 248], fit: 72 },
   ach_11: { trim: [132, 132, 248, 248], fit: 72 },
   ach_12: { trim: [132, 132, 248, 248], fit: 72 },
   ach_13: { trim: [132, 132, 248, 248], fit: 72 },

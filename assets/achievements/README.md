@@ -39,8 +39,7 @@ renumbering its file too, or changing its `icon`.
 
 - **512 × 512, with the button a 248px disc in the middle**, its own colour and rim,
   as the upgrade faces are (see `assets/upgrades/README.md`). It is drawn 72 across,
-  whole, so nothing is drawn under it. Number 10 sits 1px left of the rest; the trim
-  in `src/data/ui.js` follows it.
+  whole, so nothing is drawn under it.
 - **Transparent outside the disc.** The game shows a not-yet-earned achievement in
   black and white, faded, so there is no need for a separate "locked" drawing.
 - Run `node tools/trim.mjs` after uploading: it measures each disc and says if the
