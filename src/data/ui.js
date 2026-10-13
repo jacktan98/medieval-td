@@ -416,8 +416,11 @@ export const ui = {
   // reason a new icon needs no thought: it lands on the plate where the last ten
   // did. NOT `pale`: white price ink reads on this orange the way it reads on the
   // blue, and it is only the altar's white disc that swallowed it.
-  ability_pulse:    { trim: [163, 163, 186, 186], fit: 60, plate: true },
-  ability_strength: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  // THE REDRAWN PAIR SWAPPED SHADES: Slowed Pulse is now the lighter disc (237
+  // against 201), so it takes the dark price and comes first, and Inner Strength the
+  // white. See the temple's `abilities` in data/towers.js.
+  ability_pulse:    { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  ability_strength: { trim: [163, 163, 186, 186], fit: 60, plate: true },
 
   // THE STATUS MARKS, and they are the first entries in this table that are drawn
   // on the BOARD rather than on the interface. They are here anyway, and that is

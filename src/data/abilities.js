@@ -1386,6 +1386,41 @@ export const ABILITIES = [
       `A 2nd High Altar with it adds another ${pc(a.aura.damage)} on top.`
   },
   {
+    // THE JUDGEMENT TEMPLE'S TWO, and a FIFTH SHAPE of ability. Everything before
+    // them is a rhythm (one shot in four), a passive on the tower's own numbers
+    // (reach, reload), a reaction to being nearly dead, or an aura over the map.
+    // These change EVERY shot the tower fires, for good, from the moment they are
+    // bought — so they have no `every`, no `hold` and no `pose`, and what they
+    // carry instead is a re-drawn projectile.
+    //
+    //   `shot`      the ammunition this tower fires from now on, in place of its
+    //               tier's own. Not `ammo`, which above means the ball a SPECIAL
+    //               fires once a cycle — two different questions, and folding them
+    //               into one field would have made every ability with an `ammo`
+    //               fire it on every shot.
+    //   `shotWith`  what to fire instead when the tower has ALSO bought the ability
+    //               named. Both entries below name each other and point at the same
+    //               drawing, which tools/abilities.mjs checks — a pair that
+    //               disagreed would fire a different comet depending on which of
+    //               the two was bought first.
+    id: 'pulse',
+    name: 'Slowed Pulse',
+    of: 'Judgment Temple',
+    icon: 'ability_pulse',
+    cost: ABILITY_COST,
+    shot: monkSlowShot,
+    shotWith: { strength: monkBothShot },
+
+    detail: (a, t) => `Every blast slows the enemy it hits by ${pc(a.shot.slow.times)}, both ` +
+      `walking and attacking, for ${a.shot.slow.seconds} seconds. The temple fires ` +
+      `${t.cooldown === 1 ? 'once a second' : `every ${num(t.cooldown)} seconds`}, so anything in reach stays slowed, and stays slowed for ` +
+      `${a.shot.slow.seconds} seconds after it leaves. The slow does not stack: a 2nd temple only ` +
+      `refreshes it. Bosses are slowed by only ` +
+      `${pc(slowOn({ def: { boss: true } }, a.shot.slow.times))}. When the Sands of Time upgrade ` +
+      `triggers on a blast, the slow lasts ` +
+      `${a.shot.slow.seconds + UPGRADES.monastery.find(u => u.slow).slow.seconds} seconds instead.`
+  },
+  {
     id: 'strength',
     name: 'Inner Strength',
     of: 'Judgment Temple',
@@ -1431,41 +1466,6 @@ export const ABILITIES = [
       `${plate(blow(t.damage, a.damageTimes), t.pierce + a.pierceUp)} on medium wards instead of ` +
       `${plate(t.damage, t.pierce)}. Against warded enemies it is worth far more than ` +
       `${pc(a.damageTimes)}.`
-  },
-  {
-    // THE JUDGEMENT TEMPLE'S TWO, and a FIFTH SHAPE of ability. Everything before
-    // them is a rhythm (one shot in four), a passive on the tower's own numbers
-    // (reach, reload), a reaction to being nearly dead, or an aura over the map.
-    // These change EVERY shot the tower fires, for good, from the moment they are
-    // bought — so they have no `every`, no `hold` and no `pose`, and what they
-    // carry instead is a re-drawn projectile.
-    //
-    //   `shot`      the ammunition this tower fires from now on, in place of its
-    //               tier's own. Not `ammo`, which above means the ball a SPECIAL
-    //               fires once a cycle — two different questions, and folding them
-    //               into one field would have made every ability with an `ammo`
-    //               fire it on every shot.
-    //   `shotWith`  what to fire instead when the tower has ALSO bought the ability
-    //               named. Both entries below name each other and point at the same
-    //               drawing, which tools/abilities.mjs checks — a pair that
-    //               disagreed would fire a different comet depending on which of
-    //               the two was bought first.
-    id: 'pulse',
-    name: 'Slowed Pulse',
-    of: 'Judgment Temple',
-    icon: 'ability_pulse',
-    cost: ABILITY_COST,
-    shot: monkSlowShot,
-    shotWith: { strength: monkBothShot },
-
-    detail: (a, t) => `Every blast slows the enemy it hits by ${pc(a.shot.slow.times)}, both ` +
-      `walking and attacking, for ${a.shot.slow.seconds} seconds. The temple fires ` +
-      `${t.cooldown === 1 ? 'once a second' : `every ${num(t.cooldown)} seconds`}, so anything in reach stays slowed, and stays slowed for ` +
-      `${a.shot.slow.seconds} seconds after it leaves. The slow does not stack: a 2nd temple only ` +
-      `refreshes it. Bosses are slowed by only ` +
-      `${pc(slowOn({ def: { boss: true } }, a.shot.slow.times))}. When the Sands of Time upgrade ` +
-      `triggers on a blast, the slow lasts ` +
-      `${a.shot.slow.seconds + UPGRADES.monastery.find(u => u.slow).slow.seconds} seconds instead.`
   }
 ];
 

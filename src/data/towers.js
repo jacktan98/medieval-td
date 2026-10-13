@@ -3519,8 +3519,9 @@ export const monastery = [
     // WHICH IS WHY THE ARTIST DREW FOUR PROJECTILES. See `shot` and `shotWith` on
     // the two entries in src/data/abilities.js, and ammoOf in src/towers.js, which
     // is the whole of the choosing.
-    // Inner Strength first, on the lighter disc. See the Cannon Outpost's pair.
-    abilities: ['strength', 'pulse'] }
+    // Slowed Pulse first, on the lighter disc since the artist's redraw (it was
+    // Inner Strength). See the Cannon Outpost's pair.
+    abilities: ['pulse', 'strength'] }
 ];
 
 // FIGURES THAT BELONG TO NO TOWER.
