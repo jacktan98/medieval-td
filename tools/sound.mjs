@@ -20,6 +20,7 @@ const DUR = {
   'assets/audio/sfx/Arrow_shot.mp3': 0.5,
   'assets/audio/map/Select_Sound.mp3': 0.5,
   'assets/audio/enemies/Thug_1.mp3': 2,
+  'assets/audio/enemies/Thug_2.mp3': 2,
   // The three summary clips, at roughly their real lengths — the point of the
   // block that uses them is that a 2s fanfare does NOT gate a chime 0.55s later,
   // and a 0.5s stand-in would not have been long enough to prove it.
@@ -28,6 +29,11 @@ const DUR = {
   'assets/audio/map/Star_sound.mp3': 2
 };
 const DEFAULT_DUR = 0.5;
+
+// THE 2s LINE THE GATE TESTS USE: the Thug's first take alone. The Thug has two
+// takes now, and the no-repeat rule would answer a second ask with the other one —
+// which is right in the game and would make every "is it held off" here say yes.
+const LINE = ['thug_1'];
 
 // Must match src/audio.js, for the ducking checks.
 const BG_LEVEL = 0.45;
@@ -191,7 +197,7 @@ function at(t, fn) {
 console.log('\nEvery clip is measured and levelled at load');
 
 routes = [];
-at(0, () => solo(CUE.thug));
+at(0, () => solo(LINE));
 check('playback skips the silent lead-in', routes[0] && routes[0].offset, LEAD);
 check('and the tone is levelled to the target', routes[0] && routes[0].gain, +(TARGET_LOUD / AMP).toFixed(3));
 
@@ -202,7 +208,7 @@ console.log('\nCategory A — one channel, then a second of quiet');
 // The fake Thug_1 is 2s long with 0.1s of that silent, so it is AUDIBLE for
 // 1.9s and holds the channel until 1.9 + 1 = 2.9. Holding it for the full 2s
 // would be a tenth of a second spent saying nothing.
-check('a cue plays when the channel is free', at(30, () => solo(CUE.thug)), 1);
+check('a cue plays when the channel is free', at(30, () => solo(LINE)), 1);
 check('another is dropped while it sounds', at(31.5, () => solo(CUE.barracks)), 0);
 check('still dropped in the second of quiet after', at(32.5, () => solo(CUE.barracks)), 0);
 check('and dropped right up to the last moment', at(32.89, () => solo(CUE.barracks)), 0);
@@ -213,7 +219,7 @@ check('plays again once the rest is over', at(32.91, () => solo(CUE.barracks)), 
 // busy fight from stacking, so it is worth pinning down separately.
 ctx.currentTime = 100;
 played = [];
-solo(CUE.thug);                                    // 2s clip, holds until 103
+solo(LINE);                                    // 2s clip, holds until 103
 check('a swing is held off by an unrelated line', at(101, () => solo(CUE.arrowKill)), 0);
 check('a death is held off by it too', at(102, () => solo(CUE.soldierDeath)), 0);
 
@@ -235,7 +241,7 @@ console.log('\nThe tap click');
 
 ctx.currentTime = 240;
 played = [];
-solo(CUE.thug);                                    // holds the voice channel
+solo(LINE);                                    // holds the voice channel
 check('a click sounds while a voice is speaking', at(241, () => play(SELECT)), 1);
 check('and again a moment later', at(241.5, () => play(SELECT)), 1);
 
@@ -270,7 +276,7 @@ console.log('\nPriority — an upgrade takes the channel');
 
 ctx.currentTime = 210;
 played = []; stops = []; fades = [];
-solo(CUE.thug);                                    // 2s clip, holds A until 212.9
+solo(LINE);                                    // 2s clip, holds A until 212.9
 check('an ordinary cue is still held off', at(211, () => solo(CUE.barracks)), 0);
 
 played = []; stops = []; fades = [];
@@ -292,18 +298,18 @@ check('and it is 60ms long',
 // a single-take cue has nothing to rotate to and still waits its turn.
 ctx.currentTime = 220;
 played = [];
-solo(CUE.thug, true);
+solo(LINE, true);
 check('a priority cue with a free channel just plays', played.length, 1);
 ctx.currentTime = 220.5;
 played = [];
-solo(CUE.thug, true);
+solo(LINE, true);
 check('but it still will not repeat itself', played.length, 0);
 
 // And the gate is reset by the NEW clip rather than left where the old one put
 // it: interrupting a 2s line with a half-second one must not hold the channel
 // for the two seconds that are no longer being played.
 ctx.currentTime = 230;
-solo(CUE.thug);                                    // would hold until 232.9
+solo(LINE);                                    // would hold until 232.9
 ctx.currentTime = 230.5;
 played = [];
 solo(CUE.archery, true);                           // 0.4s audible: holds to 231.9
@@ -324,7 +330,7 @@ check('a shot 100ms later still sounds', at(300.1, () => play(SHOT)), 1);
 // The one that matters: Category B must be deaf to the Category A gate.
 ctx.currentTime = 400;
 played = [];
-solo(CUE.thug);                                    // holds A until 403
+solo(LINE);                                    // holds A until 403
 check('an arrow is not silenced by a held channel', at(401, () => play(SHOT)), 1);
 
 // ...and must not close it either.
@@ -350,7 +356,7 @@ check('a Category A clip goes out on its own bus', routes[0] && routes[0].bus, '
 // The duck itself: down when a Category A clip starts, back up when it ends.
 // Thug_1 is 2s in this fake, so the return is scheduled for 2s later.
 ducks = [];
-at(520, () => solo(CUE.thug));
+at(520, () => solo(LINE));
 check('the background is pulled down', ducks[0] && ducks[0].target, BG_DUCKED);
 check('on the background bus', ducks[0] && ducks[0].bus, 'busB');
 check('and let back up afterwards', ducks[1] && ducks[1].target, BG_LEVEL);
@@ -727,9 +733,9 @@ check('and leaves the channel open', at(9000, () => solo(CUE.arrowKill)), 1);
 // rather than throw, and must not advance the gate while it is out.
 console.log('\nSuspended');
 ctx.state = 'suspended';
-check('nothing plays while suspended', at(9100, () => { solo(CUE.thug); play(SHOT); }), 0);
+check('nothing plays while suspended', at(9100, () => { solo(LINE); play(SHOT); }), 0);
 ctx.state = 'running';
-check('and it all comes back when it resumes', at(9101, () => solo(CUE.thug)), 1);
+check('and it all comes back when it resumes', at(9101, () => solo(LINE)), 1);
 
 // --- every shot the game can fire is audible -------------------------------------
 //
@@ -802,7 +808,7 @@ console.log('\nThe summary panel counts its stars out');
 
 ctx.currentTime = 10000;
 played = [];
-solo(CUE.thug);                                    // a 2s line, gate closed to 10002.9
+solo(LINE);                                    // a 2s line, gate closed to 10002.9
 check('a fanfare is not silenced by a closed gate', at(10001, () => fanfare(VICTORY)), 1);
 
 // AND FIRING ONE DOES NOT CLOSE THE GATE. On a clean clock, so that the only thing

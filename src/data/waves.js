@@ -2085,6 +2085,23 @@ export const enemyTypes = {
   }
 };
 
+// WHAT EACH CREATURE SAYS WHEN TAPPED: its own two takes, in assets/audio/enemies —
+// keys into CUE in src/audio.js, read by selectionCue. The Thug's are the default
+// line and need no entry; the Dark Crow caws, and each boss has its own already.
+const SELECTED = {
+  tough_inf: 'toughThug',
+  shadow_inf: 'shadowThug',
+  rally_inf: 'rallyThug',
+  bomb_inf: 'bombThug',
+  blocker_inf: 'blockerThug',
+  archer_inf: 'archerThug',
+  heavy_inf: 'clubGiant',
+  boulder_giant: 'boulderGiant',
+  plague_inf: 'plagueDoctor',
+  dark_priest: 'darkPriest',
+};
+for (const [type, voice] of Object.entries(SELECTED)) enemyTypes[type].voice = voice;
+
 // THE ORDER A WAVE MARCHES IN, and it is a rule rather than a preference.
 //
 // A wave's groups are spawned ONE AFTER ANOTHER — see groupAt in src/waves.js —

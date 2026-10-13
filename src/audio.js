@@ -468,7 +468,31 @@ const paths = {
   // assets/audio/enemies, for every creature's selected line but the bosses', whose
   // are with their other lines in sfx. Every creature without a `voice` of its own
   // says this one; see selectionCue.
+  // TWO TAKES FOR EVERY CREATURE, at the owner's word, picked at random: the Thug's
+  // pair, and each other creature's own (`voice` on its def — see SELECTED in
+  // src/data/waves.js). The Dark Crow is not among them: it caws.
   thug_1:          'assets/audio/enemies/Thug_1.mp3',
+  thug_2:          'assets/audio/enemies/Thug_2.mp3',
+  tough_thug_1:    'assets/audio/enemies/Tough_Thug_1.mp3',
+  tough_thug_2:    'assets/audio/enemies/Tough_Thug_2.mp3',
+  shadow_thug_1:   'assets/audio/enemies/Shadow_Thug_1.mp3',
+  shadow_thug_2:   'assets/audio/enemies/Shadow_Thug_2.mp3',
+  rally_thug_1:    'assets/audio/enemies/Rally_Thug_1.mp3',
+  rally_thug_2:    'assets/audio/enemies/Rally_Thug_2.mp3',
+  bomb_thug_1:     'assets/audio/enemies/Bomb_Thug_1.mp3',
+  bomb_thug_2:     'assets/audio/enemies/Bomb_Thug_2.mp3',
+  blocker_thug_1:  'assets/audio/enemies/Blocker_Thug_1.mp3',
+  blocker_thug_2:  'assets/audio/enemies/Blocker_Thug_2.mp3',
+  archer_thug_1:   'assets/audio/enemies/Archer_Thug_1.mp3',
+  archer_thug_2:   'assets/audio/enemies/Archer_Thug_2.mp3',
+  club_giant_1:    'assets/audio/enemies/Club_Giant_1.mp3',
+  club_giant_2:    'assets/audio/enemies/Club_Giant_2.mp3',
+  boulder_giant_1: 'assets/audio/enemies/Boulder_Giant_1.mp3',
+  boulder_giant_2: 'assets/audio/enemies/Boulder_Giant_2.mp3',
+  plague_doctor_1: 'assets/audio/enemies/Plague_Doctor_1.mp3',
+  plague_doctor_2: 'assets/audio/enemies/Plague_Doctor_2.mp3',
+  dark_priest_1:   'assets/audio/enemies/Dark_Priest_1.mp3',
+  dark_priest_2:   'assets/audio/enemies/Dark_Priest_2.mp3',
   // Recorded. These were wired a commit before the files existed and played the
   // moment they landed, with no code change — which is the whole reason to wire
   // ahead rather than wait.
@@ -1022,7 +1046,19 @@ export const CUE = {
   // The Cannon Outpost's, keyed off the `voice` field on its tier like the six
   // above it. Artillery is the third ladder with two of these.
   cannoneer:    ['cannoneer_1', 'cannoneer_2', 'cannoneer_3'],
-  thug:         ['thug_1'],
+  // WHAT A CREATURE SAYS WHEN TAPPED, two takes each. `thug` is also the line of
+  // any creature without one of its own.
+  thug:         ['thug_1', 'thug_2'],
+  toughThug:    ['tough_thug_1', 'tough_thug_2'],
+  shadowThug:   ['shadow_thug_1', 'shadow_thug_2'],
+  rallyThug:    ['rally_thug_1', 'rally_thug_2'],
+  bombThug:     ['bomb_thug_1', 'bomb_thug_2'],
+  blockerThug:  ['blocker_thug_1', 'blocker_thug_2'],
+  archerThug:   ['archer_thug_1', 'archer_thug_2'],
+  clubGiant:    ['club_giant_1', 'club_giant_2'],
+  boulderGiant: ['boulder_giant_1', 'boulder_giant_2'],
+  plagueDoctor: ['plague_doctor_1', 'plague_doctor_2'],
+  darkPriest:   ['dark_priest_1', 'dark_priest_2'],
   // The boss has a line of his own when he is tapped, where every other creature
   // on the road shares the one thug's. See selectionCue below for how it is
   // reached, which is a DEF lookup rather than a kind check — the shape the note

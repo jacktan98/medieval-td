@@ -76,7 +76,17 @@ assets/audio/voice/   Archery_1.mp3 .. Archery_5.mp3
                       Pope_1.mp3 .. Pope_3.mp3
                       Monk_1.mp3 .. Monk_3.mp3
 
-assets/audio/enemies/ Thug_1.mp3
+assets/audio/enemies/ Thug_1.mp3 .. Thug_2.mp3
+                      Tough_Thug_1.mp3 .. Tough_Thug_2.mp3
+                      Shadow_Thug_1.mp3 .. Shadow_Thug_2.mp3
+                      Rally_Thug_1.mp3 .. Rally_Thug_2.mp3
+                      Bomb_Thug_1.mp3 .. Bomb_Thug_2.mp3
+                      Blocker_Thug_1.mp3 .. Blocker_Thug_2.mp3
+                      Archer_Thug_1.mp3 .. Archer_Thug_2.mp3
+                      Club_Giant_1.mp3 .. Club_Giant_2.mp3
+                      Boulder_Giant_1.mp3 .. Boulder_Giant_2.mp3
+                      Plague_Doctor_1.mp3 .. Plague_Doctor_2.mp3
+                      Dark_Priest_1.mp3 .. Dark_Priest_2.mp3
 ```
 
 **`Wings_flap` plays whole, and only one at a time.** It starts on a crow's
@@ -207,7 +217,7 @@ and it now means "how long a lull has to be before the game forgets".
 | a **High Altar** is built, upgraded to, or given an order | `Pope_1..3` |
 | a rally point is moved | that tower's own voice — `Barracks_1..5`, or `Paladin_1..3` |
 | a barracks man is selected | `Barracks_1..5` |
-| an enemy is selected | `Thug_1` (in `enemies/`), or its def's own `voice` |
+| an enemy is selected | its own two takes in `enemies/`, one at random (`Thug_1`/`_2` for any creature without its own); the Dark Crow caws, and each boss has his own line |
 | the **captain** is selected | `Captain_Thug_selected` |
 | a **villager** is selected | one of `Villager_selected_1` to `_3`, at random (Category A) |
 | on **stages 14 and 15**, a **thug or enemy villager** is selected | one of `Villager_enemy_selected_1` or `_2`, at random (Category A) — and, by the huts, the tap sets him on the road |
@@ -796,17 +806,16 @@ file. Worth a listen at volume; only a re-record fixes it if it is audible.
 
 ## The enemies' selected voices: `enemies/`
 
-What a creature on the road says when the player taps it, in a folder of its own.
-Every enemy but the bosses — the Captain Thug and the Crow Harbinger keep their
-selected lines in `sfx/` with the rest of theirs.
+What a creature on the road says when the player taps it, in a folder of its own:
+two takes for each, named for the creature (`Tough_Thug_1.mp3`, `Tough_Thug_2.mp3`),
+one picked at random each time. Every enemy but the bosses — the Captain Thug and
+the Crow Harbinger keep their selected lines in `sfx/` with the rest of theirs — and
+but the Dark Crow, which caws.
 
-- **`Thug_1.mp3`** is the shared line: every creature without one of its own says
-  it. To replace it, upload a new `Thug_1.mp3` here, over the old one; it plays at
-  the next reload with no code change.
-- **To give one creature its own line**, upload it here named for the creature —
-  Bomb_Thug_selected, say, with `_1`, `_2`, `_3` on the end for takes picked at random —
-  and it is wired with a `voice` on that creature in `src/data/waves.js` (step 2
-  below).
+- **To replace a take**, upload a file with the same name over it; it plays at the
+  next reload with no code change.
+- **A creature with no takes of its own** says the Thug's. Each creature's are named
+  in `SELECTED` in `src/data/waves.js` and listed in `src/audio.js`.
 
 ## Adding a clip
 
