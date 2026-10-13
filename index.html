@@ -88,6 +88,13 @@
       // src/assets.js. Published rather than recomputed there so one reload gets
       // one version for everything, even across a minute boundary.
       window.__stamp = stamp;
+      // THE FONT, ASKED FOR AT ONCE rather than once the modules have arrived: the
+      // loading screen's words wait for it (src/main.js), so the sooner it lands the
+      // sooner they show. The same URL src/overview.js loads it from, so it is one fetch.
+      var font = document.createElement('link');
+      font.rel = 'preload'; font.as = 'font'; font.type = 'font/woff2'; font.crossOrigin = 'anonymous';
+      font.href = 'assets/fonts/Lobster-Regular.woff2?v=' + stamp;
+      document.head.appendChild(font);
       var mods = [
         'main', 'assets', 'enemies', 'tint', 'flag', 'towers', 'projectiles', 'waves',
         'render', 'input', 'overview', 'motion', 'life', 'menu', 'book', 'newfoe', 'upgrades', 'upgradepage', 'achievements', 'achievepage', 'admin', 'score', 'smoke', 'units', 'villagers', 'corpses', 'bombs', 'blood', 'impacts', 'gesture', 'ground', 'select', 'audio', 'route', 'level', 'status', 'crew', 'holy', 'desert', 'tutorial', 'analytics', 'rng', 'replay', 'ending', 'data/ui',

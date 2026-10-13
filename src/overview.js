@@ -1308,6 +1308,11 @@ let namesVersion = 0;
 // draws. Started as soon as this module loads; a browser without FontFace, or Node,
 // simply never gets it and keeps the fallback.
 export const MAP_FONT = 'Lobster';
+// SETTLED ONCE THE FONT IS IN — or has failed, or there is none to load — so the
+// loading screen (src/main.js) can hold its words back until they can be drawn in it,
+// rather than flashing them in the system font first.
+let fontSettled;
+export const mapFontReady = new Promise(r => { fontSettled = r; });
 if (typeof FontFace !== 'undefined' && typeof document !== 'undefined' && document.fonts) {
   const v = (typeof window !== 'undefined' && window.__stamp) ? `?v=${window.__stamp}` : '';
   const face = new FontFace(MAP_FONT, `url(assets/fonts/Lobster-Regular.woff2${v})`);
@@ -1315,8 +1320,9 @@ if (typeof FontFace !== 'undefined' && typeof document !== 'undefined' && docume
     document.fonts.add(f);
     nameCanvas = null;
     namesVersion++;
-  }).catch(() => { /* no font: the system one stays */ });
-}
+    fontSettled(true);
+  }).catch(() => { /* no font: the system one stays */ fontSettled(false); });
+} else fontSettled(false);
 
 function namesArt() {
   if (!NAMES_AS_TEXT) return art.overviewNames || null;

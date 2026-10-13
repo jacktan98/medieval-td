@@ -6,7 +6,7 @@ import { openingDelay } from './data/waves.js';
 import { DIFFICULTIES, DEFAULT_DIFFICULTY, scaleWaves, startingGold } from './data/difficulty.js';
 import { adminWaves, adminGold } from './admin.js';
 import { finish, saveUnlocked, startReveal as startStars, stepStars, savedDifficulty } from './score.js';
-import { startReveal, stepReveal, stageOfLevel, openedStages, roadGrew, mapAudio } from './overview.js';
+import { startReveal, stepReveal, stageOfLevel, openedStages, roadGrew, mapAudio, mapFontReady } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
 import { updateEnemies, spawn } from './enemies.js';
 import { updateTowers, frameOf, prebuiltOn } from './towers.js';
@@ -739,7 +739,17 @@ function step(state, dt) {
 // the page's own dark colour, so the first few seconds are a loading screen rather
 // than an empty box. Drawn straight onto the canvas as each picture lands; the first
 // frame of the game paints over it.
+//
+// THE WORDS WAIT FOR THE FONT, at the owner's word: drawn before Lobster had arrived
+// they showed for a moment in the system face and then changed. Until it is in (or
+// has failed, or 3 seconds have passed), the screen is the bar alone.
+let loadingFrac = 0, loadingWords = false, gameUp = false;
+const showWords = () => { if (loadingWords) return; loadingWords = true; if (!gameUp) drawLoading(loadingFrac); };
+mapFontReady.then(showWords);
+setTimeout(showWords, 3000);
 function drawLoading(frac) {
+  loadingFrac = frac;
+  if (gameUp) return;
   fitToDisplay();
   ctx.save();
   ctx.fillStyle = '#23201c';
@@ -748,7 +758,7 @@ function drawLoading(frac) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '44px Lobster, Georgia, serif';
-  ctx.fillText('Medieval TD', 480, 226);
+  if (loadingWords) ctx.fillText('Medieval TD', 480, 226);
   const w = 360, h = 14, x = 480 - w / 2, y = 284;
   ctx.fillStyle = 'rgba(240,230,210,0.15)';
   ctx.beginPath();
@@ -762,12 +772,13 @@ function drawLoading(frac) {
   }
   ctx.fillStyle = 'rgba(240,230,210,0.7)';
   ctx.font = '16px Lobster, Georgia, serif';
-  ctx.fillText(`Loading… ${Math.round(frac * 100)}%`, 480, 322);
+  if (loadingWords) ctx.fillText(`Loading… ${Math.round(frac * 100)}%`, 480, 322);
   ctx.restore();
 }
 drawLoading(0);
 loadAudio();
 loadArt(drawLoading).then(() => {
+  gameUp = true;
   requestAnimationFrame(frame);
   // THEN EVERY STAGE'S BOARD, quietly, the furthest stage reached first and back down
   // the road, then the ones still ahead — and each one's preview photo made as it
