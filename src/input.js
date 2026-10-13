@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
+import { solo, answer, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -486,7 +486,14 @@ export function tap(state, x, y, restart) {
   const sel = state.selected;
   // And stage 16's perched crows, whose caw is the same kind of answer: the tap is
   // what sends them to the road.
-  solo(selectionCue(sel), !!(sel && sel.kind === 'villager' &&
+  // AND THE TWO BOSSES, at the owner's word: the Crow Harbinger on his balcony and the
+  // Captain at his wall answer in their own selected line even when they are already
+  // speaking — a tap during his entrance line used to be swallowed by the channel. See
+  // answer() in src/audio.js.
+  const boss = sel && ((sel.kind === 'enemy' && sel.ref.def && sel.ref.def.boss) ||
+    (sel.kind === 'villager' && sel.ref.voice === 'captainPicked'));
+  if (boss) answer(selectionCue(sel));
+  else solo(selectionCue(sel), !!(sel && sel.kind === 'villager' &&
     (sel.ref.voice === 'enemy_villager' || sel.ref.voice === 'perched_crow')));
   // A tapped villager stops to greet the player — see src/villagers.js.
   if (state.selected && state.selected.kind === 'villager') {

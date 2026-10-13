@@ -26,19 +26,9 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       War_cry.mp3, Bomb_sound.mp3, Boulder_hit.mp3,
                       Dark_crow_dies.mp3, Wings_flap.mp3, Vanish_effect.mp3,
                       Fire_status.mp3, Fuse_lit.mp3, Club_swing.mp3, Artillery_fires.mp3,
-                      Thug_dies.mp3, Soldier_dies.mp3,
-                      Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
-                      Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
-                      Captain_Thug_before_dying.mp3, Boss_fall_dead.mp3,
-                      Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
-                      Captain_Thug_enters_battle.mp3,
-                      Crow_Harbinger_enters_battle.mp3, Crow_Harbinger_enters.mp3,
-                      Crow_Harbinger_selected.mp3,
-                      Crow_Harbinger_Point_Tower_1.mp3, Crow_Harbinger_Point_Tower_2.mp3,
+                      Thug_dies.mp3, Soldier_dies.mp3, Boss_fall_dead.mp3,
                       Dark_crow_caw.mp3,
-                      Crow_Harbinger_Call_Crows_1.mp3, Crow_Harbinger_Call_Crows_2.mp3,
-                      Crow_Harbinger_Call_Crows_Wind.mp3,
-                      Crow_Harbinger_before_dying.mp3, Crow_Harbinger_kill_soldier.mp3
+                      Crow_Harbinger_Call_Crows_Wind.mp3
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3, Rally_flag_planted.mp3,
                       Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3, Purchase_sound.mp3, Alert_sound.mp3, Page_flip.mp3, Book_open_close_sound.mp3,
@@ -88,6 +78,16 @@ assets/audio/enemies/ Thug_1.mp3 .. Thug_2.mp3
                       Plague_Doctor_1.mp3 .. Plague_Doctor_2.mp3
                       Dark_Priest_1.mp3 .. Dark_Priest_2.mp3
 ```
+                      Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
+                      Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
+                      Captain_Thug_before_dying.mp3,
+                      Captain_Thug_selected.mp3, Captain_Thug_leads_thugs.mp3,
+                      Captain_Thug_enters_battle.mp3,
+                      Crow_Harbinger_enters_battle.mp3, Crow_Harbinger_enters.mp3,
+                      Crow_Harbinger_selected.mp3,
+                      Crow_Harbinger_Point_Tower_1.mp3, Crow_Harbinger_Point_Tower_2.mp3,
+                      Crow_Harbinger_Call_Crows_1.mp3, Crow_Harbinger_Call_Crows_2.mp3,
+                      Crow_Harbinger_before_dying.mp3, Crow_Harbinger_kill_soldier.mp3
 
 **`Wings_flap` plays whole, and only one at a time.** It starts on a crow's
 downstroke, from its first sample to its last — the leading quiet is NOT skipped,
@@ -808,9 +808,10 @@ file. Worth a listen at volume; only a re-record fixes it if it is audible.
 
 What a creature on the road says when the player taps it, in a folder of its own:
 two takes for each, named for the creature (`Tough_Thug_1.mp3`, `Tough_Thug_2.mp3`),
-one picked at random each time. Every enemy but the bosses — the Captain Thug and
-the Crow Harbinger keep their selected lines in `sfx/` with the rest of theirs — and
-but the Dark Crow, which caws.
+one picked at random each time — every enemy but the Dark Crow, which caws. And the
+two bosses' voices, all of them: the Captain Thug's and the Crow Harbinger's lines
+are here too (his flock's wind, which is not a voice, stays in `sfx/`). A boss
+tapped while he is already speaking answers as soon as that line has finished.
 
 - **To replace a take**, upload a file with the same name over it; it plays at the
   next reload with no code change.

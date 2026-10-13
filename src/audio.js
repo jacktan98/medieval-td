@@ -341,30 +341,30 @@ const paths = {
   // the two beats of a boss dying are the loudest things that will happen in a
   // run, and a shield clanking over the top of one would be the game losing its
   // own set piece.
-  captain_enters:   'assets/audio/sfx/Captain_Thug_enters.mp3',
+  captain_enters:   'assets/audio/enemies/Captain_Thug_enters.mp3',
   // STAGE 15'S CAMP, at the owner's word: his line as he sends the eight thugs from
   // behind the wall to the road, and his line as he walks out to the road himself.
-  captain_leads:    'assets/audio/sfx/Captain_Thug_leads_thugs.mp3',
-  captain_battle:   'assets/audio/sfx/Captain_Thug_enters_battle.mp3',
-  captain_pause:    'assets/audio/sfx/Captain_Thug_pause.mp3',
-  captain_healed:   'assets/audio/sfx/Captain_Thug_heal.mp3',
-  captain_dying:    'assets/audio/sfx/Captain_Thug_before_dying.mp3',
+  captain_leads:    'assets/audio/enemies/Captain_Thug_leads_thugs.mp3',
+  captain_battle:   'assets/audio/enemies/Captain_Thug_enters_battle.mp3',
+  captain_pause:    'assets/audio/enemies/Captain_Thug_pause.mp3',
+  captain_healed:   'assets/audio/enemies/Captain_Thug_heal.mp3',
+  captain_dying:    'assets/audio/enemies/Captain_Thug_before_dying.mp3',
   boss_fallen:      'assets/audio/sfx/Boss_fall_dead.mp3',
   // THE CROW HARBINGER'S VOICE, at the owner's word, held and with priority like the
   // captain's: as he walks on, as he points his crow at a tower, as he calls the
   // flock, as he is beaten and standing, and every fifth man he kills. See `lines`
   // on his def.
-  harbinger_battle: 'assets/audio/sfx/Crow_Harbinger_enters_battle.mp3',
+  harbinger_battle: 'assets/audio/enemies/Crow_Harbinger_enters_battle.mp3',
   // TWO TAKES EACH of Point Tower and Call Crows, taken in turn (see begin in
   // src/enemies.js); his line as stage 16 begins; and when he is tapped.
-  harbinger_point:  'assets/audio/sfx/Crow_Harbinger_Point_Tower_1.mp3',
-  harbinger_point_2: 'assets/audio/sfx/Crow_Harbinger_Point_Tower_2.mp3',
-  harbinger_call:   'assets/audio/sfx/Crow_Harbinger_Call_Crows_1.mp3',
-  harbinger_call_2: 'assets/audio/sfx/Crow_Harbinger_Call_Crows_2.mp3',
-  harbinger_enters: 'assets/audio/sfx/Crow_Harbinger_enters.mp3',
-  harbinger_picked: 'assets/audio/sfx/Crow_Harbinger_selected.mp3',
-  harbinger_dying:  'assets/audio/sfx/Crow_Harbinger_before_dying.mp3',
-  harbinger_kills:  'assets/audio/sfx/Crow_Harbinger_kill_soldier.mp3',
+  harbinger_point:  'assets/audio/enemies/Crow_Harbinger_Point_Tower_1.mp3',
+  harbinger_point_2: 'assets/audio/enemies/Crow_Harbinger_Point_Tower_2.mp3',
+  harbinger_call:   'assets/audio/enemies/Crow_Harbinger_Call_Crows_1.mp3',
+  harbinger_call_2: 'assets/audio/enemies/Crow_Harbinger_Call_Crows_2.mp3',
+  harbinger_enters: 'assets/audio/enemies/Crow_Harbinger_enters.mp3',
+  harbinger_picked: 'assets/audio/enemies/Crow_Harbinger_selected.mp3',
+  harbinger_dying:  'assets/audio/enemies/Crow_Harbinger_before_dying.mp3',
+  harbinger_kills:  'assets/audio/enemies/Crow_Harbinger_kill_soldier.mp3',
   // AND THE NOISE OF HIS TWO ABILITIES, Category B under the voice so neither drops
   // the other: the wind as he calls (with the call line), and his crow as it reaches
   // the tower and starts to circle it. See `sounds` on his def.
@@ -372,11 +372,11 @@ const paths = {
   dark_crow_caw:    'assets/audio/sfx/Dark_crow_caw.mp3',
   // The sixth is not a set piece — it is a running tally, every fifth man he
   // kills — so it is Category B and does not duck anything.
-  captain_kills:    'assets/audio/sfx/Captain_Thug_kill_soldier.mp3',
+  captain_kills:    'assets/audio/enemies/Captain_Thug_kill_soldier.mp3',
   // And the seventh: what he says when the player taps him. Category A like the
   // rest of the selection lines, and levelled with his others — a boss's voice is
   // his voice whichever way the player came to hear it.
-  captain_picked:   'assets/audio/sfx/Captain_Thug_selected.mp3',
+  captain_picked:   'assets/audio/enemies/Captain_Thug_selected.mp3',
   // The musket. Two clips, and they are the same pair the bow has: the crack of
   // the shot every time one is fired, and a separate line for a musketeer taking a
   // man down. A musket ball arriving is silent — see the two flags on `bullet` in
@@ -2047,6 +2047,21 @@ export function talking() {
 // doing its job — but a line that must be heard can ask again: stage 15's Captain,
 // whose entrance falls on the very first frame of the stage, when a phone may not
 // have finished waking the sound up (see `say` in musterRound, src/villagers.js).
+// A BOSS ANSWERING A TAP, at the owner's word: his own selected line, taking the
+// channel as priority does — and if one of his set pieces is holding it (his
+// entrance, a call to the crows), said the moment that line has finished rather than
+// lost. Only the latest tap waits; a second one while he is still talking replaces it.
+let answerTimer = null;
+export function answer(cue) {
+  if (!cue) return false;
+  if (solo(cue, true)) return true;
+  if (!ctx || ctx.state !== 'running' || ctx.currentTime >= holdUntil) return false;
+  if (answerTimer) clearTimeout(answerTimer);
+  answerTimer = setTimeout(() => { answerTimer = null; solo(cue, true); },
+    (holdUntil - ctx.currentTime) * 1000 + 60);
+  return false;
+}
+
 export function solo(cue, priority = false, hold = false, always = false) {
   // Callers pass the result of a lookup straight in, and plenty of things have
   // nothing to say — bare ground, a siege plot, a family with no voice yet.
