@@ -1545,7 +1545,9 @@ function musterRound(state, vp, m, dt) {
   for (const who of [...slots, m.captain]) {
     const v = state.villagers[who], c = M[who], at = home(who);
     if (!v || !at) continue;
-    v.work = true; v.voice = vp.plan.voice;
+    // THE CAPTAIN ANSWERS IN HIS OWN VOICE at the wall, at the owner's word — the line
+    // he says when tapped on the road, not the enemy villagers'.
+    v.work = true; v.voice = who === m.captain ? 'captainPicked' : vp.plan.voice;
     v.look = 'thug'; v.lookType = c.type; v.card = cardOf(c.type);
     if (c.phase === 'away') { v.hidden = true; continue; }
     if (c.phase === 'queued') {
