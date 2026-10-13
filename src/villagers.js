@@ -625,9 +625,12 @@ const PLAYS = {
     still: 2, walk: 20,   // 20, from 14: a bit faster to the road, at the owner's word
     // A SMOOTH WAY TO THE ROAD, at the owner's word: down and along it toward the exit
     // rather than straight onto its nearest edge.
-    thugs: [{ who: 11, road: [[698, 128], [742, 158], [790, 175], [815, 180]] }],
+    // SHORTER ONTO IT, at the owner's word: each used to walk 160px along the road as a
+    // man who could not be fought before he became a Thug, so a barracks beside it
+    // stood and watched him go by. Now each steps down to the road's edge and joins it.
+    thugs: [{ who: 11, road: [[698, 128], [742, 158]] }],
     hideouts: [{ who: 12, type: 'tough_inf', side: 'front', way: [[786, 95], [761, 100]], arm: 3,
-                 road: [[770, 114], [800, 134], [850, 154], [900, 164], [935, 168]] }],
+                 road: [[770, 114], [800, 134], [830, 148]] }],
     // THE CAMP BEHIND THE WALL — see musterRound.
     muster: {
       captain: 10,
@@ -1277,10 +1280,20 @@ function hollowRound(state, vp, dt) {
     if (vp.t >= c.turn) { v.flip = !v.flip; c.turn = vp.t + span(TURN_EVERY); }
   };
   // Off to the road: along `road`, and on to the nearest point of it — where he joins.
+  // A POINT ALREADY ON THE ROAD IS LEFT OUT OF THE WALK, at the owner's word ("some
+  // bumps when transitioning"): a way-point a few px past the lane's middle had him
+  // step over it and then back up onto the lane where the merge begins — a hook at the
+  // very moment he turns into the creature. The merge still starts from it; he simply
+  // turns onto the lane in one curve rather than overshooting it.
+  const ON_ROAD = 14;
   const march = (v, c, type, road) => {
     const last = road[road.length - 1];
-    const j = mergeOnto(nearestOn(level.routes, last[0], last[1]).route, last);
-    Object.assign(c, { phase: 'march', type, join: j, way: smoothWay([[v.x, v.y], ...road, ...j.tail]) });
+    const j = mergeOnto(nearestOn(level.routes, last[0], last[1]).route, last, plan.merge ?? MERGE);
+    const off = road.filter(([x, y]) => nearestOn(level.routes, x, y).d >= ON_ROAD);
+    // AND ONTO THE LANE ON A SLANT rather than square: the merge's first point (the
+    // lane's nearest to where he steps on) is left out, so he angles in toward the
+    // point ahead of it instead of meeting the lane at a right angle and turning on it.
+    Object.assign(c, { phase: 'march', type, join: j, way: smoothWay([[v.x, v.y], ...off, ...j.tail.slice(1)]) });
     v.leg = 0; v.look = 'thug'; v.lookType = type; v.card = cardOf(type);
   };
   // SLOWLY UP TO THE ROAD, AND UP TO SPEED ACROSS IT: from its edge (`ROAD_EDGE` from
