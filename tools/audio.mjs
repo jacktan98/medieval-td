@@ -102,7 +102,7 @@ function measure(buf) {
 let worst = 0;
 let notes = [];
 
-for (const dir of ['sfx', 'voice', 'villagers']) {
+for (const dir of ['sfx', 'voice', 'villagers', 'enemies']) {
   const files = readdirSync(join(ROOT, dir)).filter(f => f.endsWith('.mp3')).sort();
   if (!files.length) continue;
 

@@ -19,7 +19,7 @@
 const DUR = {
   'assets/audio/sfx/Arrow_shot.mp3': 0.5,
   'assets/audio/map/Select_Sound.mp3': 0.5,
-  'assets/audio/voice/Thug_1.mp3': 2,
+  'assets/audio/enemies/Thug_1.mp3': 2,
   // The three summary clips, at roughly their real lengths — the point of the
   // block that uses them is that a 2s fanfare does NOT gate a chime 0.55s later,
   // and a 0.5s stand-in would not have been long enough to prove it.

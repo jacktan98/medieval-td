@@ -464,7 +464,11 @@ const paths = {
   barracks_3:      'assets/audio/voice/Barracks_3.mp3',
   barracks_4:      'assets/audio/voice/Barracks_4.mp3',
   barracks_5:      'assets/audio/voice/Barracks_5.mp3',
-  thug_1:          'assets/audio/voice/Thug_1.mp3',
+  // WHAT AN ENEMY SAYS WHEN TAPPED, in a folder of its own at the owner's word —
+  // assets/audio/enemies, for every creature's selected line but the bosses', whose
+  // are with their other lines in sfx. Every creature without a `voice` of its own
+  // says this one; see selectionCue.
+  thug_1:          'assets/audio/enemies/Thug_1.mp3',
   // Recorded. These were wired a commit before the files existed and played the
   // moment they landed, with no code change — which is the whole reason to wire
   // ahead rather than wait.
