@@ -880,8 +880,13 @@ console.log('\nWhich of them comes out first\n');
   // it by accident is a wave nobody meant to reshape. There was one deliberate
   // exception, the Bend's Extended boss finale; it went with Extended. Add a new
   // deliberate one and this line is where you say so.
+  //
+  // DARK HOLLOW WOODS IS ONE, at the owner's word: its list was given wave by wave in
+  // the order each group comes out, Dark Crows at the back of every wave.
+  const OWN_ORDER = ['m16'];
   const offOrder = [];
   for (const l of levels) {
+    if (OWN_ORDER.includes(l.id)) continue;
     l.waves.forEach((w, i) => {
       const sent = w.groups.map(g => g.type);
       const inMarch = [...sent].sort((a, b) => MARCH_ORDER.indexOf(a) - MARCH_ORDER.indexOf(b));

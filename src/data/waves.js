@@ -3316,57 +3316,48 @@ export const stage13Waves = [
 ];
 
 // STAGE 14: Dark Hollow Woods, where the Rally Thug first raises his banner, from
-// wave 4. Same house order and gap ladders as stages 10 to 13, so he marches at the
-// back of each wave, behind the priests.
+// wave 5. The owner's list, wave by wave, each group in the order it comes out and
+// each `gap` the seconds between two of it: Dark Crows at the back of every wave,
+// behind Thugs at first and giants, bombs, shadows, banners and priests by the end.
 export const stage14Waves = [
-  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'crow', count: 4, gap: 1.2 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
-                       { type: 'blocker_inf', count: 2, gap: 1.7 },
-                       { type: 'crow', count: 6, gap: 1.2 },
-                       { type: 'bomb_inf', count: 2, gap: 1.9 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
-                       { type: 'crow', count: 8, gap: 1.1 },
-                       { type: 'bomb_inf', count: 4, gap: 1.9 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'crow', count: 10, gap: 1.0 },
-                       { type: 'heavy_inf', count: 1, gap: 2.0 },
-                       { type: 'boulder_giant', count: 1, gap: 2.0 },
-                       { type: 'bomb_inf', count: 6, gap: 1.8 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'crow', count: 12, gap: 0.9 },
-                       { type: 'shadow_inf', count: 1, gap: 1.7 },
-                       { type: 'heavy_inf', count: 1, gap: 1.9 },
-                       { type: 'boulder_giant', count: 1, gap: 1.9 },
-                       { type: 'bomb_inf', count: 8, gap: 1.7 },
-                       { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'crow', count: 14, gap: 0.8 },
-                       { type: 'shadow_inf', count: 2, gap: 1.6 },
-                       { type: 'heavy_inf', count: 2, gap: 1.8 },
-                       { type: 'boulder_giant', count: 2, gap: 1.8 },
-                       { type: 'bomb_inf', count: 10, gap: 1.5 },
-                       { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'crow', count: 16, gap: 0.8 },
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.5 },
+                       { type: 'crow', count: 10, gap: 1.5 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 8, gap: 1.5 },
+                       { type: 'crow', count: 10, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.5 },
+                       { type: 'crow', count: 10, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'heavy_inf', count: 4, gap: 1.5 },
+                       { type: 'bomb_inf', count: 4, gap: 1.5 },
+                       { type: 'crow', count: 10, gap: 1.0 }] },
+  { rest: 10, groups: [{ type: 'heavy_inf', count: 6, gap: 1.5 },
+                       { type: 'bomb_inf', count: 6, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.0 },
+                       { type: 'crow', count: 10, gap: 0.8 }] },
+  { rest: 10, groups: [{ type: 'heavy_inf', count: 6, gap: 1.2 },
+                       { type: 'boulder_giant', count: 2, gap: 1.5 },
+                       { type: 'bomb_inf', count: 6, gap: 1.5 },
                        { type: 'shadow_inf', count: 2, gap: 1.5 },
-                       { type: 'heavy_inf', count: 3, gap: 1.7 },
-                       { type: 'boulder_giant', count: 3, gap: 1.7 },
-                       { type: 'bomb_inf', count: 10, gap: 1.4 },
-                       { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 2, gap: 1.8 }] }
+                       { type: 'rally_inf', count: 1, gap: 1.0 },
+                       { type: 'dark_priest', count: 4, gap: 1.0 },
+                       { type: 'crow', count: 10, gap: 0.8 }] },
+  { rest: 10, groups: [{ type: 'heavy_inf', count: 8, gap: 1.0 },
+                       { type: 'boulder_giant', count: 2, gap: 1.2 },
+                       { type: 'bomb_inf', count: 8, gap: 1.2 },
+                       { type: 'shadow_inf', count: 2, gap: 1.2 },
+                       { type: 'rally_inf', count: 2, gap: 1.0 },
+                       { type: 'dark_priest', count: 4, gap: 1.0 },
+                       { type: 'crow', count: 10, gap: 0.6 }] },
+  { rest: 10, groups: [{ type: 'heavy_inf', count: 10, gap: 1.0 },
+                       { type: 'boulder_giant', count: 4, gap: 1.0 },
+                       { type: 'bomb_inf', count: 10, gap: 1.0 },
+                       { type: 'shadow_inf', count: 4, gap: 1.0 },
+                       { type: 'rally_inf', count: 2, gap: 1.0 },
+                       { type: 'dark_priest', count: 6, gap: 1.0 },
+                       { type: 'crow', count: 10, gap: 0.4 }] }
 ];
 
-// STAGE 15: Dark Hollow Quarters. The owner's list is stage 14's exactly, wave for
-// wave; a second array all the same, so the first retune of either lands on one
-// board. THE CAPTAIN IS NOT IN IT: he stands at the camp wall all game and walks out
+// STAGE 15: Dark Hollow Quarters. The list stage 14 used to send, wave for wave, in
+// an array of its own — which is why stage 14's new list did not change it. THE CAPTAIN IS NOT IN IT: he stands at the camp wall all game and walks out
 // once the last wave is dead — see `captain` under `quarters` in src/villagers.js.
 export const stage15Waves = [
   { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },

@@ -2683,19 +2683,22 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
   const hollow = levels.find(l => l.id === 'm16');
   ok(!!hollow, 'Dark Hollow Woods is in the game', hollow ? hollow.name : 'missing');
 
+  // THE OWNER'S LIST, AS TYPED, gaps and all: each group in the order it comes out
+  // (not MARCH_ORDER — see the exception in tools/admin.mjs), `(gap)` the seconds
+  // between two of it.
   const WANT14 = [
-    '8 light_inf',
-    '10 light_inf + 4 crow',
-    '10 light_inf + 2 blocker_inf + 6 crow + 2 bomb_inf',
-    '10 light_inf + 8 crow + 4 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
-    '10 crow + 1 heavy_inf + 1 boulder_giant + 6 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
-    '12 crow + 1 shadow_inf + 1 heavy_inf + 1 boulder_giant + 8 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
-    '14 crow + 2 shadow_inf + 2 heavy_inf + 2 boulder_giant + 10 bomb_inf + 4 plague_inf + 4 dark_priest + 2 rally_inf',
-    '16 crow + 2 shadow_inf + 3 heavy_inf + 3 boulder_giant + 10 bomb_inf + 4 plague_inf + 4 dark_priest + 2 rally_inf'
+    '10 light_inf (1.5) + 10 crow (1.5)',
+    '8 tough_inf (1.5) + 10 crow (1.2)',
+    '8 blocker_inf (1.5) + 10 crow (1.2)',
+    '4 heavy_inf (1.5) + 4 bomb_inf (1.5) + 10 crow (1)',
+    '6 heavy_inf (1.5) + 6 bomb_inf (1.5) + 1 rally_inf (1) + 10 crow (0.8)',
+    '6 heavy_inf (1.2) + 2 boulder_giant (1.5) + 6 bomb_inf (1.5) + 2 shadow_inf (1.5) + 1 rally_inf (1) + 4 dark_priest (1) + 10 crow (0.8)',
+    '8 heavy_inf (1) + 2 boulder_giant (1.2) + 8 bomb_inf (1.2) + 2 shadow_inf (1.2) + 2 rally_inf (1) + 4 dark_priest (1) + 10 crow (0.6)',
+    '10 heavy_inf (1) + 4 boulder_giant (1) + 10 bomb_inf (1) + 4 shadow_inf (1) + 2 rally_inf (1) + 6 dark_priest (1) + 10 crow (0.4)'
   ];
-  const got14 = hollow.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got14.join(' | ') === WANT14.map(marched).join(' | '), 'the Hollow sends exactly the eight it was given',
-    got14.map((g, i) => (g === marched(WANT14[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT14[i])})`)).join(' '));
+  const got14 = hollow.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got14.join(' | ') === WANT14.join(' | '), 'the Hollow sends exactly the eight it was given, in its order',
+    got14.map((g, i) => (g === WANT14[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT14[i]})`)).join(' '));
 
   // THE RALLY THUG FIRST RAISES HIS BANNER HERE, as the story has it.
   ok(firstSends('rally_inf') === hollow, 'it is the first board to send a Rally Thug',
@@ -2722,7 +2725,7 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
 console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link between them ---\n');
 
 // THE OWNER'S NUMBERS, checked as given: nine plots, nothing prebuilt, 800 gold, no
-// cap, the same eight waves as Dark Hollow Woods — and "60% of the enemies
+// cap, the eight waves Dark Hollow Woods used to send — and "60% of the enemies
 // will enter left top. 40% will exit right top road. 20% will cross the road path in
 // between to exit right bottom road. 40% of the enemies will enter left bottom and
 // will exit right bottom road."
@@ -2731,10 +2734,22 @@ console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link betwee
   const woods = levels.find(l => l.id === 'm16');
   ok(!!quarters, 'Dark Hollow Quarters is in the game', quarters ? quarters.name : 'missing');
 
-  const table = l => l.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + ')).join(' | ');
-  ok(table(quarters) === table(woods) && quarters.waves !== woods.waves,
-    'it sends the eight waves it was given — Dark Hollow Woods\' list, in its own array',
-    `${quarters.waves.length} waves`);
+  // THE LIST DARK HOLLOW WOODS USED TO SEND, which this board keeps in its own array:
+  // the owner's new list for the Woods was for the Woods.
+  const WANT15 = [
+    '8 light_inf',
+    '10 light_inf + 4 crow',
+    '10 light_inf + 2 blocker_inf + 6 crow + 2 bomb_inf',
+    '10 light_inf + 8 crow + 4 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
+    '10 crow + 1 heavy_inf + 1 boulder_giant + 6 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
+    '12 crow + 1 shadow_inf + 1 heavy_inf + 1 boulder_giant + 8 bomb_inf + 2 plague_inf + 2 dark_priest + 1 rally_inf',
+    '14 crow + 2 shadow_inf + 2 heavy_inf + 2 boulder_giant + 10 bomb_inf + 4 plague_inf + 4 dark_priest + 2 rally_inf',
+    '16 crow + 2 shadow_inf + 3 heavy_inf + 3 boulder_giant + 10 bomb_inf + 4 plague_inf + 4 dark_priest + 2 rally_inf'
+  ];
+  const got15 = quarters.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  ok(got15.join(' | ') === WANT15.map(marched).join(' | ') && quarters.waves !== woods.waves,
+    'it sends the eight waves it was given, in its own array',
+    got15.map((g, i) => (g === marched(WANT15[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT15[i])})`)).join(' '));
 
   ok(quarters.plots.length === 9 && quarters.startGold === 800 && quarters.waves.length === 8 &&
      !(quarters.prebuilt || []).length && quarters.maxTier === undefined && quarters.allow === undefined,
