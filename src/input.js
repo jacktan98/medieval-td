@@ -494,7 +494,7 @@ export function tap(state, x, y, restart) {
     (sel.kind === 'villager' && sel.ref.voice === 'captainPicked'));
   if (boss) answer(selectionCue(sel));
   else solo(selectionCue(sel), !!(sel && sel.kind === 'villager' &&
-    (sel.ref.voice === 'enemy_villager' || sel.ref.voice === 'perched_crow')));
+    /^enemy_|perched_crow/.test(sel.ref.voice || '')));
   // A tapped villager stops to greet the player — see src/villagers.js.
   if (state.selected && state.selected.kind === 'villager') {
     greetVillager(state, state.selected.ref);

@@ -368,7 +368,7 @@ const paths = {
   // AND THE NOISE OF HIS TWO ABILITIES, Category B under the voice so neither drops
   // the other: the wind as he calls (with the call line), and his crow as it reaches
   // the tower and starts to circle it. See `sounds` on his def.
-  harbinger_wind:   'assets/audio/sfx/Crow_Harbinger_Call_Crows_Wind.mp3',
+  harbinger_wind:   'assets/audio/enemies/Crow_Harbinger_Call_Crows_Wind.mp3',
   dark_crow_caw:    'assets/audio/sfx/Dark_crow_caw.mp3',
   // The sixth is not a set piece — it is a running tally, every fifth man he
   // kills — so it is Category B and does not duck anything.
@@ -587,6 +587,11 @@ const paths = {
   // sets them on the road. See `hollow` in src/villagers.js.
   villager_enemy_selected_1: 'assets/audio/villagers/Villager_enemy_selected_1.mp3',
   villager_enemy_selected_2: 'assets/audio/villagers/Villager_enemy_selected_2.mp3',
+  // THREE ENEMY VILLAGERS WITH A LINE OF THEIR OWN, at the owner's word, each saying
+  // only it: stage 14's box carrier, and stage 15's two smiths.
+  villager_enemy_box:   'assets/audio/villagers/Villager_enemy_carrying_box.mp3',
+  villager_enemy_anvil: 'assets/audio/villagers/Villager_enemy_using_anvil.mp3',
+  villager_enemy_steel: 'assets/audio/villagers/Villager_enemy_heating_steel.mp3',
   villager_runnn:    'assets/audio/villagers/Villager_say_runnn.mp3',
   villager_nooo:     'assets/audio/villagers/Villager_say_nooo.mp3',
   // What the village shouts when the first wave comes: stage 2's "thugs are here",
@@ -1016,6 +1021,9 @@ export const CUE = {
   villager:     ['villager_selected_1', 'villager_selected_2', 'villager_selected_3'],
   // And Dark Hollow's, who are nobody's friend — see `voice` on the `hollow` play.
   enemy_villager: ['villager_enemy_selected_1', 'villager_enemy_selected_2'],
+  enemy_box:      ['villager_enemy_box'],
+  enemy_anvil:    ['villager_enemy_anvil'],
+  enemy_steel:    ['villager_enemy_steel'],
   // And stage 16's dark crows perched on the citadel, at the owner's word: a caw.
   perched_crow: ['dark_crow_caw'],
   barracks:     ['barracks_1', 'barracks_2', 'barracks_3', 'barracks_4', 'barracks_5'],

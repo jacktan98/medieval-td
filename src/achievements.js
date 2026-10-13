@@ -159,7 +159,7 @@ export const OFFROAD = {
 };
 // FRIEND OF THE PEOPLE counts the people: not Dark Hollow's thugs and enemy villagers,
 // and not its crows, at the owner's word.
-const NOT_PEOPLE = ['enemy_villager', 'perched_crow'];
+const NOT_PEOPLE = ['enemy_villager', 'enemy_box', 'enemy_anvil', 'enemy_steel', 'perched_crow'];
 export function noteVillagerTap(levelId, v) {
   if (!NOT_PEOPLE.includes(v.voice)) note('villagers');
   if (OFFROAD[levelId] && OFFROAD[levelId].includes(v.n)) noteOnce('offroad', 'off', `${levelId}:${v.n}`);

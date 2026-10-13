@@ -27,8 +27,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       Dark_crow_dies.mp3, Wings_flap.mp3, Vanish_effect.mp3,
                       Fire_status.mp3, Fuse_lit.mp3, Club_swing.mp3, Artillery_fires.mp3,
                       Thug_dies.mp3, Soldier_dies.mp3, Boss_fall_dead.mp3,
-                      Dark_crow_caw.mp3,
-                      Crow_Harbinger_Call_Crows_Wind.mp3
+                      Dark_crow_caw.mp3
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3, Rally_flag_planted.mp3,
                       Marching_sound.mp3, Select_Sound.mp3, Sell_Tower.mp3, Purchase_sound.mp3, Alert_sound.mp3, Page_flip.mp3, Book_open_close_sound.mp3,
@@ -50,6 +49,8 @@ assets/audio/villagers/  Villager_selected_1.mp3 .. Villager_selected_3.mp3,
                          Villager_say_thugs_are_here.mp3, Villager_say_hide.mp3,
                          Villager_say_oh_no.mp3, Villager_say_here_they_come.mp3,
                          Villager_enemy_selected_1.mp3, Villager_enemy_selected_2.mp3,
+                         Villager_enemy_carrying_box.mp3, Villager_enemy_using_anvil.mp3,
+                         Villager_enemy_heating_steel.mp3,
                          Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3,
                          Villager_enemy_say_you_are_on_forbidden_ground.mp3
 
@@ -87,6 +88,7 @@ assets/audio/enemies/ Thug_1.mp3 .. Thug_2.mp3
                       Crow_Harbinger_selected.mp3,
                       Crow_Harbinger_Point_Tower_1.mp3, Crow_Harbinger_Point_Tower_2.mp3,
                       Crow_Harbinger_Call_Crows_1.mp3, Crow_Harbinger_Call_Crows_2.mp3,
+                      Crow_Harbinger_Call_Crows_Wind.mp3,
                       Crow_Harbinger_before_dying.mp3, Crow_Harbinger_kill_soldier.mp3
 
 **`Wings_flap` plays whole, and only one at a time.** It starts on a crow's
@@ -221,6 +223,9 @@ and it now means "how long a lull has to be before the game forgets".
 | the **captain** is selected | `Captain_Thug_selected` |
 | a **villager** is selected | one of `Villager_selected_1` to `_3`, at random (Category A) |
 | on **stages 14 and 15**, a **thug or enemy villager** is selected | one of `Villager_enemy_selected_1` or `_2`, at random (Category A) — and, by the huts, the tap sets him on the road |
+| stage 14's **box carrier** is selected | `Villager_enemy_carrying_box`, his line alone |
+| stage 15's **smith at the anvil** is selected | `Villager_enemy_using_anvil`, his line alone |
+| stage 15's **smith heating steel** at the brazier is selected | `Villager_enemy_heating_steel`, his line alone |
 | on **stage 14**, an **Elite Archer** at the barricade is selected | `Archery_1..5`, as the Crossbow Tower answers |
 | the first enemy of wave 1 appears on **stages 1, 6 and 11** | `Villager_say_runnn`, once, **before everything**: takes the channel and is never cut off |
 | the first enemy of wave 1 appears on **stages 2, 7 and 12** | `Villager_say_hide`, the same way |
@@ -809,8 +814,8 @@ file. Worth a listen at volume; only a re-record fixes it if it is audible.
 What a creature on the road says when the player taps it, in a folder of its own:
 two takes for each, named for the creature (`Tough_Thug_1.mp3`, `Tough_Thug_2.mp3`),
 one picked at random each time — every enemy but the Dark Crow, which caws. And the
-two bosses' voices, all of them: the Captain Thug's and the Crow Harbinger's lines
-are here too (his flock's wind, which is not a voice, stays in `sfx/`). A boss
+two bosses' sounds, all of them: the Captain Thug's and the Crow Harbinger's lines
+are here too, and the wind that rises with the Harbinger's call to his flock. A boss
 tapped while he is already speaking answers as soon as that line has finished.
 
 - **To replace a take**, upload a file with the same name over it; it plays at the

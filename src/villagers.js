@@ -577,7 +577,7 @@ const PLAYS = {
     // TAPPED, HE CARRIES ON (`keepWorking`), at the owner's word. What a tap used to do —
     // the box dropped, into the hut, out a Tough Thug — is kept below, unused.
     boxman: { who: 1, path: HOLLOW_WAY, first: [[168, 128], [178, 139], [193, 144], [214, 142.5]],
-              inside: 3, gone: 3, arm: 3, road: [[196, 170]], keepWorking: true },
+              inside: 3, gone: 3, arm: 3, road: [[196, 170]], keepWorking: true, voice: 'enemy_box' },
     // THE TWO WHO ARM IN A HUT turn left and right where they stand. Tapped, each walks
     // up to his hut's door, his back to the player (`side`) — the man below the
     // top-left hut up and to the left, the drawing as it is; the man by the bottom hut
@@ -610,13 +610,13 @@ const PLAYS = {
     // weld sounds — a little slower than stage 4's, at the owner's word. He keeps at it whether he is tapped or not.
     // THE SPARKS FLY FROM THE BLADE (`sparks`, the hot middle of it in heat_2), not out
     // of the middle of the fire, at the owner's word.
-    smith: { who: 0, back: 4.2, in: 2.6, poses: ['heat_1', 'heat_2'], sparks: [-12, -17], voice: 'enemy_villager',
+    smith: { who: 0, back: 4.2, in: 2.6, poses: ['heat_1', 'heat_2'], sparks: [-12, -17], voice: 'enemy_steel',
              card: ENEMY_VILLAGER_CARD },
     // THE SMITH AT THE ANVIL: the hammer raised, and down on the metal — a hit cut out
     // of the anvil recording (ANVIL in src/audio.js) and a burst of sparks each time it
     // lands (`sparks`, from his feet in board px) — two blows and a breath, and again,
     // unhurried.
-    hammer: { who: 1, strike: 'anvil_1', sound: 'anvil', sparks: [1, -6], voice: 'enemy_villager',
+    hammer: { who: 1, strike: 'anvil_1', sound: 'anvil', sparks: [1, -6], voice: 'enemy_anvil',
               beats: [['anvil_2', 0.6], ['anvil_1', 0.4], ['anvil_2', 0.6], ['anvil_1', 0.4], ['anvil_2', 1.7]],
               card: ENEMY_VILLAGER_CARD },
     // THE TWO BY THE HUTS, as stage 14's: tapped, each stands `still` seconds, then the
@@ -1361,7 +1361,8 @@ function hollowRound(state, vp, dt) {
 
   const bx = plan.boxman, bv = bx && state.villagers[bx.who];
   if (bv && bv.live) {
-    bv.work = true; bv.voice = plan.voice;
+    // His own line, at the owner's word — the box he is carrying.
+    bv.work = true; bv.voice = bx.voice || plan.voice;
     const c = vp.hollow[bx.who] || (vp.hollow[bx.who] = { phase: 'carry', at: vp.t, first: true });
     const k = vp.t - c.at;
     // TAPPED, whatever he is doing that can see a tap: the box dropped if he has one,
