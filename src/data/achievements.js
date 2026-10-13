@@ -52,7 +52,7 @@ export const ACHIEVEMENTS = [
     text: '{Click} on every picture in the Encyclopedia to see it up close.' },
   { id: 'villagers', name: 'Friend of the People', icon: 'ach_18', goal: 100,
     text: '{Click} on villagers 100 times. Thugs do not count.' },
-  { id: 'offroad', name: 'No Stone Unturned', icon: 'ach_19', goal: 17,
+  { id: 'offroad', name: 'Know Thy Enemy', icon: 'ach_19', goal: 19,
     text: '{Click} on every enemy waiting off the road on stages 14, 15 and 16.' },
   { id: 'tier4', name: 'Grand Arsenal', icon: 'ach_20', goal: 8,
     text: 'Build all 8 tier 4 towers in one stage.' }

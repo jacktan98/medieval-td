@@ -149,12 +149,15 @@ function noteOnce(id, list, key) {
 export const noteBookPicture = (page, i) => noteOnce('book', 'book', `${page}:${i}`);
 
 // THE ENEMIES WAITING OFF THE ROAD, by board and by their place in its `villagers`
-// list: stage 14's five, stage 15's two by the huts (the smiths work on and the men
-// behind the wall are not tapped onto the road), and stage 16's four thugs and six
-// perched crows. tools/achievements.mjs holds this against the boards.
+// list: stage 14's five, stage 15's two by the huts and its two smiths, and stage
+// 16's four thugs and six perched crows. EVERY ONE OFF THE ROAD, at the owner's word,
+// whether a tap sends him to it or not: the box carrier and the two smiths work on
+// when tapped and still count. The men behind stage 15's wall march out on the
+// waves rather than standing to be found, and are not in it. tools/achievements.mjs
+// holds this against the boards.
 export const OFFROAD = {
   m16: [0, 1, 2, 3, 4],
-  m17: [11, 12],
+  m17: [0, 1, 11, 12],
   m18: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 };
 // FRIEND OF THE PEOPLE counts the people: not Dark Hollow's thugs and enemy villagers,

@@ -51,7 +51,7 @@ const off = Object.values(A.OFFROAD).reduce((n, l) => n + l.length, 0);
 check(goal('normal') === STAGES.length && goal('hard') === STAGES.length, 'Normal and Hard: every stage', String(STAGES.length));
 check(goal('upgrades') === rungs, 'Master Smith: every upgrade rung', String(rungs));
 check(goal('book') === pictures, 'Patron of the Arts: every picture in the encyclopedia', String(pictures));
-check(goal('offroad') === off, 'No Stone Unturned: every enemy off the road', String(off));
+check(goal('offroad') === off, 'Know Thy Enemy: every enemy off the road', String(off));
 check(goal('tier4') === A.TIER4.length && A.TIER4.length === 8, 'Grand Arsenal: all 8 tier 4 towers', A.TIER4.join(', '));
 for (const id of ['winchester', 'dawnford', 'ironforge', 'hollow']) check(goal(id) === 3, `${A.byId(id).name}: 3 stages`);
 // The enemies off the road, on stages 14, 15 and 16, each a villager the board has.
@@ -116,7 +116,7 @@ A.noteVillagerTap('m18', { n: 4, voice: 'perched_crow' });
 A.noteVillagerTap('m18', { n: 4, voice: 'perched_crow' });
 check(A.progressOf('offroad')[0] === 1, 'an enemy off the road counts once, however often tapped');
 for (const [id, list] of Object.entries(A.OFFROAD)) for (const n of list) A.noteVillagerTap(id, { n, voice: 'enemy_villager' });
-check(A.earned('offroad'), 'all of them earns No Stone Unturned');
+check(A.earned('offroad'), 'all of them earns Know Thy Enemy');
 
 {
   const st = {};

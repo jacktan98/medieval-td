@@ -498,7 +498,7 @@ export function tap(state, x, y, restart) {
   // A tapped villager stops to greet the player — see src/villagers.js.
   if (state.selected && state.selected.kind === 'villager') {
     greetVillager(state, state.selected.ref);
-    // Counted for Friend of the People, and on Dark Hollow for No Stone Unturned.
+    // Counted for Friend of the People, and on Dark Hollow for Know Thy Enemy.
     noteVillagerTap(level.id, state.selected.ref);
   }
   // Picking somebody up is an action and so is putting them down; tapping bare

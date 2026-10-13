@@ -32,7 +32,7 @@ renumbering its file too, or changing its `icon`.
 | `Achievements_16.png` | Time Stands Still |
 | `Achievements_17.png` | Patron of the Arts |
 | `Achievements_18.png` | Friend of the People |
-| `Achievements_19.png` | No Stone Unturned |
+| `Achievements_19.png` | Know Thy Enemy |
 | `Achievements_20.png` | Grand Arsenal |
 
 ## How to draw them
