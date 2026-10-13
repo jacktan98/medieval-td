@@ -247,28 +247,18 @@ console.log('\nWhich of a pair is on top\n');
   ok(wrong.length === 0, 'every pair is listed lighter disc first', wrong.join('; ') ||
     `${owners.length} towers`);
 
-  // AND THE LIGHTER ONE PRINTS ITS PRICE IN DARK INK, the darker one in white.
-  // The owner's rule, and it is one rule doing two jobs: every price gets the ink
-  // that reads on the plate under it, and a tower's two buttons come out as a
-  // contrast pair rather than two of the same.
-  //
-  // ASKED OF THE MEASURED PLATE rather than of the list order, even though the two
-  // agree today. The order is a decision somebody typed; the lightness is a fact
-  // about the file. If a re-export ever flips a pair, this says which flag is now
-  // wrong instead of quietly agreeing with a stale order.
+  // AND EVERY ONE PRINTS ITS PRICE IN DARK INK, at the owner's word: the artist
+  // redrew all sixteen on light discs, so white ink would sink into every one of
+  // them. Asked of the measured plate as well, so a disc redrawn dark again says so.
   const inked = [];
   for (const d of owners) {
-    const two = d.abilities.map(id => abilityById(id));
-    const lum = two.map(a => plate(a.icon));
-    const light = lum[0] >= lum[1] ? 0 : 1;
-    two.forEach((a, i) => {
-      const wantPale = i === light;
-      const isPale = !!(ui[a.icon] || {}).pale;
-      if (isPale !== wantPale)
-        inked.push(`${a.name} on ${lum[i].toFixed(0)} is ${isPale ? 'dark' : 'white'}, wanted ${wantPale ? 'dark' : 'white'}`);
-    });
+    for (const a of d.abilities.map(id => abilityById(id))) {
+      const lum = plate(a.icon);
+      if (!(ui[a.icon] || {}).pale) inked.push(`${a.name} is white, wanted dark`);
+      if (lum < 150) inked.push(`${a.name}'s disc measures ${lum.toFixed(0)}, too dark for dark ink`);
+    }
   }
-  ok(inked.length === 0, 'and the lighter takes the dark price, the darker white',
+  ok(inked.length === 0, 'and every price is in dark ink, on a light disc',
     inked.join('; ') || `${owners.length * 2} buttons`);
 
   // AND THE BOOK AND THE MENU ARE THE SAME ORDER. The tier's `abilities` list is

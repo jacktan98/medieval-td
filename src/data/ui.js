@@ -346,8 +346,11 @@ export const ui = {
   up_monastery_2: { trim: [132, 132, 248, 248], fit: 72 },
   up_monastery_3: { trim: [132, 132, 248, 248], fit: 72 },
   up_monastery_4: { trim: [132, 132, 248, 248], fit: 72 },
+  // EVERY ABILITY'S PRICE IN DARK INK now, at the owner's word: the artist redrew
+  // all sixteen on light discs, so `pale` is on every one of them. (It used to be
+  // one of each pair — the lighter — with white ink on the darker.)
   ability_burst:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_deadeye: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // `pale` MEANS DARK INK ON THIS BUTTON'S PRICE — see buttonPrice in render.js —
   // and it is on EXACTLY THE LIGHTER OF EACH TOWER'S PAIR, at the owner's ask:
   // "for each tower, the lighter background uses dark colour for price and vice
@@ -394,33 +397,31 @@ export const ui = {
   // not read as a light one and a dark one, which is the thing being organised.
   //
   ability_light:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_blinding: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_blinding: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Ballista Turret's two, measured to the same disc as the four above.
   ability_ballista_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Crossbow Sentry's two, on the same terms: whole buttons on the artist's
   // own disc, measured to btn_plate's trim like every other ability face.
   ability_sentry_tension: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true },
-  ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_swift:          { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
+  ability_heavy:   { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Assassin Guild's two, measured to the same disc as every other face —
   // 163,163,186,186 again, which is now nine files in a row the artist has drawn
   // to the same circle without being asked twice.
   ability_knife: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_sneak: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_sneak: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Cannon Outpost's two, on the same disc as every other ability face.
-  ability_cannon_swift: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_cannon_swift: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   ability_fiery:        { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // The Judgment Temple's two, on the monastery's own ORANGE disc. Eleven files
   // in a row now measure to 163,163,186,186 — the artist draws every ability face
   // into the same circle, and that is worth saying out loud because it is the
   // reason a new icon needs no thought: it lands on the plate where the last ten
-  // did. NOT `pale`: white price ink reads on this orange the way it reads on the
-  // blue, and it is only the altar's white disc that swallowed it.
+  // did.
   // THE REDRAWN PAIR SWAPPED SHADES: Slowed Pulse is now the lighter disc (237
-  // against 201), so it takes the dark price and comes first, and Inner Strength the
-  // white. See the temple's `abilities` in data/towers.js.
+  // against 201), so it comes first. See the temple's `abilities` in data/towers.js.
   ability_pulse:    { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
-  ability_strength: { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_strength: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
 
   // THE STATUS MARKS, and they are the first entries in this table that are drawn
   // on the BOARD rather than on the interface. They are here anyway, and that is
@@ -477,7 +478,7 @@ export const ui = {
   // which reads this and prints the ordinary dark ink instead — the same colour
   // every tier upgrade prints its price in. A property of the ARTWORK rather than
   // of the ability, so a re-export on a dark disc is one word to delete.
-  ability_wrath:     { trim: [163, 163, 186, 186], fit: 60, plate: true },
+  ability_wrath:     { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   ability_fortitude: { trim: [163, 163, 186, 186], fit: 60, plate: true, pale: true },
   // AND THE TWO BADGES, which are not buttons: they are drawn on the BOARD over
   // every tower an aura is working on. `h` rather than `fit`, because what has to
