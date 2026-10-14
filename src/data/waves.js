@@ -3375,7 +3375,7 @@ export const stage14Waves = [
 
 // STAGE 15: Dark Hollow Quarters. The owner's own list, wave by wave, each group in the
 // order it comes out and each `gap` the seconds between two of it — Dark Crows behind
-// the first four, then shadows, giants and archers, and a last wave of 40 Blocker Thugs
+// the first four, then shadows, giants and archers, and a last wave of 32 Blocker Thugs
 // behind 4 Rally Thugs. THE CAPTAIN IS NOT IN IT: he stands at the camp wall all game
 // and walks out once the last wave is dead — see `captain` under `quarters` in
 // src/villagers.js.
@@ -3402,7 +3402,7 @@ export const stage15Waves = [
                        { type: 'plague_inf', count: 6, gap: 1.2 },
                        { type: 'boulder_giant', count: 6, gap: 1.2 }] },
   { rest: 10, groups: [{ type: 'rally_inf', count: 4, gap: 0.5 },
-                       { type: 'blocker_inf', count: 40, gap: 0.5 }] }
+                       { type: 'blocker_inf', count: 32, gap: 0.5 }] }
 ];
 
 // STAGE 16: Dark Hollow Citadel. "Similar to Stage 15", at the owner's word — so

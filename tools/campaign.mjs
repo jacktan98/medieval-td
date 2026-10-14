@@ -2744,7 +2744,7 @@ console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link betwee
     '10 shadow_inf (1.5) + 1 rally_inf (1)',
     '4 heavy_inf (1.5) + 4 boulder_giant (1.5) + 4 bomb_inf (1.5) + 1 rally_inf (1.5) + 12 archer_inf (1)',
     '6 heavy_inf (1.2) + 6 dark_priest (1.2) + 6 plague_inf (1.2) + 6 boulder_giant (1.2)',
-    '4 rally_inf (0.5) + 40 blocker_inf (0.5)'
+    '4 rally_inf (0.5) + 32 blocker_inf (0.5)'
   ];
   const got15 = quarters.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
   ok(got15.join(' | ') === WANT15.join(' | ') && quarters.waves !== woods.waves,
