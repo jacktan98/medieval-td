@@ -293,16 +293,16 @@ console.log('\nAnything, in any wave\n');
   reset();
 
   // AND HOW FAST THEY COME, which is the third control on a row and the newest.
-  const shippedGap = waveGap(lv.id, 3, 'light_inf');
-  ok(shippedGap === lv.waves[3].groups[0].gap,
+  const shippedGap = waveGap(lv.id, 2, 'light_inf');
+  ok(shippedGap === lv.waves[2].groups[0].gap,
     'an untouched rate is the one the table ships', `every ${shippedGap}s`);
-  setWaveGap(lv.id, 3, 'light_inf', shippedGap + gapStep());
-  ok(adminWaves(lv)[3].groups[0].gap === +(shippedGap + 0.1).toFixed(1),
+  setWaveGap(lv.id, 2, 'light_inf', shippedGap + gapStep());
+  ok(adminWaves(lv)[2].groups[0].gap === +(shippedGap + 0.1).toFixed(1),
     'and an override reaches the wave the game is handed',
-    `every ${adminWaves(lv)[3].groups[0].gap}s`);
-  ok(lv.waves[3].groups[0].gap === shippedGap,
-    'while the LEVEL keeps its own underneath', `every ${lv.waves[3].groups[0].gap}s`);
-  setWaveGap(lv.id, 3, 'light_inf', shippedGap);
+    `every ${adminWaves(lv)[2].groups[0].gap}s`);
+  ok(lv.waves[2].groups[0].gap === shippedGap,
+    'while the LEVEL keeps its own underneath', `every ${lv.waves[2].groups[0].gap}s`);
+  setWaveGap(lv.id, 2, 'light_inf', shippedGap);
   ok(!touched(), 'and stepping it back to the shipped rate clears the edit');
 
   // A TENTH IS NOT REPRESENTABLE IN BINARY, so ten taps down from 2.0 lands on
@@ -881,9 +881,11 @@ console.log('\nWhich of them comes out first\n');
   // exception, the Bend's Extended boss finale; it went with Extended. Add a new
   // deliberate one and this line is where you say so.
   //
-  // DARK HOLLOW WOODS, QUARTERS AND CITADEL ARE THREE, at the owner's word: each list
-  // was given wave by wave in the order each group comes out.
-  const OWN_ORDER = ['m16', 'm17', 'm18'];
+  // EVERY CAMPAIGN STAGE IS ONE NOW, at the owner's word: all sixteen lists were
+  // given wave by wave in the order each group comes out. What is left to hold to
+  // MARCH_ORDER is the maps outside the campaign.
+  const OWN_ORDER = ['m0', 'm4', 'm5', 'm6', 'm7', 'm8', 'm9', 'm10', 'm11', 'm12', 'm13',
+    'm14', 'm15', 'm16', 'm17', 'm18'];
   const offOrder = [];
   for (const l of levels) {
     if (OWN_ORDER.includes(l.id)) continue;

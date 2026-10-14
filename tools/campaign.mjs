@@ -38,14 +38,8 @@ import { prebuiltOn, makeTower, towerBox, machineBox } from '../src/towers.js';
 // The real spawner, for the entry mix: what walks is the question, not what the
 // level file declares.
 import { spawn, updateEnemies, pickTarget } from '../src/enemies.js';
-import { enemyTypes, MARCH_ORDER } from '../src/data/waves.js';
+import { enemyTypes } from '../src/data/waves.js';
 
-// A WAVE AS ITS CREATURES AND THEIR COUNTS, in MARCH_ORDER whatever order it was
-// written in. The owner's lists say who comes and how many; the order they come in
-// is the house order (MARCH_ORDER, checked against every table in tools/admin.mjs),
-// which the owner re-set after most of these lists were written.
-const marched = line => line.split(' + ')
-  .sort((a, b) => MARCH_ORDER.indexOf(a.split(' ')[1]) - MARCH_ORDER.indexOf(b.split(' ')[1])).join(' + ');
 import { typeOf } from '../src/data/armor.js';
 import { inRange } from '../src/ground.js';
 import { at as routeAt } from '../src/route.js';
@@ -1130,14 +1124,14 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // Written down rather than derived, because the shape of them is a decision:
   // wave 5 sends NO THUGS, which no other wave in the game does, and a check that
   // measured "gets bigger" would call that a fault.
-  const shape2 = w => w.groups.map(g => `${g.count} ${g.type}`).join(' + ');
+  const shape2 = w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + ');
   const WANT2 = [
-    '5 light_inf',
-    '5 light_inf + 2 tough_inf',
-    '10 light_inf + 2 tough_inf + 1 archer_inf',
-    '12 light_inf + 4 tough_inf + 4 archer_inf',
-    '4 tough_inf + 10 archer_inf',
-    '16 light_inf + 6 tough_inf + 16 archer_inf'
+    '4 light_inf (1.6)',
+    '4 light_inf (1.6) + 1 tough_inf (1.8)',
+    '6 light_inf (1.6) + 1 tough_inf (1.8) + 1 archer_inf (1.8)',
+    '8 light_inf (1.4) + 2 tough_inf (1.6) + 2 archer_inf (1.6)',
+    '4 tough_inf (1.2) + 6 archer_inf (1.4)',
+    '10 light_inf (1.2) + 6 tough_inf (1.2) + 10 archer_inf (1.2)'
   ];
   const got2 = two.waves.map(shape2);
   ok(got2.join(' | ') === WANT2.join(' | '), 'and sends exactly the six it was given',
@@ -1189,13 +1183,13 @@ console.log('\n--- stage 1 is a tutorial, and the rest moved down ---\n');
   // cannot be guarded by a check that the pattern holds, so this pins the list
   // instead: the shape is a decision rather than a rule, and a decision is checked
   // by writing it down.
-  const shape = w => w.groups.map(g => `${g.count} ${g.type}`).join(' + ');
+  const shape = w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + ');
   const WANT = [
-    '2 light_inf',
-    '4 light_inf',
-    '6 light_inf',
-    '2 tough_inf',
-    '6 light_inf + 2 tough_inf'
+    '2 light_inf (1.8)',
+    '4 light_inf (1.8)',
+    '6 light_inf (1.6)',
+    '2 tough_inf (1.8)',
+    '6 light_inf (1.6) + 2 tough_inf (1.8)'
   ];
   const got = tut.waves.map(shape);
   ok(got.join(' | ') === WANT.join(' | '), 'and sends exactly the five it was given',
@@ -1235,18 +1229,18 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
 {
   const castle = levels.find(l => l.id === 'm7');
   const WANT5 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 1 heavy_inf',
-    '10 light_inf + 2 blocker_inf + 2 heavy_inf',
-    '10 light_inf + 4 tough_inf + 2 heavy_inf + 6 archer_inf',
-    '6 blocker_inf + 3 heavy_inf + 10 archer_inf',
-    '8 blocker_inf + 4 heavy_inf + 16 archer_inf',
-    '8 blocker_inf + 5 heavy_inf + 16 archer_inf'
+    '8 light_inf (1.4)',
+    '10 light_inf (1.4) + 2 tough_inf (1.6)',
+    '12 light_inf (1.4) + 4 tough_inf (1.6) + 2 blocker_inf (1.6)',
+    '14 light_inf (1.4) + 6 tough_inf (1.6) + 4 blocker_inf (1.8)',
+    '4 blocker_inf (1.6) + 1 heavy_inf (2) + 4 archer_inf (1.2)',
+    '4 blocker_inf (1.6) + 2 heavy_inf (2) + 8 archer_inf (1.2)',
+    '6 blocker_inf (1.6) + 3 heavy_inf (2) + 12 archer_inf (1.2)',
+    '8 blocker_inf (1.6) + 4 heavy_inf (1.6) + 16 archer_inf (1)'
   ];
-  const got5 = castle.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got5.join(' | ') === WANT5.map(marched).join(' | '), 'the Castle sends exactly the eight it was given',
-    got5.map((g, i) => (g === marched(WANT5[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT5[i])})`)).join(' '));
+  const got5 = castle.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got5.join(' | ') === WANT5.join(' | '), 'the Castle sends exactly the eight it was given',
+    got5.map((g, i) => (g === WANT5[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT5[i]})`)).join(' '));
   ok(castle.plots.length === 9 && castle.startGold === 300 && castle.waves.length === 8,
     'and is nine plots, 300 gold and eight waves',
     `${castle.plots.length} plots, ${castle.startGold} gold, ${castle.waves.length} waves`);
@@ -1267,7 +1261,7 @@ console.log('\n--- stage 5, the bridge and the two men at it ---\n');
   const shop = levels.find(l => l.id === 'm6');
   const shared = castle.waves.findIndex((w, i) =>
     i >= shop.waves.length || JSON.stringify(w.groups) !== JSON.stringify(shop.waves[i].groups));
-  ok(shared === 3, "and its first three are the Workshop's own, unchanged",
+  ok(shared === 2, "and its first two are the Workshop's own, unchanged",
     `${shared} of ${shop.waves.length} identical before they part`);
 
   // THE KEEP IS OFF THE BOTTOM. Every other board ends past the right edge, and this
@@ -1541,18 +1535,18 @@ console.log('\n--- stage 6, one way in and two ways out ---\n');
 {
   const ford = levels.find(l => l.id === 'm8');
   const WANT6 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 1 heavy_inf',
-    '10 light_inf + 2 blocker_inf + 2 heavy_inf + 1 plague_inf',
-    '4 tough_inf + 4 heavy_inf + 4 archer_inf + 2 plague_inf',
-    '6 blocker_inf + 4 heavy_inf + 8 archer_inf + 2 plague_inf',
-    '8 blocker_inf + 6 heavy_inf + 10 archer_inf + 4 plague_inf',
-    '10 blocker_inf + 8 heavy_inf + 12 archer_inf + 6 plague_inf'
+    '8 light_inf (1.4)',
+    '10 light_inf (1.4) + 2 tough_inf (1.6)',
+    '12 light_inf (1.4) + 4 tough_inf (1.6) + 1 blocker_inf (1.6) + 1 plague_inf (1.4)',
+    '12 light_inf (1.4) + 4 blocker_inf (1.6) + 1 heavy_inf (2) + 2 plague_inf (1.4)',
+    '2 heavy_inf (1.6) + 4 archer_inf (1.2) + 2 plague_inf (1.2)',
+    '3 heavy_inf (1.6) + 6 archer_inf (1.2) + 2 plague_inf (1.2)',
+    '4 heavy_inf (1.6) + 8 archer_inf (1.2) + 4 plague_inf (1.2)',
+    '5 heavy_inf (1.6) + 10 archer_inf (1) + 6 plague_inf (1)'
   ];
-  const got6 = ford.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got6.join(' | ') === WANT6.map(marched).join(' | '), 'Dawnford sends exactly the eight it was given',
-    got6.map((g, i) => (g === marched(WANT6[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT6[i])})`)).join(' '));
+  const got6 = ford.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got6.join(' | ') === WANT6.join(' | '), 'Dawnford sends exactly the eight it was given',
+    got6.map((g, i) => (g === WANT6[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT6[i]})`)).join(' '));
   ok(ford.plots.length === 9 && ford.startGold === 300 && ford.waves.length === 8,
     'and is nine plots, 300 gold and eight waves',
     `${ford.plots.length} plots, ${ford.startGold} gold, ${ford.waves.length} waves`);
@@ -1602,23 +1596,23 @@ console.log('\n--- stage 8, two roads that cross, and five men already standing 
 {
   const kirk = levels.find(l => l.id === 'm10');
   const WANT8 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 heavy_inf + 1 plague_inf + 1 dark_priest',
-    '8 light_inf + 4 blocker_inf + 2 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '6 light_inf + 6 tough_inf + 4 blocker_inf + 3 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 4 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest',
-    '10 blocker_inf + 6 heavy_inf + 14 archer_inf + 4 plague_inf + 4 dark_priest',
-    '12 blocker_inf + 8 heavy_inf + 20 archer_inf + 6 plague_inf + 6 dark_priest'
+    '10 light_inf (1.2)',
+    '10 light_inf (1.2) + 2 tough_inf (1.6)',
+    '6 tough_inf (1.6) + 4 blocker_inf (1.6) + 1 heavy_inf (2)',
+    '4 blocker_inf (1.6) + 2 heavy_inf (2) + 1 plague_inf (1.2) + 1 dark_priest (1.2)',
+    '6 blocker_inf (1.6) + 2 heavy_inf (2) + 8 archer_inf (1) + 2 plague_inf (1.2) + 2 dark_priest (1.2)',
+    '4 heavy_inf (2) + 10 archer_inf (1) + 4 plague_inf (1) + 4 dark_priest (1)',
+    '6 heavy_inf (2) + 12 archer_inf (0.8) + 4 plague_inf (0.8) + 4 dark_priest (0.8)',
+    '8 heavy_inf (2) + 16 archer_inf (0.8) + 6 plague_inf (0.8) + 6 dark_priest (0.8)'
   ];
-  const got8 = kirk.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got8.join(' | ') === WANT8.map(marched).join(' | '), 'Dawnford Church sends exactly the eight it was given',
-    got8.map((g, i) => (g === marched(WANT8[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT8[i])})`)).join(' '));
+  const got8 = kirk.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got8.join(' | ') === WANT8.join(' | '), 'Dawnford Church sends exactly the eight it was given',
+    got8.map((g, i) => (g === WANT8[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT8[i]})`)).join(' '));
   // AND THE GIANTS CLIMB, which is the shape of the owner's second pass over this
   // table rather than a number in it. Every wave from the third carries more of them
   // than the wave before, and that is the thing a later edit could quietly flatten.
   const giants = kirk.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
-  ok(giants.join(',') === '0,0,1,2,3,4,6,8', 'and its giants climb 0,0,1,2,3,4,6,8',
+  ok(giants.join(',') === '0,0,1,2,2,4,6,8', 'and its giants climb 0,0,1,2,2,4,6,8',
     giants.join(','));
   ok(giants.every((n, i) => i === 0 || n >= giants[i - 1]),
     'never carrying fewer than the wave before', giants.join(' -> '));
@@ -1709,25 +1703,25 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
 {
   const sand = levels.find(l => l.id === 'm11');
   const WANT9 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 1 shadow_inf',
-    '10 light_inf + 4 blocker_inf + 2 shadow_inf + 1 heavy_inf + 1 plague_inf + 1 dark_priest',
-    '8 tough_inf + 4 blocker_inf + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 4 shadow_inf + 2 heavy_inf + 8 archer_inf + 2 plague_inf + 2 dark_priest',
-    '8 blocker_inf + 6 shadow_inf + 4 heavy_inf + 10 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 10 shadow_inf + 4 heavy_inf + 12 archer_inf + 4 plague_inf + 4 dark_priest'
+    '8 light_inf (1.2)',
+    '10 light_inf (1.2) + 2 tough_inf (1.6)',
+    '10 light_inf (1.2) + 4 tough_inf (1.6) + 2 blocker_inf (1.6)',
+    '4 blocker_inf (1.6) + 2 shadow_inf (1.6)',
+    '4 blocker_inf (1.6) + 4 shadow_inf (1.6)',
+    '2 heavy_inf (2) + 4 shadow_inf (1.6)',
+    '2 heavy_inf (1.6) + 8 shadow_inf (1.6) + 6 archer_inf (0.8)',
+    '2 heavy_inf (1.2) + 10 shadow_inf (1.2) + 10 archer_inf (0.6)'
   ];
-  const got9 = sand.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got9.join(' | ') === WANT9.map(marched).join(' | '), 'Sandshroud sends exactly the eight it was given',
-    got9.map((g, i) => (g === marched(WANT9[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT9[i])})`)).join(' '));
+  const got9 = sand.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got9.join(' | ') === WANT9.join(' | '), 'Sandshroud sends exactly the eight it was given',
+    got9.map((g, i) => (g === WANT9[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT9[i]})`)).join(' '));
 
   // THE SHADOW THUG SHIPS HERE AND NOWHERE ELSE, which is the thing this table is
   // for and the thing a later retune could quietly undo from either end: take him
   // off this board and he is a creature nothing sends again; put him on another and
   // the claim below about the barracks stops being about one board.
   const shadows = sand.waves.map(w => (w.groups.find(g => g.type === 'shadow_inf') || {}).count || 0);
-  ok(shadows.join(',') === '0,0,1,2,2,4,6,10', 'its Shadow Thugs climb 0,0,1,2,2,4,6,10',
+  ok(shadows.join(',') === '0,0,0,2,4,4,8,10', 'its Shadow Thugs climb 0,0,0,2,4,4,8,10',
     shadows.join(','));
   ok(shadows.every((n, i) => i === 0 || n >= shadows[i - 1]),
     '  never carrying fewer than the wave before', shadows.join(' -> '));
@@ -1767,7 +1761,7 @@ console.log('\n--- stage 9, three roads into two doors, on sand ---\n');
   // owner's rewrite took the late pair down to four and made the Shadow Thug the
   // thing that grows instead.
   const giants9 = sand.waves.map(w => (w.groups.find(g => g.type === 'heavy_inf') || {}).count || 0);
-  ok(giants9.join(',') === '0,0,0,1,2,2,4,4', 'and its giants climb 0,0,0,1,2,2,4,4',
+  ok(giants9.join(',') === '0,0,0,0,0,2,2,2', 'and its giants climb 0,0,0,0,0,2,2,2',
     giants9.join(','));
   ok(giants9.every((n, i) => i === 0 || n >= giants9[i - 1]),
     '  never carrying fewer than the wave before', giants9.join(' -> '));
@@ -1935,20 +1929,20 @@ console.log('\n--- stage 10 is Ironforge Town, and one of its roads forks ---\n'
   const iron = levels.find(l => l.id === 'm12');
   ok(!!iron, 'Ironforge Town is in the game', iron ? iron.name : 'missing');
 
-  // THE OWNER'S EIGHT WAVES. Compared in MARCH_ORDER, which is how they march.
+  // THE OWNER'S EIGHT WAVES, as typed, gaps and all.
   const WANT10 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 2 tough_inf + 1 blocker_inf + 4 crow + 1 shadow_inf',
-    '10 light_inf + 4 blocker_inf + 6 crow + 1 shadow_inf + 1 heavy_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 8 crow + 2 shadow_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '6 blocker_inf + 10 crow + 2 shadow_inf + 2 heavy_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
-    '8 blocker_inf + 12 crow + 4 shadow_inf + 3 heavy_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '10 blocker_inf + 14 crow + 6 shadow_inf + 4 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest'
+    '8 crow (1.6)',
+    '2 tough_inf (1.6) + 8 crow (1.6)',
+    '2 blocker_inf (1.6) + 8 crow (1.6)',
+    '2 tough_inf (1.6) + 2 blocker_inf (1.6) + 8 crow (1.6)',
+    '1 heavy_inf (2) + 10 crow (1.6)',
+    '2 heavy_inf (2) + 10 crow (1.6) + 2 plague_inf (1.2) + 2 dark_priest (1.2)',
+    '2 heavy_inf (2) + 16 crow (1.2) + 2 plague_inf (1) + 2 dark_priest (1)',
+    '4 heavy_inf (2) + 24 crow (1) + 2 plague_inf (1) + 2 dark_priest (1)'
   ];
-  const got10 = iron.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got10.join(' | ') === WANT10.map(marched).join(' | '), 'Ironforge sends exactly the eight it was given',
-    got10.map((g, i) => (g === marched(WANT10[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT10[i])})`)).join(' '));
+  const got10 = iron.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got10.join(' | ') === WANT10.join(' | '), 'Ironforge sends exactly the eight it was given',
+    got10.map((g, i) => (g === WANT10[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT10[i]})`)).join(' '));
 
   // THE DARK CROW FIRST FLIES HERE, as the story has it: no board before this one
   // sends a crow, and this one does from wave 3.
@@ -2127,18 +2121,18 @@ console.log('\n--- stage 11 is Ironforge Factory, and it branches at both ends -
   ok(!!fact, 'Ironforge Factory is in the game', fact ? fact.name : 'missing');
 
   const WANT11 = [
-    '8 light_inf',
-    '10 light_inf + 4 crow',
-    '10 light_inf + 2 blocker_inf + 6 crow + 2 bomb_inf',
-    '10 light_inf + 8 crow + 1 heavy_inf + 4 bomb_inf + 2 plague_inf + 2 dark_priest',
-    '10 crow + 2 heavy_inf + 6 bomb_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '12 crow + 1 shadow_inf + 2 heavy_inf + 8 bomb_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
-    '14 crow + 2 shadow_inf + 3 heavy_inf + 10 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '16 crow + 3 shadow_inf + 4 heavy_inf + 10 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest'
+    '10 light_inf (1.6)',
+    '10 light_inf (1.6) + 4 tough_inf (1.6)',
+    '4 tough_inf (1.6) + 4 blocker_inf (1.6) + 2 bomb_inf (1.6)',
+    '6 blocker_inf (1.6) + 2 bomb_inf (1.6) + 2 plague_inf (1.2) + 2 dark_priest (1.2) + 2 crow (1.2)',
+    '8 blocker_inf (1.2) + 4 bomb_inf (1.6) + 4 archer_inf (1) + 2 plague_inf (1) + 2 dark_priest (1) + 4 crow (1)',
+    '8 blocker_inf (1.2) + 2 heavy_inf (1.6) + 6 bomb_inf (1.6) + 6 archer_inf (1) + 2 plague_inf (1) + 2 dark_priest (1) + 6 crow (1)',
+    '8 blocker_inf (0.8) + 2 heavy_inf (1.2) + 8 bomb_inf (1.2) + 8 archer_inf (0.8) + 4 plague_inf (0.8) + 4 dark_priest (0.8) + 8 crow (0.8)',
+    '16 blocker_inf (0.8) + 4 heavy_inf (1) + 10 bomb_inf (1.2) + 10 archer_inf (0.8) + 6 plague_inf (0.8) + 6 dark_priest (0.8) + 10 crow (0.8)'
   ];
-  const got11 = fact.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got11.join(' | ') === WANT11.map(marched).join(' | '), 'the Factory sends exactly the eight it was given',
-    got11.map((g, i) => (g === marched(WANT11[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT11[i])})`)).join(' '));
+  const got11 = fact.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got11.join(' | ') === WANT11.join(' | '), 'the Factory sends exactly the eight it was given',
+    got11.map((g, i) => (g === WANT11[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT11[i]})`)).join(' '));
 
   // A REPORT, NOT A CHECK: any creature built that no board sends yet. A creature
   // built ahead of the board that will use it is a normal state for this project,
@@ -2302,18 +2296,18 @@ console.log('\n--- stage 12, Ironforge Castle ---\n');
   ok(!!cast, 'Ironforge Castle is in the game', cast ? cast.name : 'missing');
 
   const WANT12 = [
-    '8 light_inf',
-    '10 light_inf + 4 crow',
-    '10 light_inf + 2 blocker_inf + 6 crow + 2 bomb_inf',
-    '10 light_inf + 8 crow + 1 heavy_inf + 4 bomb_inf + 2 plague_inf + 2 dark_priest',
-    '10 crow + 2 heavy_inf + 6 bomb_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '12 crow + 1 shadow_inf + 2 heavy_inf + 8 bomb_inf + 6 archer_inf + 2 plague_inf + 2 dark_priest',
-    '14 crow + 2 shadow_inf + 3 heavy_inf + 10 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest',
-    '16 crow + 3 shadow_inf + 4 heavy_inf + 10 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest'
+    '10 light_inf (1.6)',
+    '10 light_inf (1.6) + 2 tough_inf (1.6) + 6 crow (1.6)',
+    '4 tough_inf (1.6) + 2 blocker_inf (1.6) + 10 crow (1.6)',
+    '4 blocker_inf (1.6) + 4 bomb_inf (1.6) + 12 crow (1.2)',
+    '2 heavy_inf (1.6) + 6 bomb_inf (1.2) + 4 archer_inf (0.8) + 14 crow (1)',
+    '2 heavy_inf (1.2) + 6 bomb_inf (1.2) + 6 archer_inf (0.8) + 2 plague_inf (0.8) + 2 dark_priest (0.8) + 16 crow (0.8)',
+    '4 heavy_inf (1.2) + 2 shadow_inf (1.2) + 6 bomb_inf (1.2) + 8 archer_inf (0.6) + 4 plague_inf (0.6) + 4 dark_priest (0.6) + 18 crow (0.6)',
+    '6 heavy_inf (1.2) + 2 shadow_inf (1.2) + 8 bomb_inf (1.2) + 10 archer_inf (0.6) + 4 plague_inf (0.6) + 4 dark_priest (0.6) + 20 crow (0.6)'
   ];
-  const got12 = cast.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got12.join(' | ') === WANT12.map(marched).join(' | '), 'the Castle sends exactly the eight it was given',
-    got12.map((g, i) => (g === marched(WANT12[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT12[i])})`)).join(' '));
+  const got12 = cast.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got12.join(' | ') === WANT12.join(' | '), 'the Castle sends exactly the eight it was given',
+    got12.map((g, i) => (g === WANT12[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT12[i]})`)).join(' '));
 
   // AND THEY ARE THE FACTORY'S, WAVE FOR WAVE. The owner sent the same eight for
   // both boards, so this is a fact rather than a coincidence to tidy away — and it
@@ -2489,18 +2483,18 @@ console.log('\n--- stage 13 is Serene Peak Lake, and nothing is held back on it 
   ok(!!peak, 'Serene Peak Lake is in the game', peak ? peak.name : 'missing');
 
   const WANT13 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 2 blocker_inf + 2 bomb_inf',
-    '10 light_inf + 1 heavy_inf + 4 bomb_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 1 heavy_inf + 1 boulder_giant + 6 bomb_inf + 2 archer_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 2 heavy_inf + 2 boulder_giant + 8 bomb_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 3 heavy_inf + 3 boulder_giant + 10 bomb_inf + 6 archer_inf + 4 plague_inf + 4 dark_priest',
-    '4 blocker_inf + 4 heavy_inf + 4 boulder_giant + 12 bomb_inf + 8 archer_inf + 4 plague_inf + 4 dark_priest'
+    '8 light_inf (1.6)',
+    '10 light_inf (1.6) + 2 tough_inf (1.6)',
+    '10 light_inf (1.6) + 4 blocker_inf (1.6) + 2 bomb_inf (1.6)',
+    '6 blocker_inf (1.6) + 2 boulder_giant (1.6) + 2 plague_inf (1.4) + 2 dark_priest (1.4)',
+    '2 heavy_inf (1.6) + 2 boulder_giant (1.6) + 2 plague_inf (1.4) + 2 dark_priest (1.4)',
+    '2 heavy_inf (1.6) + 4 boulder_giant (1.6) + 4 bomb_inf (1.6) + 4 plague_inf (1.4) + 4 dark_priest (1.4)',
+    '4 heavy_inf (1.6) + 4 boulder_giant (1.6) + 4 bomb_inf (1.6) + 4 plague_inf (1.4) + 4 dark_priest (1.4)',
+    '4 heavy_inf (1.6) + 8 boulder_giant (1.6) + 8 bomb_inf (1.6) + 6 plague_inf (1.4) + 6 dark_priest (1.4)'
   ];
-  const got13 = peak.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got13.join(' | ') === WANT13.map(marched).join(' | '), 'the Lake sends exactly the eight it was given',
-    got13.map((g, i) => (g === marched(WANT13[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT13[i])})`)).join(' '));
+  const got13 = peak.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got13.join(' | ') === WANT13.join(' | '), 'the Lake sends exactly the eight it was given',
+    got13.map((g, i) => (g === WANT13[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT13[i]})`)).join(' '));
 
   ok(peak.plots.length === 9 && peak.startGold === 300 && peak.waves.length === 8,
     'and is nine plots, 300 gold and eight waves',
@@ -2687,14 +2681,14 @@ console.log('\n--- stage 14 is Dark Hollow Woods, two roads that keep to their o
   // (not MARCH_ORDER — see the exception in tools/admin.mjs), `(gap)` the seconds
   // between two of it.
   const WANT14 = [
-    '10 light_inf (1.5) + 10 crow (1.5)',
-    '8 tough_inf (1.5) + 10 crow (1.2)',
-    '8 blocker_inf (1.5) + 10 crow (1.2)',
-    '4 heavy_inf (1.5) + 4 bomb_inf (1.5) + 10 crow (1)',
-    '6 heavy_inf (1.5) + 6 bomb_inf (1.5) + 1 rally_inf (1) + 10 crow (0.8)',
-    '6 heavy_inf (1.2) + 2 boulder_giant (1.5) + 6 bomb_inf (1.5) + 2 shadow_inf (1.5) + 1 rally_inf (1) + 4 dark_priest (1) + 10 crow (0.8)',
-    '8 heavy_inf (1) + 2 boulder_giant (1.2) + 8 bomb_inf (1.2) + 2 shadow_inf (1.2) + 2 rally_inf (1) + 4 dark_priest (1) + 10 crow (0.6)',
-    '10 heavy_inf (1) + 4 boulder_giant (1) + 10 bomb_inf (1) + 4 shadow_inf (1) + 2 rally_inf (1) + 6 dark_priest (1) + 10 crow (0.4)'
+    '10 light_inf (1.6) + 10 crow (1.6)',
+    '8 tough_inf (1.6) + 10 crow (1.2)',
+    '8 blocker_inf (1.6) + 10 crow (1.2)',
+    '4 heavy_inf (1.6) + 4 bomb_inf (1.6) + 10 crow (1)',
+    '6 heavy_inf (1.6) + 6 bomb_inf (1.6) + 1 rally_inf (1.6) + 10 crow (0.8)',
+    '6 heavy_inf (1.2) + 2 boulder_giant (1.6) + 6 bomb_inf (1.6) + 2 shadow_inf (1.6) + 1 rally_inf (1) + 2 plague_inf (1) + 2 dark_priest (1) + 10 crow (0.8)',
+    '8 heavy_inf (1) + 2 boulder_giant (1.2) + 8 bomb_inf (1.2) + 2 shadow_inf (1.2) + 2 rally_inf (1) + 2 plague_inf (1) + 2 dark_priest (1) + 10 crow (0.6)',
+    '8 heavy_inf (1) + 6 boulder_giant (1) + 10 bomb_inf (1) + 4 shadow_inf (1) + 2 rally_inf (1) + 4 plague_inf (1) + 4 dark_priest (1) + 10 crow (0.4)'
   ];
   const got14 = hollow.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
   ok(got14.join(' | ') === WANT14.join(' | '), 'the Hollow sends exactly the eight it was given, in its order',
@@ -2737,13 +2731,13 @@ console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link betwee
   // THE OWNER'S LIST FOR THE QUARTERS, AS TYPED, gaps and all — its own, in an array
   // of its own (not MARCH_ORDER: see the exception in tools/admin.mjs).
   const WANT15 = [
-    '10 light_inf (1.5) + 10 crow (1.5)',
-    '8 tough_inf (1.5) + 10 crow (1.2)',
-    '4 blocker_inf (1.5) + 10 crow (1.2)',
-    '6 blocker_inf (1.5) + 1 shadow_inf (1.5) + 1 rally_inf (1.5) + 10 crow (1)',
-    '10 shadow_inf (1.5) + 1 rally_inf (1)',
-    '4 heavy_inf (1.5) + 4 boulder_giant (1.5) + 4 bomb_inf (1.5) + 1 rally_inf (1.5) + 12 archer_inf (1)',
-    '6 heavy_inf (1.2) + 6 dark_priest (1.2) + 6 plague_inf (1.2) + 6 boulder_giant (1.2)',
+    '10 light_inf (1.6) + 10 crow (1.6)',
+    '8 tough_inf (1.6) + 10 crow (1.2)',
+    '4 blocker_inf (1.6) + 10 crow (1.2)',
+    '6 blocker_inf (1.6) + 1 shadow_inf (1.6) + 1 rally_inf (1.6) + 10 crow (1)',
+    '10 shadow_inf (1.6) + 1 rally_inf (1.6)',
+    '4 heavy_inf (1.6) + 4 boulder_giant (1.6) + 4 bomb_inf (1.6) + 1 rally_inf (1.6) + 12 archer_inf (1)',
+    '6 heavy_inf (1.2) + 6 boulder_giant (1.2) + 6 plague_inf (1.2) + 6 dark_priest (1.2)',
     '4 rally_inf (0.6) + 32 blocker_inf (0.6)'
   ];
   const got15 = quarters.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
@@ -2782,14 +2776,14 @@ console.log('\n--- stage 16 is Dark Hollow Citadel ---\n');
   const citadel = levels.find(l => l.id === 'm18');
   ok(!!citadel, 'Dark Hollow Citadel is in the game', citadel ? citadel.name : 'missing');
   const WANT16 = [
-    '8 light_inf (1.5) + 8 crow (1.5)',
-    '8 tough_inf (1.5) + 8 crow (1.5)',
-    '6 blocker_inf (1.5) + 8 crow (1.5) + 2 bomb_inf (1.5)',
-    '1 rally_inf (1.5) + 6 shadow_inf (1.8)',
-    '4 heavy_inf (1.8) + 2 boulder_giant (1.8) + 2 bomb_inf (1.8) + 2 dark_priest (1.8)',
-    '2 rally_inf (1.5) + 10 shadow_inf (1.5) + 10 archer_inf (1.5)',
+    '8 light_inf (1.6) + 8 crow (1.6)',
+    '8 tough_inf (1.6) + 8 crow (1.6)',
+    '6 blocker_inf (1.6) + 2 bomb_inf (1.6) + 8 crow (1.6)',
+    '6 shadow_inf (1.8) + 1 rally_inf (1.6)',
+    '4 heavy_inf (1.8) + 2 boulder_giant (1.8) + 2 bomb_inf (1.8) + 1 plague_inf (1.8) + 1 dark_priest (1.8)',
+    '10 shadow_inf (1.8) + 2 rally_inf (1.6) + 10 archer_inf (1.4)',
     '40 crow (0.8)',
-    '6 heavy_inf (1.8) + 2 rally_inf (1.5) + 4 boulder_giant (1.8) + 4 bomb_inf (1.8) + 2 dark_priest (1.5) + 2 plague_inf (1.5)'
+    '4 heavy_inf (1.8) + 4 boulder_giant (1.8) + 4 bomb_inf (1.8) + 2 rally_inf (1.6) + 2 plague_inf (1.6) + 2 dark_priest (1.6)'
   ];
   const got16 = citadel.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
   ok(got16.join(' | ') === WANT16.join(' | '), 'it sends the eight waves it was given, in its order',
@@ -2867,18 +2861,18 @@ console.log('\n--- stage 7, two ways in and two ways out that never meet ---\n')
 {
   const well = levels.find(l => l.id === 'm9');
   const WANT7 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 1 heavy_inf',
-    '10 light_inf + 4 blocker_inf + 1 heavy_inf + 1 plague_inf + 1 dark_priest',
-    '8 tough_inf + 4 blocker_inf + 2 heavy_inf + 4 archer_inf + 2 plague_inf + 2 dark_priest',
-    '4 blocker_inf + 4 heavy_inf + 10 archer_inf + 2 plague_inf + 2 dark_priest',
-    '10 blocker_inf + 4 heavy_inf + 10 archer_inf + 4 plague_inf + 4 dark_priest',
-    '12 blocker_inf + 6 heavy_inf + 12 archer_inf + 6 plague_inf + 6 dark_priest'
+    '8 light_inf (1.4)',
+    '10 light_inf (1.4) + 2 tough_inf (1.6)',
+    '10 light_inf (1.4) + 2 tough_inf (1.6) + 1 heavy_inf (2) + 1 dark_priest (1.4)',
+    '10 light_inf (1.4) + 4 blocker_inf (1.6) + 1 heavy_inf (2) + 2 dark_priest (1.4)',
+    '6 tough_inf (1.6) + 4 blocker_inf (1.6) + 1 heavy_inf (2) + 4 archer_inf (1.4) + 2 plague_inf (1.2) + 2 dark_priest (1.2)',
+    '4 blocker_inf (1.6) + 2 heavy_inf (2) + 8 archer_inf (1.2) + 2 plague_inf (1.2) + 2 dark_priest (1.2)',
+    '8 blocker_inf (1.6) + 2 heavy_inf (2) + 10 archer_inf (1) + 4 plague_inf (1.2) + 4 dark_priest (1.2)',
+    '10 blocker_inf (1.6) + 4 heavy_inf (2) + 12 archer_inf (1) + 6 plague_inf (1.2) + 6 dark_priest (1.2)'
   ];
-  const got7 = well.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
-  ok(got7.join(' | ') === WANT7.map(marched).join(' | '), 'Dawnford Fountain sends exactly the eight it was given',
-    got7.map((g, i) => (g === marched(WANT7[i]) ? '.' : `${i + 1}: ${g} (wanted ${marched(WANT7[i])})`)).join(' '));
+  const got7 = well.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got7.join(' | ') === WANT7.join(' | '), 'Dawnford Fountain sends exactly the eight it was given',
+    got7.map((g, i) => (g === WANT7[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT7[i]})`)).join(' '));
   ok(well.plots.length === 9 && well.startGold === 300 && well.waves.length === 8,
     'and is nine plots, 300 gold and eight waves',
     `${well.plots.length} plots, ${well.startGold} gold, ${well.waves.length} waves`);
@@ -2950,15 +2944,15 @@ console.log('\n--- stage 4, its three mouths and its two capped forks ---\n');
 {
   const shop = levels.find(l => l.id === 'm6');
   const WANT4 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 1 heavy_inf',
-    '10 light_inf + 2 blocker_inf + 2 heavy_inf',
-    '4 tough_inf + 4 heavy_inf + 6 archer_inf',
-    '6 blocker_inf + 4 heavy_inf + 10 archer_inf',
-    '8 heavy_inf + 20 archer_inf'
+    '8 light_inf (1.4)',
+    '10 light_inf (1.4) + 2 tough_inf (1.6)',
+    '10 light_inf (1.4) + 2 tough_inf (1.6) + 1 heavy_inf (2)',
+    '10 light_inf (1.2) + 1 blocker_inf (1.8) + 2 heavy_inf (2)',
+    '4 tough_inf (1.6) + 3 heavy_inf (2) + 6 archer_inf (1.4)',
+    '4 blocker_inf (1.6) + 4 heavy_inf (2) + 10 archer_inf (1.2)',
+    '6 heavy_inf (2) + 20 archer_inf (1)'
   ];
-  const got4 = shop.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  const got4 = shop.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
   ok(got4.join(' | ') === WANT4.join(' | '), 'the Workshop sends exactly the seven it was given',
     got4.map((g, i) => (g === WANT4[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT4[i]})`)).join(' '));
   ok(shop.plots.length === 9 && shop.startGold === 300 && shop.waves.length === 7,
@@ -3080,15 +3074,15 @@ console.log('\n--- stage 3, and the one rung above its cap ---\n');
 {
   const win = levels.find(l => l.id === 'm5');
   const WANT3 = [
-    '8 light_inf',
-    '10 light_inf + 2 tough_inf',
-    '10 light_inf + 4 tough_inf + 1 blocker_inf',
-    '10 light_inf + 4 tough_inf + 2 blocker_inf + 4 archer_inf',
-    '6 tough_inf + 4 blocker_inf + 8 archer_inf',
-    '10 tough_inf + 4 blocker_inf + 16 archer_inf',
-    '10 tough_inf + 10 blocker_inf + 20 archer_inf'
+    '8 light_inf (1.6)',
+    '10 light_inf (1.4) + 2 tough_inf (1.6)',
+    '10 light_inf (1.4) + 4 tough_inf (1.6) + 1 blocker_inf (1.8)',
+    '10 light_inf (1.2) + 4 tough_inf (1.6) + 2 blocker_inf (1.8) + 4 archer_inf (1.4)',
+    '6 tough_inf (1.2) + 4 blocker_inf (1.2) + 8 archer_inf (1.2)',
+    '10 tough_inf (1) + 4 blocker_inf (1.2) + 12 archer_inf (1)',
+    '10 tough_inf (1) + 10 blocker_inf (1.2) + 16 archer_inf (0.8)'
   ];
-  const got3 = win.waves.map(w => w.groups.map(g => `${g.count} ${g.type}`).join(' + '));
+  const got3 = win.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
   ok(got3.join(' | ') === WANT3.join(' | '), 'Winchester sends exactly the seven it was given',
     got3.map((g, i) => (g === WANT3[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT3[i]})`)).join(' '));
 
