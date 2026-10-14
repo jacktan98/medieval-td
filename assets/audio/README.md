@@ -51,6 +51,14 @@ assets/audio/villagers/  Villager_selected_1.mp3 .. Villager_selected_3.mp3,
                          Villager_enemy_selected_1.mp3, Villager_enemy_selected_2.mp3,
                          Villager_enemy_carrying_box.mp3, Villager_enemy_using_anvil.mp3,
                          Villager_enemy_heating_steel.mp3,
+                         Villager_drinking_ale.mp3, Villager_forging_steel.mp3,
+                         Villager_carrying_plank.mp3, Villager_carrying_box_of_supplies.mp3,
+                         Villager_carrying_ballista_parts.mp3, Villager_hammering_nail.mp3,
+                         Villager_fishing.mp3, Villager_stuck_with_helmet.mp3,
+                         Villager_cooking_fish.mp3, Villager_carrying_box_of_books.mp3,
+                         Villager_praying_1.mp3, Villager_praying_2.mp3,
+                         Villager_cutting_tree.mp3, Villager_carrying_cannonball.mp3,
+                         Villager_carrying_box_to_factory.mp3, Villager_carrying_torch.mp3,
                          Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3,
                          Villager_enemy_say_you_are_on_forbidden_ground.mp3
 
@@ -226,6 +234,7 @@ and it now means "how long a lull has to be before the game forgets".
 | stage 14's **box carrier** is selected | `Villager_enemy_carrying_box`, his line alone |
 | stage 15's **smith at the anvil** is selected | `Villager_enemy_using_anvil`, his line alone |
 | stage 15's **smith heating steel** at the brazier is selected | `Villager_enemy_heating_steel`, his line alone |
+| a **villager with a line of his own** is selected — his line alone, in place of the shared three (see `voices` on each board in `src/villagers.js`) | stage 2, drinking: `Villager_drinking_ale`; stage 4, at the forge: `Villager_forging_steel`, and the two with the plank: `Villager_carrying_plank`; stage 5, boxes by the crossbowmen: `Villager_carrying_box_of_supplies`, parts to the ballista: `Villager_carrying_ballista_parts`, hammering: `Villager_hammering_nail`; stage 6, fishing: `Villager_fishing`, in the helmet: `Villager_stuck_with_helmet`; stage 7, cooking: `Villager_cooking_fish`; stage 8, boxes out of the church: `Villager_carrying_box_of_books`, the six on the mat: `Villager_praying_1` and `_2` by turns; stage 10, felling the tree: `Villager_cutting_tree`; stage 11, the cannonball: `Villager_carrying_cannonball`, the factory boxes: `Villager_carrying_box_to_factory`; stage 12, lighting the torches: `Villager_carrying_torch` |
 | on **stage 14**, an **Elite Archer** at the barricade is selected | `Archery_1..5`, as the Crossbow Tower answers |
 | the first enemy of wave 1 appears on **stages 1, 6 and 11** | `Villager_say_runnn`, once, **before everything**: takes the channel and is never cut off |
 | the first enemy of wave 1 appears on **stages 2, 7 and 12** | `Villager_say_hide`, the same way |

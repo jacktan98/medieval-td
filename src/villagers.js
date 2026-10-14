@@ -78,9 +78,12 @@ export function makeVillagers(state, level) {
     // `g`, when the level gives one, is the depth he is drawn at in place of where
     // he stands: stage 10's lumberjack, in front of the tree he is felling.
     const b = play.before[i] || {};
+    // HIS OWN LINE WHEN TAPPED, where the board gives him one (`voices`, by his place
+    // in the level's list) — said in place of the villagers' shared three.
+    const voice = play.voices && play.voices[i];
     return { def: VILLAGER, x: v.x, y: v.y, g: v.g, live: true, n: i, side: b.side || 'front',
              act: b.act || null, hidden: !!b.hidden, pose: 'standing', flip: !!b.flip,
-             mode: 'idle', path: null, leg: 0, greetUntil: -1 };
+             mode: 'idle', path: null, leg: 0, greetUntil: -1, ...(voice ? { voice } : {}) };
   });
   state.villagerPlay = play ? { plan: play, started: false, t: 0, hops: play.hops.map(() => ({ n: 0, at: null })),
     startLives: level.startLives, stars: null, shouted: false,
@@ -271,6 +274,10 @@ const PLAYS = {
   // STAGE 2, Oakhaven Outskirts, left to right: 1 at the well, 2 by the tavern wall,
   // 3 with his mug by the tavern steps and 4 beside him.
   outskirts: {
+    // WHAT EACH WITH A LINE OF HIS OWN SAYS WHEN TAPPED, by his place in the level's
+    // list, at the owner's word — a key into CUE in src/audio.js. The rest say the
+    // villagers' shared three. The same field on every board below.
+    voices: { 2: 'v_drinking_ale' },
     // Villager 1 faces the player, mirrored, at the owner's word.
     before: [mirrored('greets'), front('greets'), front('drink'), front('greets')],
     // VILLAGER 4 RUNS INTO THE TAVERN when the first wave comes, up over the stepping
@@ -307,6 +314,7 @@ const PLAYS = {
   // all — no greeting, praying or hopping. See work() below.
   lumberyard: {
     work: true,
+    voices: { 0: 'v_forging_steel', 1: 'v_carrying_plank', 2: 'v_carrying_plank' },
     // The smith at the forge, pushing a steel pipe into the fire and drawing it
     // back: pipe_1 (drawn back) and pipe_2 (in the fire) by turns. He stands `at`,
     // up to the fire and behind the workbench, rather than where he was painted.
@@ -358,6 +366,7 @@ const PLAYS = {
     // THE ANGLER waits with his line in the water for `wait` seconds, then tugs at it
     // for `tug` — the reel whirring while he does (main.js, `reeling`) — and back.
     angler: { who: 2, wait: [4, 7.5], tug: [1.6, 2.6] },
+    voices: { 2: 'v_fishing', 4: 'v_stuck_with_helmet' },
     // THE MAN IN THE HELMET heaves at it: his two drawings by turns every `beat`,
     // shaking, for `struggle` seconds, then stands still for `rest`, and again.
     // Toned down at the owner's word: slower heaves, a shorter bout, a smaller shake
@@ -383,6 +392,7 @@ const PLAYS = {
     // while he does (main.js, `cooking`) — then draws it back out for `out`, and
     // again. Over the fire for half as long as drawn back, at the owner's word.
     cook: { who: 5, cook: [3, 3], out: [6, 6] },
+    voices: { 5: 'v_cooking_fish' },
     cries: { runnn: false, nooo: true, wave: 'hide' }
   },
   // STAGE 8, Dawnford Church, as the owner numbers them: 1 by the praying mat, 2 to 7
@@ -402,6 +412,9 @@ const PLAYS = {
     // back up) and bowed down. Praying and bowed down half as long again as they
     // were, at the owner's word; kneeling up is only the way between, as it was.
     kneel: { who: [1, 2, 3, 4, 5, 6], pray: [5.5, 10.5], rise: [0.9, 1.6], bow: [4.5, 9] },
+    // The six on the mat share two lines, said by turns; the box carrier his own.
+    voices: { 1: 'v_praying', 2: 'v_praying', 3: 'v_praying', 4: 'v_praying', 5: 'v_praying', 6: 'v_praying',
+              7: 'v_carrying_box_of_books' },
     // VILLAGER 8 CARRIES BOXES out of the church: stage 5's box carrier, mirrored. Out
     // of the door, slowly down to the pile in front of the church, a toss onto it,
     // back up and in at the door — and ten seconds inside before the next box. The
@@ -442,6 +455,7 @@ const PLAYS = {
     // the axe goes in — then a long rest drawn back, and again. Slower than the
     // hammer, at the owner's word: the axe stays in a moment, and he takes his time
     // drawing it back between the two chops and after them.
+    voices: { 0: 'v_cutting_tree' },
     hammer: { who: 0, strike: 'chop_1', sound: 'chop',
       beats: [['chop_2', 0.5], ['chop_1', 0.35], ['chop_2', 0.75], ['chop_1', 0.35], ['chop_2', 2.4]] },
     cries: { runnn: false, nooo: true, wave: 'thugs' }
@@ -464,6 +478,7 @@ const PLAYS = {
     // the way he came, off the top of the board, and after `gone` seconds is back with
     // the next box. The first time he starts from where he is painted.
     porter: { who: 1, path: FACTORY_WAY, from: 1, idle: 1, runs: 2, between: 3, gone: 3 },
+    voices: { 1: 'v_carrying_box_to_factory', 2: 'v_carrying_cannonball' },
     // VILLAGER 3 CARRIES CANNONBALLS INTO THE CANNON OUTPOST standing on `tower`: in at
     // its door, `inside` seconds there, out empty-handed back to the pile, bent over
     // it picking one up for `pick`, a moment (`heave`) with it in his arms facing the
@@ -493,6 +508,7 @@ const PLAYS = {
     // again; then throws the pole down — it falls still burning and burns out on the
     // grass (drawn by render.js from `vp.pole`) — and walks back into the castle.
     // `at` is where he stands for each torch: the pole's flame at its cup.
+    voices: { 0: 'v_carrying_torch' },
     lighter: { who: 0, start: 0, torches: [[604.5, 253], [657, 266]], hold: 1.0, lightAt: 0.45,
                rest: 1.2, door: [651, 247], homeWalk: 7 },
     // THE VILLAGER WHO BECOMES A MUSKETEER: standing about, now and then turning to
@@ -797,6 +813,7 @@ const PLAYS = {
     // down, and again.
     // A FEW TINY SPARKS each time the hammer meets the ballista's beam (`hammer_1`, its
     // head down at the beam on his left), at the owner's word.
+    voices: { 2: 'v_carrying_ballista_parts', 6: 'v_carrying_box_of_supplies', 3: 'v_hammering_nail' },
     hammer: { who: 3, beats: [['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_1', 0.26], ['hammer_2', 0.2], ['hammer_2', 1.9]],
               sparks: [-13.6, -12.7], sparkOn: 'hammer_1', sparkSize: 0.45 },
     // Two hops each: villager 5 every tenth enemy down, 6 every twelfth.

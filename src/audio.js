@@ -583,6 +583,25 @@ const paths = {
   villager_selected_1: 'assets/audio/villagers/Villager_selected_1.mp3',
   villager_selected_2: 'assets/audio/villagers/Villager_selected_2.mp3',
   villager_selected_3: 'assets/audio/villagers/Villager_selected_3.mp3',
+  // VILLAGERS WITH A LINE OF THEIR OWN, at the owner's word, each said in place of the
+  // shared three by the one villager it belongs to — see `voices` on each board in
+  // src/villagers.js. The six praying on stage 8's mat share the two prayers, by turns.
+  villager_drinking_ale:             'assets/audio/villagers/Villager_drinking_ale.mp3',
+  villager_forging_steel:            'assets/audio/villagers/Villager_forging_steel.mp3',
+  villager_carrying_plank:           'assets/audio/villagers/Villager_carrying_plank.mp3',
+  villager_carrying_box_of_supplies: 'assets/audio/villagers/Villager_carrying_box_of_supplies.mp3',
+  villager_carrying_ballista_parts:  'assets/audio/villagers/Villager_carrying_ballista_parts.mp3',
+  villager_hammering_nail:           'assets/audio/villagers/Villager_hammering_nail.mp3',
+  villager_fishing:                  'assets/audio/villagers/Villager_fishing.mp3',
+  villager_stuck_with_helmet:        'assets/audio/villagers/Villager_stuck_with_helmet.mp3',
+  villager_cooking_fish:             'assets/audio/villagers/Villager_cooking_fish.mp3',
+  villager_carrying_box_of_books:    'assets/audio/villagers/Villager_carrying_box_of_books.mp3',
+  villager_praying_1:                'assets/audio/villagers/Villager_praying_1.mp3',
+  villager_praying_2:                'assets/audio/villagers/Villager_praying_2.mp3',
+  villager_cutting_tree:             'assets/audio/villagers/Villager_cutting_tree.mp3',
+  villager_carrying_cannonball:      'assets/audio/villagers/Villager_carrying_cannonball.mp3',
+  villager_carrying_box_to_factory:  'assets/audio/villagers/Villager_carrying_box_to_factory.mp3',
+  villager_carrying_torch:           'assets/audio/villagers/Villager_carrying_torch.mp3',
   // DARK HOLLOW'S ENEMY VILLAGERS AND THUGS, tapped: one of two, and the tap is what
   // sets them on the road. See `hollow` in src/villagers.js.
   villager_enemy_selected_1: 'assets/audio/villagers/Villager_enemy_selected_1.mp3',
@@ -1019,6 +1038,21 @@ export const CUE = {
   archery:      ['archery_1', 'archery_2', 'archery_3', 'archery_4', 'archery_5'],
   // A villager's own answer when tapped — see selectionCue.
   villager:     ['villager_selected_1', 'villager_selected_2', 'villager_selected_3'],
+  v_drinking_ale:                ['villager_drinking_ale'],
+  v_forging_steel:               ['villager_forging_steel'],
+  v_carrying_plank:              ['villager_carrying_plank'],
+  v_carrying_box_of_supplies:    ['villager_carrying_box_of_supplies'],
+  v_carrying_ballista_parts:     ['villager_carrying_ballista_parts'],
+  v_hammering_nail:              ['villager_hammering_nail'],
+  v_fishing:                     ['villager_fishing'],
+  v_stuck_with_helmet:           ['villager_stuck_with_helmet'],
+  v_cooking_fish:                ['villager_cooking_fish'],
+  v_carrying_box_of_books:       ['villager_carrying_box_of_books'],
+  v_cutting_tree:                ['villager_cutting_tree'],
+  v_carrying_cannonball:         ['villager_carrying_cannonball'],
+  v_carrying_box_to_factory:     ['villager_carrying_box_to_factory'],
+  v_carrying_torch:              ['villager_carrying_torch'],
+  v_praying:                     ['villager_praying_1', 'villager_praying_2'],
   // And Dark Hollow's, who are nobody's friend — see `voice` on the `hollow` play.
   enemy_villager: ['villager_enemy_selected_1', 'villager_enemy_selected_2'],
   enemy_box:      ['villager_enemy_box'],
