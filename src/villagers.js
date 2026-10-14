@@ -727,7 +727,10 @@ const PLAYS = {
       waves: { 3: { act: 'point', n: 1 }, 4: { act: 'point', n: 1 },
                5: { act: 'point', n: 2, every: 20 }, 6: { act: 'point', n: 2, every: 20 },
                7: { act: 'call', n: 1 }, 8: { act: 'call', n: 2, every: 20 } },
-      quiet: 2, pause: 1, inside: 2, walk: 14, march: 22, route: 2
+      // OUT BY THE TOP RIGHT ROAD, at the owner's word: the link (route 1), which runs
+      // with the bottom road where he joins it below his door and then climbs to the
+      // top right exit. It was the bottom road, out at the bottom right.
+      quiet: 2, pause: 1, inside: 2, walk: 14, march: 22, route: 1
     },
     // NO SHOUT AS THE FIRST WAVE COMES: the Harbinger speaks for this keep.
     cries: { runnn: false, nooo: false, wave: null }
