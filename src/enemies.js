@@ -768,9 +768,14 @@ function bossBeat(state, e, dt) {
       const m = d.rage.mend;
       e.hp = Math.min(e.maxHp, e.hp + e.maxHp * m.share * dt / m.seconds);
     }
-    // CALLING THE FLOCK MENDS HIM, `heal` of his maximum every second he channels,
-    // clamped at his bar — real seconds, on the beat's own clock.
-    if (e.act === 'call' && d.call.heal) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * d.call.heal * dt);
+    // CALLING THE FLOCK MENDS HIM, `heal` of his maximum over the call — spread over
+    // its seconds, clamped at his bar, real seconds on the beat's own clock — and
+    // `healFade` less for every call he has made before this one (`calls` counts this
+    // one already), down to nothing. See `call` on crow_harbinger in data/waves.js.
+    if (e.act === 'call' && d.call.heal) {
+      const share = Math.max(0, d.call.heal - (d.call.healFade || 0) * ((e.calls || 1) - 1));
+      e.hp = Math.min(e.maxHp, e.hp + e.maxHp * share * dt / d.call.seconds);
+    }
     // THE CROW LEAVES HIS ARM `launch` seconds into the pointing pose.
     if (e.act === 'point' && !e.raven && d.point.seconds - e.actT >= d.point.launch) launchCrow(state, e);
     e.actT -= dt;

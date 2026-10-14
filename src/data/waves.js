@@ -1975,10 +1975,10 @@ export const enemyTypes = {
     deadTrim: [137, 217, 168, 110],
     deadPivot: [0.295, 0.882],
 
-    // THE OWNER'S NUMBERS: 8000 health, 120 magic damage that breaks 2 ranks of magic
-    // armour, a 200 reach, high plate both ways — and 30 a second, slower than the
-    // Captain's 40, at the owner's second word.
-    hp: 8000,
+    // THE OWNER'S NUMBERS: 10,000 health (it was 8,000), 120 magic damage that breaks
+    // 2 ranks of magic armour, a 200 reach, high plate both ways — and 30 a second,
+    // slower than the Captain's 40, at the owner's second word.
+    hp: 10000,
     damageType: 'magic',
     armour: { physical: 'high', magic: 'high' },
     speed: 30,
@@ -2026,14 +2026,19 @@ export const enemyTypes = {
       blind: 10
     },
     // CALL CROWS, below half and every 20 seconds: he stands channelling for `seconds`
-    // in the wind he raises, MENDING `heal` of his maximum health every second of it,
-    // and `count` crows come in from the road's mouths — a random one each, on a board
+    // in the wind he raises, MENDING `heal` of his maximum health over the call, and
+    // `count` crows come in from the road's mouths — a random one each, on a board
     // with more than one — `gap` seconds apart. 3 seconds and 0.4 apart, at the owner's
     // second word (they were 2 and 0.2); the mending is his too.
+    //
+    // AND EACH MENDING IS `healFade` LESS THAN THE ONE BEFORE, at the owner's word: 30%
+    // on his first call, then 28%, 26% and on, until a call heals nothing — so a fight
+    // dragged out wears his healing away while the flock keeps growing.
     call: {
       sprite: 'harbinger_call', trim: [172, 164, 156, 184], pivot: [0.449, 0.929],
       seconds: 3,
-      heal: 0.1,
+      heal: 0.3,
+      healFade: 0.02,
       below: 0.5,
       cooldown: 20,
       count: 20,
@@ -2216,7 +2221,8 @@ export const FOE_NOTES = {
   captain_thug: 'The bandit captain, with shield, bow and sword. Wounded badly, he throws down ' +
     'his shield and fights on with a magic blade. If he reaches the end, the battle is lost.',
   crow_harbinger: 'A sorcerer whose crow blinds 1 of your towers for 10 seconds. Badly hurt, he ' +
-    'calls 20 crows down the road and heals while he calls, and 2 more crows with every call after. ' +
+    'calls 20 crows down the road and heals 30% while he calls, with 2 more crows and 2% less healing ' +
+    'every call after. ' +
     'Bring him down fast, and keep archery and monastery towers ready.'
 };
 
