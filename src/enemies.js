@@ -17,6 +17,7 @@ import { typeOf, pierceOf, stageOf, timesOf } from './data/armor.js';
 import { tickHit } from './gesture.js';
 import { track, where } from './analytics.js';
 import { rand } from './rng.js';
+import { DIFFICULTIES } from './data/difficulty.js';
 import { note } from './achievements.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
@@ -97,6 +98,11 @@ export function spawn(state, typeId, from = null) {
 
   state.enemies.push({
     def,
+    // HOW MUCH OF A BLOW HE TAKES, after his armour: 1 for everything but a boss on a
+    // difficulty that says otherwise — Normal's 1.2 (`bossTaken` in data/difficulty.js).
+    // Read where a blow lands: hit() in projectiles.js, a soldier's swing in units.js,
+    // and a burn or poison in the status pass below.
+    frail: (def.boss && (DIFFICULTIES[state.difficultyIndex ?? -1] || {}).bossTaken) || 1,
     route: ri,
     lane,            // which of the three, as an index into LANES
     s: s0,           // distance walked along that lane's own polyline
@@ -1320,7 +1326,9 @@ export function updateEnemies(state, dt) {
     const fire = e.statuses && e.statuses.find(st => st.id === 'burnt' && st.by === 'cannonball');
     if (fire && e.hp > 0) note('fiery', Math.min(fire.dps * dt, e.hp));
     const hurt = tickStatus(e, dt);
-    if (hurt) e.hp = Math.min(e.maxHp, e.hp - hurt);
+    // A burn or a poison hurts a frail boss as much more as a blow does; a mend is not
+    // scaled.
+    if (hurt) e.hp = Math.min(e.maxHp, e.hp - (hurt > 0 ? hurt * (e.frail || 1) : hurt));
   }
 
   // THE RALLY THUG'S AURA, after everything has moved and before anything leaves

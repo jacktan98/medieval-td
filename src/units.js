@@ -1587,11 +1587,12 @@ export function updateUnits(state, dt) {
         // a paladin's 8 two different answers rather than the same answer at two
         // speeds. The blow is the man's own kind, and his `pierce` with it — the
         // assassin breaks a rank, which is what his knife is for.
+        // And more of it on a boss Normal makes frail — see `frail` in src/enemies.js.
         u.foe.hp -= taken(
           (special
             ? (special.times ? soldierBlow(u) * special.times : special.damage)
             : soldierBlow(u)) * (sneak ? sneak.times : 1),
-          typeOf(u.def), wornBy(u.foe), swingPierce(u, special, sneak));
+          typeOf(u.def), wornBy(u.foe), swingPierce(u, special, sneak)) * (u.foe.frail || 1);
         // SPENT, whether or not anything was bought. The flag means "his next blow
         // is the one he lands on showing himself", and that is true of every man
         // here; the ability is what turns it into damage. Re-armed by hiding, and

@@ -59,7 +59,12 @@ export const DIFFICULTIES = [
     // broke at 0.9 / 1.05 and held at the strictly more generous 0.9 / 1.10, which
     // is backwards and was the tell that a single-seed flip means nothing here.
     count: 0.8,
-    gold: 1.1
+    gold: 1.1,
+    // AND THE BOSSES TAKE 20% MORE of every blow, at the owner's word: whatever lands
+    // after his armour — a tower's shot, a soldier's swing, a burn — is 1.2 times as
+    // much on Normal (20 becomes 24). Their own numbers, and the encyclopedia's, stay as
+    // written. See `frail` on an enemy in src/enemies.js.
+    bossTaken: 1.2
   },
   {
     id: 'hard',

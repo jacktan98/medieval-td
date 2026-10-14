@@ -78,6 +78,9 @@ function newState() {
     // does. The waves are scaled ONCE here for the same reason they are there:
     // waveSize and the spawn loop must agree exactly on how big a group is.
     waves: scaleWaves(level.waves, difficulty),
+    // And the bosses as that difficulty fights them (`bossTaken` in data/difficulty.js);
+    // the neutral table is -1, which leaves every boss as written.
+    difficultyIndex: DIFFICULTIES.indexOf(difficulty),
     gold: startingGold(level.startGold, difficulty),
     lives: level.startLives,
     // THE BOARD AS THE GAME OPENS IT, through newGame's own helpers: the towers a

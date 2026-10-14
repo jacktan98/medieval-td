@@ -350,7 +350,8 @@ function hit(state, s, v) {
     // THROUGH THE ARMOUR, and this is the one line that makes twenty towers
     // differentiate. `s.damage` is what the tower hits FOR — the number on its
     // card — and this is what the man in front of it actually loses.
-    const lost = taken(s.damage, s.type, wornBy(v), s.pierce);
+    // And more of it on a boss Normal makes frail — see `frail` in src/enemies.js.
+    const lost = taken(s.damage, s.type, wornBy(v), s.pierce) * (v.frail || 1);
     // RAIN OF QUARRELS: what a Crossbow Sentry's quarrel actually took off him, no
     // more than he had left. See src/achievements.js.
     if (s.fromTower && s.ammo.kind === 'quarrel' && v.hp > 0) note('quarrels', Math.min(lost, v.hp));
