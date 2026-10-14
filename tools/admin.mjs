@@ -881,9 +881,9 @@ console.log('\nWhich of them comes out first\n');
   // exception, the Bend's Extended boss finale; it went with Extended. Add a new
   // deliberate one and this line is where you say so.
   //
-  // DARK HOLLOW WOODS IS ONE, at the owner's word: its list was given wave by wave in
-  // the order each group comes out, Dark Crows at the back of every wave.
-  const OWN_ORDER = ['m16'];
+  // DARK HOLLOW WOODS AND QUARTERS ARE TWO, at the owner's word: each list was given
+  // wave by wave in the order each group comes out.
+  const OWN_ORDER = ['m16', 'm17'];
   const offOrder = [];
   for (const l of levels) {
     if (OWN_ORDER.includes(l.id)) continue;

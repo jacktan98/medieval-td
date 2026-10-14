@@ -1644,14 +1644,14 @@ export const enemyTypes = {
     dead: 'captain_dead',
     deadTrim: [65, 241, 307, 108],
     deadPivot: [0.645, 0.852],
-    // 8,000, the owner's number, which is exactly 10 Giants. The fight is meant to
-    // be the length of a wave rather than an interruption to one.
+    // 9,000, the owner's number. The fight is meant to be the length of a wave
+    // rather than an interruption to one.
     //
-    // IT HAS BEEN 5,000, 9,000 AND 10,000, and this is the owner playing it rather
+    // IT HAS BEEN 5,000, 8,000, 9,000 AND 10,000, and this is the owner playing it rather
     // than a rule being applied — the number that matters is how long he survives
     // the board the player has actually built by wave 11, which is not a thing any
     // arithmetic here can tell him.
-    hp: 8000,
+    hp: 9000,
     damageType: 'physical',
     armour: { physical: 'med', magic: 'med' },
     // THE CHOICE — SPEED. Not given. 50 makes him the slowest thing in the game,
@@ -1690,16 +1690,16 @@ export const enemyTypes = {
     // Sword and bow both, and the two are one number on purpose: where he is
     // standing decides how the blow ARRIVES and not how hard.
     //
-    // 80, the owner's number, and it is both his kinds of damage: physical in
+    // 90, the owner's number, and it is both his kinds of damage: physical in
     // stage 1 and magic in stage 2, the same either way.
     //
     // WHAT ACTUALLY LANDS IS NOW A DIFFERENT QUESTION, because he breaks armour —
     // see `pierce` below. A spearman's low plate is broken through entirely and
-    // takes the whole 80; a paladin's medium physical, which used to halve it,
-    // meets a sword that breaks two ranks and takes all 80 as well. The armour on
+    // takes the whole 90; a paladin's medium physical, which used to halve it,
+    // meets a sword that breaks two ranks and takes all 90 as well. The armour on
     // the player's line stopped being an answer to him at the moment he was given
     // a pierce, which is the point of giving him one.
-    damage: 80,
+    damage: 90,
     // HIS SWORD BREAKS TWO RANKS OF PHYSICAL PLATE, the owner's number for stage 1
     // melee. `pierceOf` reads it and `rankAgainst` subtracts it before looking up
     // what gets through, so two ranks is 50 percentage points of the blow — see the
@@ -1848,7 +1848,7 @@ export const enemyTypes = {
         seconds: 4,
         // THREE FIFTHS OF HIS BAR, the owner's number, up from a half. A SHARE
         // rather than a number of points, so it follows his health through every
-        // retune — at 8,000 that is 4,800 back over four seconds, 1,200 a second,
+        // retune — at 9,000 that is 5,400 back over four seconds, 1,350 a second,
         // which is more than most single towers do. The four seconds behind high
         // plate are the most expensive thing on the board to fail to interrupt.
         share: 0.6,
@@ -3373,53 +3373,36 @@ export const stage14Waves = [
                        { type: 'crow', count: 10, gap: 0.4 }] }
 ];
 
-// STAGE 15: Dark Hollow Quarters. The list stage 14 used to send, wave for wave, in
-// an array of its own — which is why stage 14's new list did not change it. THE CAPTAIN IS NOT IN IT: he stands at the camp wall all game and walks out
-// once the last wave is dead — see `captain` under `quarters` in src/villagers.js.
+// STAGE 15: Dark Hollow Quarters. The owner's own list, wave by wave, each group in the
+// order it comes out and each `gap` the seconds between two of it — Dark Crows behind
+// the first four, then shadows, giants and archers, and a last wave of 40 Blocker Thugs
+// behind 4 Rally Thugs. THE CAPTAIN IS NOT IN IT: he stands at the camp wall all game
+// and walks out once the last wave is dead — see `captain` under `quarters` in
+// src/villagers.js.
 export const stage15Waves = [
-  { rest: 10, groups: [{ type: 'light_inf', count: 8, gap: 1.4 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 }, { type: 'crow', count: 4, gap: 1.2 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.3 },
-                       { type: 'blocker_inf', count: 2, gap: 1.7 },
-                       { type: 'crow', count: 6, gap: 1.2 },
-                       { type: 'bomb_inf', count: 2, gap: 1.9 }] },
-  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.2 },
-                       { type: 'crow', count: 8, gap: 1.1 },
-                       { type: 'bomb_inf', count: 4, gap: 1.9 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'crow', count: 10, gap: 1.0 },
-                       { type: 'heavy_inf', count: 1, gap: 2.0 },
-                       { type: 'boulder_giant', count: 1, gap: 2.0 },
-                       { type: 'bomb_inf', count: 6, gap: 1.8 },
-                       { type: 'plague_inf', count: 2, gap: 2.0 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'crow', count: 12, gap: 0.9 },
-                       { type: 'shadow_inf', count: 1, gap: 1.7 },
-                       { type: 'heavy_inf', count: 1, gap: 1.9 },
-                       { type: 'boulder_giant', count: 1, gap: 1.9 },
-                       { type: 'bomb_inf', count: 8, gap: 1.7 },
-                       { type: 'plague_inf', count: 2, gap: 1.9 },
-                       { type: 'dark_priest', count: 2, gap: 1.8 },
-                       { type: 'rally_inf', count: 1, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'crow', count: 14, gap: 0.8 },
-                       { type: 'shadow_inf', count: 2, gap: 1.6 },
-                       { type: 'heavy_inf', count: 2, gap: 1.8 },
-                       { type: 'boulder_giant', count: 2, gap: 1.8 },
-                       { type: 'bomb_inf', count: 10, gap: 1.5 },
-                       { type: 'plague_inf', count: 4, gap: 1.9 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 2, gap: 1.8 }] },
-  { rest: 10, groups: [{ type: 'crow', count: 16, gap: 0.8 },
-                       { type: 'shadow_inf', count: 2, gap: 1.5 },
-                       { type: 'heavy_inf', count: 3, gap: 1.7 },
-                       { type: 'boulder_giant', count: 3, gap: 1.7 },
-                       { type: 'bomb_inf', count: 10, gap: 1.4 },
-                       { type: 'plague_inf', count: 4, gap: 1.8 },
-                       { type: 'dark_priest', count: 4, gap: 1.8 },
-                       { type: 'rally_inf', count: 2, gap: 1.8 }] }
+  { rest: 10, groups: [{ type: 'light_inf', count: 10, gap: 1.5 },
+                       { type: 'crow', count: 10, gap: 1.5 }] },
+  { rest: 10, groups: [{ type: 'tough_inf', count: 8, gap: 1.5 },
+                       { type: 'crow', count: 10, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.5 },
+                       { type: 'crow', count: 10, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.5 },
+                       { type: 'shadow_inf', count: 1, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.5 },
+                       { type: 'crow', count: 10, gap: 1.0 }] },
+  { rest: 10, groups: [{ type: 'shadow_inf', count: 10, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.0 }] },
+  { rest: 10, groups: [{ type: 'heavy_inf', count: 4, gap: 1.5 },
+                       { type: 'boulder_giant', count: 4, gap: 1.5 },
+                       { type: 'bomb_inf', count: 4, gap: 1.5 },
+                       { type: 'rally_inf', count: 1, gap: 1.5 },
+                       { type: 'archer_inf', count: 12, gap: 1.0 }] },
+  { rest: 10, groups: [{ type: 'heavy_inf', count: 6, gap: 1.2 },
+                       { type: 'dark_priest', count: 6, gap: 1.2 },
+                       { type: 'plague_inf', count: 6, gap: 1.2 },
+                       { type: 'boulder_giant', count: 6, gap: 1.2 }] },
+  { rest: 10, groups: [{ type: 'rally_inf', count: 4, gap: 0.5 },
+                       { type: 'blocker_inf', count: 40, gap: 0.5 }] }
 ];
 
 // STAGE 16: Dark Hollow Citadel. "Similar to Stage 15", at the owner's word — so
