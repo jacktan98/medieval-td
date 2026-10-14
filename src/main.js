@@ -27,7 +27,7 @@ import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
 import { makeTutorial, updateTutorial, makeMapTour, updateMapTour } from './tutorial.js';
 import { track, watchGame, gameVersion } from './analytics.js';
-import { noteBattle, startEnding, updateEnding, lastStage, endingSeen } from './ending.js';
+import { noteBattle, startEnding, updateEnding, lastStage } from './ending.js';
 import { seedRng, newSeed } from './rng.js';
 import { startRecording, stopRecording, recording, replaying, afterStep, duePresses, startPlayback, ended, drift } from './replay.js';
 import { tap } from './input.js';
@@ -587,9 +587,10 @@ function frame(now) {
     if (state.result === 'won' && state.tutorial) state.mapTour = makeMapTour();
     if (state.result === 'won') {
       const here = stageOfLevel(state.levelIndex);
-      // THE LAST STAGE WON: the ending plays on the world map, the first time. See
-      // src/ending.js.
-      if (here !== null && lastStage(here) && !endingSeen() && !REPLAY) state.pendingEnding = true;
+      // THE LAST STAGE WON: the ending plays on the world map — EVERY TIME, at the
+      // owner's word, not only the first; its Skip is there for a player who has seen
+      // it. See src/ending.js.
+      if (here !== null && lastStage(here) && !REPLAY) state.pendingEnding = true;
       if (here !== null && here + 1 === state.unlocked && state.unlocked < STAGE_COUNT) {
         state.unlocked += 1;
         saveUnlocked(state.unlocked);

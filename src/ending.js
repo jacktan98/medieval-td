@@ -1,5 +1,5 @@
-// THE ENDING, at the owner's word ("The Road Home"): played on the world map the
-// first time stage 16 is won, and again whenever the campaign seal is tapped.
+// THE ENDING, at the owner's word ("The Road Home"): played on the world map
+// every time stage 16 is won (and from the admin keypad, code 1600).
 //
 //   crows    the flock rises from the Dark Hollow and flies off the map
 //   fog      the dark over the world lifts, and the map brightens
