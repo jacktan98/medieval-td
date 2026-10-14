@@ -316,7 +316,10 @@ function newGame() {
     achPick: 0,
     achHover: null,
     // The tier 4 towers built on this stage, for Grand Arsenal. See src/achievements.js.
-    tier4: []
+    tier4: [],
+    // THE BOSS WHO GOT AWAY, by name, if one walked out of the exit — which is a loss
+    // whatever the lives said, and the summary says so (src/render.js).
+    bossEscaped: null
   });
 
   // AND ANY PREBUILT BARRACKS GETS ITS SQUAD, which cannot happen inside the

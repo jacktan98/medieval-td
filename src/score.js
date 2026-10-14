@@ -240,6 +240,8 @@ export function finish(state, level, difficulty) {
     // opening wave reads 0 of 8 and a win reads all of them.
     waves: Math.min(state.waveIndex, state.waves.length),
     ofWaves: state.waves.length,
+    // The boss who walked out, if that is how it ended — see drawResult.
+    escaped: state.result === 'won' ? null : state.bossEscaped || null,
     map: level.name,
     difficulty: difficulty.name
   };

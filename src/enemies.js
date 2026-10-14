@@ -1334,7 +1334,7 @@ export function updateEnemies(state, dt) {
     // here would be a second thing the end-of-game summary, the star record and
     // the stall clock could each disagree about. Nothing downstream has to learn
     // what a boss is; the keep simply falls.
-    if (e.def.ends) state.lives = 0;
+    if (e.def.ends) { state.lives = 0; state.bossEscaped = e.def.name; }
     else state.lives -= e.def.leak;
     // INTO THE PLAYER LOG: what got through, and where.
     track('leak', { ...where(state), enemy: e.def.name, lost: e.def.ends ? 'all' : e.def.leak });

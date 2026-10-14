@@ -8737,9 +8737,13 @@ function drawResult(ctx, state) {
   const [three, two] = starCuts(s.startLives);
   ctx.font = `21px ${MAP_TYPE}`;
   ctx.fillStyle = '#F0E6D2';
+  // A BOSS WHO GOT AWAY ENDS IT, and the line says so, at the owner's word, rather
+  // than naming a wave that does not exist ("wave 9 of 8": every wave was over, and he
+  // was what came after them). Nor does a keep that falls in that last fight.
   ctx.fillText(
-    s.won
-      ? `${s.lives} of ${s.startLives} lives held  ·  ${s.ofWaves} waves`
+    s.won ? `${s.lives} of ${s.startLives} lives held  ·  ${s.ofWaves} waves`
+      : s.escaped ? `The ${s.escaped} escaped from the battle`
+      : s.waves >= s.ofWaves ? 'The keep fell in the final battle'
       : `The keep fell on wave ${s.waves + 1} of ${s.ofWaves}`,
     480, 314);
 
@@ -8753,7 +8757,9 @@ function drawResult(ctx, state) {
   const want = s.stars === 1 ? two : s.stars === 2 ? three : null;
   if (!s.won || want !== null) {
     ctx.fillText(
-      !s.won ? `Hold the keep to the end of wave ${s.ofWaves} for a star.`
+      !s.won ? (s.escaped ? `Stop the ${s.escaped} before he reaches the exit.`
+        : s.waves >= s.ofWaves ? 'Hold the keep until the last enemy has fallen.'
+        : `Hold the keep to the end of wave ${s.ofWaves} for a star.`)
         : `${want} lives for ${s.stars === 2 ? 'three' : 'two'} stars.`,
       480, 348);
   }
