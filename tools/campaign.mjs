@@ -2773,6 +2773,31 @@ console.log('\n--- stage 15 is Dark Hollow Quarters, two roads and a link betwee
     JSON.stringify(mix));
 }
 
+console.log('\n--- stage 16 is Dark Hollow Citadel ---\n');
+
+// THE OWNER'S LIST FOR THE CITADEL, AS TYPED, gaps and all — each group in the order
+// it comes out (not MARCH_ORDER: see the exception in tools/admin.mjs). The Crow
+// Harbinger is not in it: he comes down from his balcony once the last wave is dead.
+{
+  const citadel = levels.find(l => l.id === 'm18');
+  ok(!!citadel, 'Dark Hollow Citadel is in the game', citadel ? citadel.name : 'missing');
+  const WANT16 = [
+    '8 light_inf (1.5) + 8 crow (1.5)',
+    '8 tough_inf (1.5) + 8 crow (1.5)',
+    '6 blocker_inf (1.5) + 8 crow (1.5) + 2 bomb_inf (1.5)',
+    '1 rally_inf (1.5) + 6 shadow_inf (1.8)',
+    '4 heavy_inf (1.8) + 2 boulder_giant (1.8) + 2 bomb_inf (1.8) + 2 dark_priest (1.8)',
+    '2 rally_inf (1.5) + 10 shadow_inf (1.5) + 10 archer_inf (1.5)',
+    '40 crow (0.8)',
+    '6 heavy_inf (1.8) + 2 rally_inf (1.5) + 4 boulder_giant (1.8) + 4 bomb_inf (1.8) + 2 dark_priest (1.5) + 2 plague_inf (1.5)'
+  ];
+  const got16 = citadel.waves.map(w => w.groups.map(g => `${g.count} ${g.type} (${g.gap})`).join(' + '));
+  ok(got16.join(' | ') === WANT16.join(' | '), 'it sends the eight waves it was given, in its order',
+    got16.map((g, i) => (g === WANT16[i] ? '.' : `${i + 1}: ${g} (wanted ${WANT16[i]})`)).join(' '));
+  ok(!citadel.waves.some(w => w.groups.some(g => g.type === 'crow_harbinger')),
+    'and the Crow Harbinger is not in any wave');
+}
+
 console.log('\n--- a board may be drawn in another palette ---\n');
 
 // THREE COLOURS CARRY MEANING on a board — the road, the ground and every ground
