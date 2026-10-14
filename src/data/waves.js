@@ -3386,7 +3386,7 @@ export const stage15Waves = [
                        { type: 'crow', count: 10, gap: 1.2 }] },
   { rest: 10, groups: [{ type: 'blocker_inf', count: 4, gap: 1.5 },
                        { type: 'crow', count: 10, gap: 1.2 }] },
-  { rest: 10, groups: [{ type: 'blocker_inf', count: 8, gap: 1.5 },
+  { rest: 10, groups: [{ type: 'blocker_inf', count: 6, gap: 1.5 },
                        { type: 'shadow_inf', count: 1, gap: 1.5 },
                        { type: 'rally_inf', count: 1, gap: 1.5 },
                        { type: 'crow', count: 10, gap: 1.0 }] },
@@ -3401,8 +3401,8 @@ export const stage15Waves = [
                        { type: 'dark_priest', count: 6, gap: 1.2 },
                        { type: 'plague_inf', count: 6, gap: 1.2 },
                        { type: 'boulder_giant', count: 6, gap: 1.2 }] },
-  { rest: 10, groups: [{ type: 'rally_inf', count: 4, gap: 0.5 },
-                       { type: 'blocker_inf', count: 32, gap: 0.5 }] }
+  { rest: 10, groups: [{ type: 'rally_inf', count: 4, gap: 0.6 },
+                       { type: 'blocker_inf', count: 32, gap: 0.6 }] }
 ];
 
 // STAGE 16: Dark Hollow Citadel. "Similar to Stage 15", at the owner's word — so
