@@ -99,7 +99,7 @@ export function spawn(state, typeId, from = null) {
   state.enemies.push({
     def,
     // HOW MUCH OF A BLOW HE TAKES, after his armour: 1 for everything but a boss on a
-    // difficulty that says otherwise — Normal's 1.2 (`bossTaken` in data/difficulty.js).
+    // difficulty that says otherwise — Normal's 1.3 (`bossTaken` in data/difficulty.js).
     // Read where a blow lands: hit() in projectiles.js, a soldier's swing in units.js,
     // and a burn or poison in the status pass below.
     frail: (def.boss && (DIFFICULTIES[state.difficultyIndex ?? -1] || {}).bossTaken) || 1,
