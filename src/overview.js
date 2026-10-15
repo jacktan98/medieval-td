@@ -252,8 +252,14 @@ export function stepReveal(state, dt) {
 // See setLoop for why this is safe to call on every frame, and why it is the
 // reason the sound starts by itself once a phone unlocks its audio.
 const MAP_AMBIENT = [...new Set(STAGES.flatMap(s => (s.level === null ? [] : levels[s.level].ambience || []).map(a => a.clip)))];
+// THE START PAGE'S BIRDS, at the owner's word: birdsong as its background, at the
+// level the first boards play it. Run as the map's own bird loop, so a map at rest
+// whose birds are Oakhaven's or the Outskirts' carries the same birdsong on without
+// a break. (A browser lets no sound play before the player's first tap; any tap on
+// the page wakes it, and the birds start then.)
+const TITLE_BIRDS = { clip: 'bird_chirping', level: 0.5 };
 export function mapAudio(state) {
-  // Not on the start page, which is quiet until Start is pressed — see src/titlepage.js.
+  // Not the map's sounds on the start page (see src/titlepage.js): its birds only.
   const onMap = !state.started && !state.title;
   const marching = !state.title && !!(state.reveal && state.reveal.phase === 'road');
   const opened = state.stage !== null && state.stage !== undefined;
@@ -262,7 +268,8 @@ export function mapAudio(state) {
   // AND NOTHING WHILE THE ENDING PLAYS, at the owner's word — no Dark Hollow, no crows.
   const ending = !!(state.ending || state.pendingEnding);
   const which = !onMap || marching || ending ? -1 : opened ? state.stage : frontier;
-  const want = which >= 0 && playable(which) ? levels[STAGES[which].level].ambience || [] : [];
+  const want = state.title ? [TITLE_BIRDS]
+    : which >= 0 && playable(which) ? levels[STAGES[which].level].ambience || [] : [];
   for (const clip of MAP_AMBIENT) {
     const a = want.find(x => x.clip === clip);
     setLoop(clip, !!a, a ? a.level : 1, `map_${clip}`);
