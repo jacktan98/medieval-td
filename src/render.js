@@ -56,7 +56,7 @@ import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft, boughtIn } from './upgrades.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
-import { drawTutorial, drawMapTour, verbs } from './tutorial.js';
+import { drawTutorial, drawMapTour, verbs, showsSkip } from './tutorial.js';
 import { ACHIEVEMENTS, ACHIEVEMENTS_TITLE, UNLOCKED_TITLE } from './data/achievements.js';
 import { earned, earnedCount, progressOf, toasts, byId } from './achievements.js';
 import { ACHIEVE_ICON, ACH_SHEET, ACH_PANEL, ACH_DONE, ACH_COUNT, achBox, shownAchievement } from './achievepage.js';
@@ -135,6 +135,8 @@ export function draw(ctx, state) {
   // STAGE 1'S TUTORIAL: its line of advice and its arrow, over the HUD and the menu
   // it is pointing into. See src/tutorial.js.
   if (state.started && !state.result) drawTutorial(ctx, state);
+  // And its Skip, in the Admin button's place, over the tutorial's darkening.
+  if (showsSkip(state)) drawAdminDoor(ctx, 'Skip');
 
   // Over everything, including the menu: while either of these is up the board
   // is not accepting the taps it normally would, and a dimmed board is how that

@@ -17,8 +17,11 @@
 // was walked through building can never be sold (`kept` on the tower) — upgraded or
 // not, at the owner's word.
 //
-// FOR A NEW PLAYER: it runs on stage 1 until stage 1 has been won once. The admin
-// dashboard's fresh start brings it back.
+// FOR A NEW PLAYER: it runs on stage 1 until stage 1 has been won once — or until the
+// player presses Skip, bottom right, where the Admin button is on the world map
+// (SKIP_TUTORIAL). A skip is the whole tutorial: these steps, and the encyclopedia,
+// the upgrades and stage 2's flag on the world map after it. The admin dashboard's
+// fresh start brings it back.
 //
 // THE STEPS ARE READ OFF THE GAME, not off the taps: a step is done when the board
 // shows it done — a menu open on the plot, a tower standing on it, the wave called.
@@ -324,12 +327,39 @@ const INTRO_KEY = 'medieval-td/intro';
 const store = () => { try { return globalThis.localStorage || null; } catch { return null; } };
 const introSeen = () => { try { return !!store()?.getItem(INTRO_KEY); } catch { return true; } };
 function saveIntro() { try { store()?.setItem(INTRO_KEY, '1'); } catch { /* private mode: this visit only */ } }
-export function forgetIntro() { try { store()?.removeItem(INTRO_KEY); } catch { /* nothing kept */ } }
+export function forgetIntro() {
+  try { store()?.removeItem(INTRO_KEY); store()?.removeItem(SKIPPED_KEY); } catch { /* nothing kept */ }
+}
+
+// SKIP, at the owner's word: in stage 1, in the Admin button's place and style (see
+// src/admin.js ADMIN_BTN, and SKIP_BTN in src/ending.js), while the tutorial runs. It
+// ends the tutorial for good — kept, so a lost stage 1 played again does not start it
+// over — and with it the world map's tour that would follow a win. Nothing else: the
+// game's own summary at the end of the stage is not part of the tutorial and still
+// shows. The two towers it had made unsellable may be sold again.
+const SKIPPED_KEY = 'medieval-td/tutorial-skipped';
+const skipped = () => { try { return !!store()?.getItem(SKIPPED_KEY); } catch { return false; } };
+export const SKIP_TUTORIAL = { x: 858, y: 484, w: 84, h: 38 };
+export const showsSkip = state => !!(state.started && !state.result && state.tutorial && !state.tutorial.done);
+export const hitSkipTutorial = (state, x, y) => showsSkip(state) &&
+  x >= SKIP_TUTORIAL.x && x <= SKIP_TUTORIAL.x + SKIP_TUTORIAL.w &&
+  y >= SKIP_TUTORIAL.y && y <= SKIP_TUTORIAL.y + SKIP_TUTORIAL.h;
+export function skipTutorial(state) {
+  const tut = state.tutorial;
+  if (!tut) return;
+  track('tutorial_skip', { list: tut.list, step: tut.i + 1 });
+  try { store()?.setItem(SKIPPED_KEY, '1'); } catch { /* private mode: this visit only */ }
+  for (const t of state.towers) delete t.kept;
+  // A menu the tutorial had shaped (one family, no tier past the cap) is shut, so the
+  // next one opens whole.
+  if (state.menu) closeMenu(state);
+  state.tutorial = null;
+}
 const stepsOf = tut => LISTS[tut.list];
 
 // A new game's tutorial, or null: stage 1, not yet won.
 export function makeTutorial(lv) {
-  if (!lv.tutorial || sealOf(lv.id)) return null;
+  if (!lv.tutorial || sealOf(lv.id) || skipped()) return null;
   return { list: 'game', i: 0, begun: false, t: 0, cap: 1, hold: false, done: false, leaving: null, slow: 1 };
 }
 

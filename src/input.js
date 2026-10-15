@@ -17,7 +17,7 @@ import { solo, answer, play, insist, unlock, selectionCue, familyCue, CUE, SELEC
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
-import { tutorialAllows, shapeMenu, mapTourAllows, setTouch } from './tutorial.js';
+import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, skipTutorial } from './tutorial.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { hitAchievementsButton, openAchievements, tapAchievements, hoverAchievements } from './achievepage.js';
 import { noteVillagerTap, noteTier4, note } from './achievements.js';
@@ -359,6 +359,10 @@ export function tap(state, x, y, restart) {
   // is the reward for the run. Clearing the stage before the rebuild is what
   // newGame reads, so it carries null across rather than the stage just played.
   if (state.result) { state.stage = null; restart(); return press('result_continue'); }
+
+  // STAGE 1'S SKIP, bottom right while the tutorial runs: asked before the tutorial's
+  // own lock, which would otherwise refuse it. See skipTutorial in src/tutorial.js.
+  if (hitSkipTutorial(state, x, y)) { skipTutorial(state); return press('tutorial_skip'); }
 
   // The HUD sits above everything and is not part of the board, so it is
   // asked first — otherwise a button that happens to overlap a plot's menu
