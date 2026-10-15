@@ -23,7 +23,7 @@ import { hitAchievementsButton, openAchievements, tapAchievements, hoverAchievem
 import { noteVillagerTap, noteTier4, note } from './achievements.js';
 import { AIM_MODES } from './data/towers.js';
 import { DIFFICULTIES } from './data/difficulty.js';
-import { saveDifficulty } from './score.js';
+import { saveDifficulty, summaryReady } from './score.js';
 import { track, where, layerOf, trackLeave } from './analytics.js';
 import { recordInput, recording, stopRecording } from './replay.js';
 import { tapEnding, tapSeal } from './ending.js';
@@ -358,6 +358,8 @@ export function tap(state, x, y, restart) {
   // from: a win has just opened the next stage, and the road drawing itself to it
   // is the reward for the run. Clearing the stage before the rebuild is what
   // newGame reads, so it carries null across rather than the stage just played.
+  // NOT BEFORE ITS STARS HAVE ALL COME OUT, at the owner's word — see summaryReady.
+  if (state.result && !summaryReady(state)) return press('result_wait', false);
   if (state.result) { state.stage = null; restart(); return press('result_continue'); }
 
   // STAGE 1'S SKIP, bottom right while the tutorial runs: asked before the tutorial's

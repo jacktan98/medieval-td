@@ -32,7 +32,7 @@ import { PAGES, PAGE_TITLES, pageItems, pageEntry, towerArt, figureArt, figureFi
          ABILITY_ICON, SHEET, FOLD, LEFT, RIGHT, TITLE_Y, FOOT_Y, frameFor, frameSlot, FRAME_AIR,
          boxFor, BOX_PAD, STAT_GAP, STAT_ROW_H, STAGE_BTN, BOOK_BANDS, bossHeadY,
          popSlot, BOOK_CLOSE, BOOK_PREV, BOOK_NEXT, BOOK_ICON, locked, towerEntry, unitEntry } from './book.js';
-import { MAX_STARS, bestStars, starCuts, sealOf } from './score.js';
+import { MAX_STARS, bestStars, starCuts, sealOf, summaryReady } from './score.js';
 import { STORY } from './data/story.js';
 import { BOSS_FX, HEAL_GLOW, HEAL_FLOOR, RAGE_BURST, RAGE_TINT, WEAPON_POP,
          UNIT_FX, HOLY_GLOW, HOLY_FLOOR } from './data/bossfx.js';
@@ -8775,9 +8775,10 @@ function drawResult(ctx, state) {
            : `Best here: ${s.best} of ${MAX_STARS} stars.`,
     480, 386);
 
+  // Only once a tap will take it — see summaryReady in score.js.
   ctx.font = `20px ${MAP_TYPE}`;
   ctx.fillStyle = '#F0E6D2';
-  ctx.fillText('Tap to play again', 480, 440);
+  if (summaryReady(state)) ctx.fillText('Tap to play again', 480, 440);
   ctx.textAlign = 'left';
 }
 

@@ -277,6 +277,18 @@ export function finish(state, level, difficulty) {
 export const STAR_FIRST = 1.5;
 export const STAR_GAP = 1.2;
 
+// THE SUMMARY CANNOT BE SKIPPED, at the owner's word: a tap does nothing until every
+// star earned has come out and a beat after the last (READY_AFTER), or a beat after
+// the panel opens on a loss — then "Tap to play again" shows and a tap goes on. A
+// summary with no clock ticking for it (a tool, a test page) is ready at once.
+const READY_AFTER = 1;
+export function summaryReady(state) {
+  const s = state.summary;
+  if (!s || typeof state.summaryClock !== 'number') return true;
+  const last = s.stars ? STAR_FIRST + (s.stars - 1) * STAR_GAP : 0;
+  return state.starsShown >= s.stars && state.summaryClock >= last + READY_AFTER;
+}
+
 // Everything the reveal needs, reset when a summary is built. Held on the state
 // rather than on the summary itself because the summary is a RECORD — it is what
 // was achieved, and it is read back by the panel every frame; how far through the
@@ -296,8 +308,10 @@ export function startReveal(state) {
 // the frame count. Shorten STAR_GAP past the clamp and this still rings once each.
 export function stepStars(state, dt) {
   const s = state.summary;
-  if (!s || state.starsShown >= s.stars) return 0;
+  if (!s) return 0;
+  // The clock runs on past the last star, for summaryReady.
   state.summaryClock += dt;
+  if (state.starsShown >= s.stars) return 0;
   const due = Math.min(s.stars, Math.floor((state.summaryClock - STAR_FIRST) / STAR_GAP) + 1);
   let rang = 0;
   while (state.starsShown < due) { state.starsShown++; rang++; }
