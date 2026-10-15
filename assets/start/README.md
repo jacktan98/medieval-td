@@ -3,9 +3,11 @@
 The artwork for the start page: the first screen a player sees, before the world
 map, with the game's logo and the Start button (like Kingdom Rush 1's).
 
-The start page itself is not in the game yet. The name already is: the loading
-screen draws `Start_Page_Name.svg` in place of the words "Medieval TD" (see NAME_SRC
-in src/main.js), so a new upload of it shows there at once.
+In the game: the start page shows after the loading bar, once a visit, before the
+world map (src/titlepage.js). The four scene layers get a light wash there, a touch of
+colour taken out and the edges darkened; the name goes over that as drawn. The
+loading screen draws the name too, in place of the words "Medieval TD" (NAME_SRC in
+src/main.js), so a new upload of any of these shows at once.
 
 ## The layers
 

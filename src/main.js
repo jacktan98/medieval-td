@@ -383,6 +383,8 @@ if (REPLAY) {
   state.startWhenReady = true;
   setTouch(!!REPLAY.touch);
 } else {
+  // THE START PAGE FIRST, once a visit, before the world map. See src/titlepage.js.
+  state.title = true;
   attachInput(canvas, state, newGame);
   // A game left by closing the page is still worth watching, up to where it was left.
   addEventListener('pagehide', () => { if (state.started && !state.result) stopRecording(state, 'left'); });
@@ -602,9 +604,11 @@ function frame(now) {
   // The world map's one moving part, and it only moves while the map is up.
   // Stepped on real time rather than through step(): it is a screen animation,
   // so the fast-forward multiplier has no business touching it.
-  if (!state.started) stepReveal(state, real);
+  // None of it while the start page is up: the road a new player's map opens with
+  // draws itself once they are looking at it.
+  if (!state.started && !state.title) stepReveal(state, real);
   // And the world map's tour of the encyclopedia and the upgrades, once stage 1 is won.
-  if (!state.started && !state.ending) updateMapTour(state, real);
+  if (!state.started && !state.ending && !state.title) updateMapTour(state, real);
   // THE ENDING, on the world map, once the board behind it is gone and the map is at
   // rest. See src/ending.js.
   if (!state.started && state.pendingEnding && (state.stage === null || state.stage === undefined) &&

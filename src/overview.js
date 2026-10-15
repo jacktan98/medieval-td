@@ -253,8 +253,9 @@ export function stepReveal(state, dt) {
 // reason the sound starts by itself once a phone unlocks its audio.
 const MAP_AMBIENT = [...new Set(STAGES.flatMap(s => (s.level === null ? [] : levels[s.level].ambience || []).map(a => a.clip)))];
 export function mapAudio(state) {
-  const onMap = !state.started;
-  const marching = !!(state.reveal && state.reveal.phase === 'road');
+  // Not on the start page, which is quiet until Start is pressed — see src/titlepage.js.
+  const onMap = !state.started && !state.title;
+  const marching = !state.title && !!(state.reveal && state.reveal.phase === 'road');
   const opened = state.stage !== null && state.stage !== undefined;
   const idle = onMap && !opened && !state.reveal;
   const frontier = Math.max(0, Math.min(state.unlocked ?? 0, STAGE_COUNT) - 1);

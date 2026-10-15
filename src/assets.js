@@ -1005,7 +1005,14 @@ export const paths = {
   // THE SEPIA ONE, and it is DERIVED: tools/overview.mjs recolours the artist's
   // Overview_Map.svg into browns that keep every fill's brightness and drop its
   // hue, then writes this beside it. The artist goes on drawing in colour.
-  overview:    'assets/map/Overview_Map_sepia.svg'
+  overview:    'assets/map/Overview_Map_sepia.svg',
+  // THE START PAGE, the first screen after the loading bar: the artist's four layers,
+  // back to front, and the name over them. See src/titlepage.js.
+  start_1:     'assets/start/Start_Page_1.svg',
+  start_2:     'assets/start/Start_Page_2.svg',
+  start_3:     'assets/start/Start_Page_3.svg',
+  start_4:     'assets/start/Start_Page_4.svg',
+  start_name:  'assets/start/Start_Page_Name.svg'
   // THE REGION NAMES used to be the second image here — `overviewNames:
   // 'assets/map/Overview_Map_names.svg'`, the artist's lettering from layer 9. For
   // now they are set as text instead, at the owner's word, as a test: see

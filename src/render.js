@@ -57,6 +57,7 @@ import { rungState, canBuy, starsLeft, boughtIn } from './upgrades.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
 import { drawTutorial, drawMapTour, verbs, showsSkip } from './tutorial.js';
+import { drawTitle } from './titlepage.js';
 import { ACHIEVEMENTS, ACHIEVEMENTS_TITLE, UNLOCKED_TITLE } from './data/achievements.js';
 import { earned, earnedCount, progressOf, toasts, byId } from './achievements.js';
 import { ACHIEVE_ICON, ACH_SHEET, ACH_PANEL, ACH_DONE, ACH_COUNT, achBox, shownAchievement } from './achievepage.js';
@@ -76,6 +77,9 @@ const DEBUG_MUZZLE = typeof location !== 'undefined' &&
 
 export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
+  // THE START PAGE, before the world map, is the whole screen while it is up — and an
+  // achievement's pop-up over it. See src/titlepage.js.
+  if (state.title) { drawTitle(ctx); drawAchievementToast(ctx); return; }
 
   // THE BOARD SHAKES AS THE BOSS TURNS — see bossShake. Everything on the board
   // moves together, a hair enlarged so no edge shows; the HUD below does not.

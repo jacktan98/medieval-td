@@ -17,6 +17,7 @@ import { solo, answer, play, insist, unlock, selectionCue, familyCue, CUE, SELEC
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
+import { tapTitle } from './titlepage.js';
 import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, skipTutorial } from './tutorial.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { hitAchievementsButton, openAchievements, tapAchievements, hoverAchievements } from './achievepage.js';
@@ -251,6 +252,9 @@ export function attachInput(canvas, state, restart) {
 // spends nothing, and a test that re-implemented the branch it is checking would
 // hold nothing at all. Nothing in the game calls it from outside.
 export function tap(state, x, y, restart) {
+  // THE START PAGE, first of all: only its Start answers. See src/titlepage.js.
+  if (state.title) return tapTitle(state, x, y) ? press('title_start') : false;
+
   // THE ADMIN DASHBOARD SWALLOWS EVERYTHING, and it is tested first because it
   // covers the whole board AND is opened from the title screen — so its keypad
   // sits on top of the map buttons, and a digit key must not be answered by the
