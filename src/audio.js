@@ -1833,6 +1833,16 @@ export function insist(cue) {
   ctx.resume().then(() => solo(cue, true, false, true)).catch(() => {});
 }
 
+// A CLICK THAT MUST BE HEARD ON THE FIRST TAP OF A VISIT — the start page's Start,
+// at the owner's word. That tap is the one that wakes the sound (unlock above), so a
+// plain play() finds it still asleep and says nothing; this waits for the wake. The
+// ordinary click otherwise, not a voice line.
+export function playAwake(cue) {
+  if (!ctx) return;
+  if (ctx.state === 'running') { play(cue); return; }
+  ctx.resume().then(() => play(cue)).catch(() => {});
+}
+
 // The Category A voice currently in the air, so a priority cue can take the
 // channel off it. Nothing else needs a handle on a playing source — Category B
 // clips are meant to overlap, and a voice that is simply finishing does not

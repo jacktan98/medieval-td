@@ -13,7 +13,7 @@ import { clampToRange } from './ground.js';
 import { callWaveEarly } from './waves.js';
 import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
-import { solo, answer, play, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
+import { solo, answer, play, playAwake, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
@@ -119,6 +119,9 @@ export function attachInput(canvas, state, restart) {
     else if (did === 'open' || did === 'close') bookSound();
     // A rally flag planted sounds as one, in place of the click.
     else if (did === 'planted') rallySound();
+    // THE START PAGE'S START, the first tap of a visit: the click waits for the
+    // sound to wake. See playAwake in audio.js.
+    else if (did === 'awake') playAwake(SELECT);
     else if (did) play(SELECT);
   });
 
@@ -253,7 +256,7 @@ export function attachInput(canvas, state, restart) {
 // hold nothing at all. Nothing in the game calls it from outside.
 export function tap(state, x, y, restart) {
   // THE START PAGE, first of all: only its Start answers. See src/titlepage.js.
-  if (state.title) return tapTitle(state, x, y) ? press('title_start') : false;
+  if (state.title) return tapTitle(state, x, y) ? press('title_start', 'awake') : false;
 
   // THE ADMIN DASHBOARD SWALLOWS EVERYTHING, and it is tested first because it
   // covers the whole board AND is opened from the title screen — so its keypad
