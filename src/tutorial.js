@@ -336,7 +336,8 @@ export function forgetIntro() {
 // ends the tutorial for good — kept, so a lost stage 1 played again does not start it
 // over — and with it the world map's tour that would follow a win. Nothing else: the
 // game's own summary at the end of the stage is not part of the tutorial and still
-// shows. The two towers it had made unsellable may be sold again.
+// shows. The two towers it had made unsellable may be sold again, and the tier 2
+// tower cards it would have raised after wave 2 are raised at once.
 const SKIPPED_KEY = 'medieval-td/tutorial-skipped';
 const skipped = () => { try { return !!store()?.getItem(SKIPPED_KEY); } catch { return false; } };
 export const SKIP_TUTORIAL = { x: 858, y: 484, w: 84, h: 38 };
@@ -350,6 +351,13 @@ export function skipTutorial(state) {
   track('tutorial_skip', { list: tut.list, step: tut.i + 1 });
   try { store()?.setItem(SKIPPED_KEY, '1'); } catch { /* private mode: this visit only */ }
   for (const t of state.towers) delete t.kept;
+  // THE TIER 2 TOWER CARDS, at the owner's word, if the skip came before the tutorial
+  // raised them: up under the gold at once, as the `cards` step would have put them.
+  const cards = STEPS.findIndex(st => st.say === 'cards');
+  if (tut.list === 'game' && (tut.i < cards || (tut.i === cards && !tut.begun))) {
+    const up = state.foeAlerts ||= [];
+    for (const tower of tier2()) if (!up.some(id => id && id.tower === tower)) up.push({ tower });
+  }
   // A menu the tutorial had shaped (one family, no tier past the cap) is shut, so the
   // next one opens whole.
   if (state.menu) closeMenu(state);
