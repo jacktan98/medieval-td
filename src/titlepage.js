@@ -10,17 +10,19 @@
 // Not in a replay (replay.html), which goes straight to its board, nor in the tools
 // and test pages, which build their own state: `state.title` is set by main.js alone.
 import { art } from './assets.js';
-import { UI_BACK, UI_EDGE, UI_INK, UI_GOLD } from './render.js';
+import { UI_BACK, UI_EDGE, UI_INK } from './render.js';
 
 // START, at the bottom middle on the road, in the Admin button's style (render.js
 // panelBox and drawAdminDoor), larger — and larger again at the owner's word, with a
-// ring pulsing out of it to draw the eye.
+// ring pulsing round it to draw the eye.
 export const TITLE_START = { x: 480 - 100, y: 540 - 62 - 34, w: 200, h: 62 };
 const FONT = '36px Lobster, system-ui, sans-serif';
 const RADIUS = 16;
-// THE PULSE: a cream ring leaving the button's edge every PULSE seconds, growing by
-// PULSE_GROW px as it fades out. Two at a time, half a beat apart.
-const PULSE = 1.6, PULSE_GROW = 22;
+// THE PULSE, AS THE TUTORIAL'S RINGS PULSE, at the owner's word (arrowAt in
+// src/tutorial.js): one cream ring just outside the button, breathing 2px in and out
+// and brightening and dimming with it, about once a second. A dark edge
+// under it, so it shows on the pale road.
+const RING_GAP = 6, RING_SWAY = 2, RING_RATE = 6;
 
 // THE WASH, the gentlest of the three softenings the owner was shown.
 const GREY = 0.06;            // how much of the colour is taken out
@@ -84,21 +86,17 @@ export function drawTitle(ctx) {
   ctx.save();
   // On the wall clock: the page is up before any game has a clock of its own.
   const t = performance.now() / 1000;
-  // IN THE GAME'S GOLD WITH A DARK EDGE, so it shows on the pale road it sits on.
-  for (const lag of [0, 0.5]) {
-    const k = ((t / PULSE + lag) % 1);
-    const grow = k * PULSE_GROW;
-    const w = 4 * (1 - k) + 1.5;
-    ctx.globalAlpha = 0.9 * (1 - k) * (1 - k);
-    ctx.beginPath();
-    ctx.roundRect(b.x - grow, b.y - grow, b.w + 2 * grow, b.h + 2 * grow, RADIUS + grow);
-    ctx.strokeStyle = 'rgba(14,12,10,0.7)';
-    ctx.lineWidth = w + 2.5;
-    ctx.stroke();
-    ctx.strokeStyle = UI_GOLD;
-    ctx.lineWidth = w;
-    ctx.stroke();
-  }
+  const wave = Math.sin(t * RING_RATE);
+  const out = RING_GAP + wave * RING_SWAY;
+  ctx.globalAlpha = 0.5 + 0.3 * wave;
+  ctx.beginPath();
+  ctx.roundRect(b.x - out, b.y - out, b.w + 2 * out, b.h + 2 * out, RADIUS + out);
+  ctx.strokeStyle = 'rgba(14,12,10,0.6)';
+  ctx.lineWidth = 5;
+  ctx.stroke();
+  ctx.strokeStyle = UI_INK;
+  ctx.lineWidth = 3;
+  ctx.stroke();
   ctx.globalAlpha = 1;
   ctx.beginPath();
   ctx.roundRect(b.x, b.y, b.w, b.h, RADIUS);
