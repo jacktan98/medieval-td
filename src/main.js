@@ -739,16 +739,31 @@ function step(state, dt) {
 // flight simply does not play. It starts alongside the art rather than after
 // it, so in practice it is all there before the Start button is pressed.
 //
-// AND WHILE IT LOADS, A BAR: the game's name and how much of its art has arrived, on
-// the page's own dark colour, so the first few seconds are a loading screen rather
-// than an empty box. Drawn straight onto the canvas as each picture lands; the first
-// frame of the game paints over it.
+// AND WHILE IT LOADS, A BAR: the game's name (the start page's, see NAME_SRC) and how
+// much of its art has arrived, on the page's own dark colour, so the first few seconds
+// are a loading screen rather than an empty box. Drawn straight onto the canvas as
+// each picture lands; the first frame of the game paints over it.
 //
 // THE WORDS WAIT FOR THE FONT, at the owner's word: drawn before Lobster had arrived
 // they showed for a moment in the system face and then changed. Until it is in (or
 // has failed, or 3 seconds have passed), the screen is the bar alone.
 let loadingFrac = 0, loadingWords = false, gameUp = false;
 const showWords = () => { if (loadingWords) return; loadingWords = true; if (!gameUp) drawLoading(loadingFrac); };
+// THE START PAGE'S NAME IN PLACE OF THE WORDS "Medieval TD", at the owner's word: the
+// artist's lettering, arrow, shield, sword and torch (assets/start), fetched first and
+// on its own so it is up before the rest of the art. NAME_CROP is the drawing within
+// its 1920 x 1080 sheet, its shadow included. Until it has arrived the screen is the
+// bar alone; if it never does, the words stand in.
+const NAME_SRC = 'assets/start/Start_Page_Name.svg';
+const NAME_CROP = { x: 470, y: 106, w: 922, h: 398 };
+const NAME_W = 440;
+let loadingName = null, nameFailed = false;
+{
+  const img = new Image();
+  img.onload = () => { loadingName = img; if (!gameUp) drawLoading(loadingFrac); };
+  img.onerror = () => { nameFailed = true; if (!gameUp) drawLoading(loadingFrac); };
+  img.src = window.__stamp ? `${NAME_SRC}?v=${window.__stamp}` : NAME_SRC;
+}
 mapFontReady.then(showWords);
 setTimeout(showWords, 3000);
 function drawLoading(frac) {
@@ -762,8 +777,12 @@ function drawLoading(frac) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#F0E6D2';
   ctx.font = '44px Lobster, Georgia, serif';
-  if (loadingWords) ctx.fillText('Medieval TD', 480, 226);
-  const w = 360, h = 14, x = 480 - w / 2, y = 284;
+  if (loadingName) {
+    const h = NAME_W * NAME_CROP.h / NAME_CROP.w;
+    ctx.drawImage(loadingName, NAME_CROP.x, NAME_CROP.y, NAME_CROP.w, NAME_CROP.h, 480 - NAME_W / 2, 302 - h, NAME_W, h);
+  } else if (loadingWords && nameFailed) ctx.fillText('Medieval TD', 480, 266);
+  // The name, the bar and the count, as one group in the middle of the screen.
+  const w = 360, h = 14, x = 480 - w / 2, y = 324;
   ctx.fillStyle = 'rgba(240,230,210,0.15)';
   ctx.beginPath();
   ctx.roundRect(x, y, w, h, h / 2);
@@ -776,7 +795,7 @@ function drawLoading(frac) {
   }
   ctx.fillStyle = 'rgba(240,230,210,0.7)';
   ctx.font = '16px Lobster, Georgia, serif';
-  if (loadingWords) ctx.fillText(`Loading… ${Math.round(frac * 100)}%`, 480, 322);
+  if (loadingWords) ctx.fillText(`Loading… ${Math.round(frac * 100)}%`, 480, 362);
   ctx.restore();
 }
 drawLoading(0);
