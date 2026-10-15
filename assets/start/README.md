@@ -18,7 +18,7 @@ Each one 1920 × 1080 over the whole screen, laid down in this order, back to fr
 | `Start_Page_Name.svg` | the name, Medieval Tower Defense, with its arrow, shield, sword and torch, over everything |
 
 THE NAME IS LETTERED AS THE WORLD MAP'S AREA NAMES ARE, at the owner's word: cream
-(#FFEFD4) with a black edge (a 14px stroke drawn behind the fill, so 7px of it
+(#FFEFD4) with a black edge (a 17px stroke drawn behind the fill, so about 8px of it
 shows). And the whole of it, lettering and pictures together, casts a dark shadow
 — a soft dark glow all round it and a crisper one offset down and to the right —
 made by the `shadow` filter in the file rather than drawn, so redraw the name and
