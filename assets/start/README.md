@@ -19,9 +19,10 @@ Each one 1920 × 1080 over the whole screen, laid down in this order, back to fr
 
 THE NAME IS LETTERED AS THE WORLD MAP'S AREA NAMES ARE, at the owner's word: cream
 (#FFEFD4) with a black edge (a 14px stroke drawn behind the fill, so 7px of it
-shows). And the whole of it, lettering and pictures together, sits inside a white
-border, made by the `white-border` filter in the file rather than drawn — redraw the
-name and the border follows it. Both were added to the uploaded file; an upload that
+shows). And the whole of it, lettering and pictures together, casts a dark shadow
+— a soft dark glow all round it and a crisper one offset down and to the right —
+made by the `shadow` filter in the file rather than drawn, so redraw the name and
+the shadow follows it. Both were added to the uploaded file; an upload that
 replaces it needs them again (or ask for them).
 
 Drawn in layers so the page can move a little (flags waving, birds circling, the
