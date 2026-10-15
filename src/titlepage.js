@@ -14,18 +14,16 @@ import { UI_BACK, UI_EDGE, UI_INK } from './render.js';
 
 // START, at the bottom middle on the road, in the Admin button's style (render.js
 // panelBox and drawAdminDoor), larger — and larger again at the owner's word, with a
-// ring pulsing round it to draw the eye.
+// glow breathing round it to draw the eye.
 export const TITLE_START = { x: 480 - 100, y: 540 - 62 - 34, w: 200, h: 62 };
 const FONT = '36px Lobster, system-ui, sans-serif';
 const RADIUS = 16;
-// THE PULSE, AS THE TUTORIAL'S RINGS PULSE, at the owner's word (arrowAt in
-// src/tutorial.js): a ring just outside the button, breathing 2px in and out and
-// brightening and dimming with it, about once a second. NO EDGE, AND SOFT, at the
-// owner's word: a white glow brightest along its middle and fading away to nothing
-// on both sides, drawn as thin rings stepped outwards (RING_SOFT of them each way)
-// rather than with a blur, which not every browser's canvas has.
-const RING_GAP = 8, RING_SWAY = 2, RING_RATE = 6, RING_SOFT = 7, RING_STEP = 1.4;
-const GLOW = '#FFFFFF';
+// ITS EDGE THICKER, AND IT GLOWS AS THE UPGRADES SCREEN'S RUNGS DO, at the owner's
+// word (drawUpgrades in src/render.js): the edge stroked twice through a soft glow of
+// its own colour that swells and fades on the wall clock, then once sharp on top.
+// In the button's own cream; the gold of a rung that can be bought was the other
+// look shown.
+const EDGE_W = 3.5;
 
 // THE WASH, the gentlest of the three softenings the owner was shown.
 const GREY = 0.06;            // how much of the colour is taken out
@@ -89,27 +87,18 @@ export function drawTitle(ctx) {
   ctx.save();
   // On the wall clock: the page is up before any game has a clock of its own.
   const t = performance.now() / 1000;
-  const wave = Math.sin(t * RING_RATE);
-  const mid = RING_GAP + wave * RING_SWAY;
-  const peak = 0.75 + 0.25 * wave;
-  ctx.strokeStyle = GLOW;
-  ctx.lineWidth = RING_STEP + 0.4;
-  for (let i = -RING_SOFT; i <= RING_SOFT; i++) {
-    const out = mid + i * RING_STEP;
-    if (out <= 0) continue;
-    const fall = 1 - Math.abs(i) / (RING_SOFT + 1);
-    ctx.globalAlpha = peak * fall * fall * 0.8;
-    ctx.beginPath();
-    ctx.roundRect(b.x - out, b.y - out, b.w + 2 * out, b.h + 2 * out, RADIUS + out);
-    ctx.stroke();
-  }
-  ctx.globalAlpha = 1;
+  const pulse = 0.5 + 0.5 * Math.sin(t * 4);
   ctx.beginPath();
   ctx.roundRect(b.x, b.y, b.w, b.h, RADIUS);
   ctx.fillStyle = UI_BACK;
   ctx.fill();
   ctx.strokeStyle = UI_EDGE;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = EDGE_W;
+  ctx.shadowColor = UI_EDGE;
+  ctx.shadowBlur = 6 + 18 * pulse;
+  ctx.stroke();
+  ctx.stroke();
+  ctx.shadowBlur = 0;
   ctx.stroke();
   ctx.fillStyle = UI_INK;
   ctx.font = FONT;
