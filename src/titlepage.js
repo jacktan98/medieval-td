@@ -10,7 +10,7 @@
 // Not in a replay (replay.html), which goes straight to its board, nor in the tools
 // and test pages, which build their own state: `state.title` is set by main.js alone.
 import { art } from './assets.js';
-import { UI_BACK, UI_EDGE, UI_INK } from './render.js';
+import { UI_EDGE, UI_INK } from './render.js';
 
 // START, at the bottom middle on the road, in the Admin button's style (render.js
 // panelBox and drawAdminDoor), larger — and larger again at the owner's word, with a
@@ -24,6 +24,12 @@ const RADIUS = 16;
 // In the button's own cream; the gold of a rung that can be bought was the other
 // look shown.
 const EDGE_W = 3.5;
+// MORE OBVIOUS, at the owner's word: the glow in white rather than the edge's
+// softer one, wider (GLOW_MIN to GLOW_MAX px of blur, in the board's own pixels so it
+// is as wide on a sharp screen as on a plain one) and laid down GLOW_PASSES times so
+// it carries on the pale road. The face a shade darker than the Admin button's
+// (0.75 against 0.6), so the glow under it does not show through.
+const GLOW = '#FFFFFF', GLOW_MIN = 8, GLOW_MAX = 36, GLOW_PASSES = 6;
 
 // THE WASH, the gentlest of the three softenings the owner was shown.
 const GREY = 0.06;            // how much of the colour is taken out
@@ -90,15 +96,19 @@ export function drawTitle(ctx) {
   const pulse = 0.5 + 0.5 * Math.sin(t * 4);
   ctx.beginPath();
   ctx.roundRect(b.x, b.y, b.w, b.h, RADIUS);
-  ctx.fillStyle = UI_BACK;
+  // The glow first, then the button over it, so the glow shows outside the button
+  // and does not wash over its face. The blur is in screen pixels, not the board's,
+  // so it is scaled to match.
+  const px = ctx.getTransform().a || 1;
+  ctx.strokeStyle = GLOW;
+  ctx.lineWidth = EDGE_W;
+  ctx.shadowColor = GLOW;
+  ctx.shadowBlur = (GLOW_MIN + (GLOW_MAX - GLOW_MIN) * pulse) * px;
+  for (let i = 0; i < GLOW_PASSES; i++) ctx.stroke();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(14,12,10,0.75)';
   ctx.fill();
   ctx.strokeStyle = UI_EDGE;
-  ctx.lineWidth = EDGE_W;
-  ctx.shadowColor = UI_EDGE;
-  ctx.shadowBlur = 6 + 18 * pulse;
-  ctx.stroke();
-  ctx.stroke();
-  ctx.shadowBlur = 0;
   ctx.stroke();
   ctx.fillStyle = UI_INK;
   ctx.font = FONT;
