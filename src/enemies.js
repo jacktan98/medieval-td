@@ -17,7 +17,7 @@ import { typeOf, pierceOf, stageOf, timesOf } from './data/armor.js';
 import { tickHit } from './gesture.js';
 import { track, where } from './analytics.js';
 import { rand } from './rng.js';
-import { DIFFICULTIES } from './data/difficulty.js';
+import { DIFFICULTIES, bountyOf } from './data/difficulty.js';
 import { note } from './achievements.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
@@ -1400,7 +1400,7 @@ export function updateEnemies(state, dt) {
     }
 
     if (e.hp <= 0 && e.def.finale && !downed(e)) {
-      state.gold += e.def.bounty;
+      state.gold += bountyOf(e.def, DIFFICULTIES[state.difficultyIndex ?? -1]);
       state.slain = (state.slain || 0) + 1;   // for the villagers — see src/villagers.js
       countKill(e);
       // At the BIRD for a crow — he dies in the air — and on the ground for the rest.
@@ -1455,7 +1455,7 @@ export function updateEnemies(state, dt) {
     }
 
     if (e.hp <= 0) {
-      state.gold += e.def.bounty;
+      state.gold += bountyOf(e.def, DIFFICULTIES[state.difficultyIndex ?? -1]);
       state.slain = (state.slain || 0) + 1;   // for the villagers — see src/villagers.js
       countKill(e);
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });

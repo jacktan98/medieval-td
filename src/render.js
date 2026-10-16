@@ -6162,6 +6162,41 @@ function difficultyUi(ctx, index) {
   }
 }
 
+// "+20%" AND THE GOLD COIN, in the encyclopedia's small dark plate, over Normal for a
+// moment after it is picked, at the owner's word: Normal starts with a fifth more gold
+// and pays a fifth more for every kill (see `gold` and `bounty` in
+// src/data/difficulty.js), and the encyclopedia's numbers stay as written. Set by the
+// difficulty tap in src/input.js (`diffTip`, a wall-clock time).
+export const DIFF_TIP_FOR = 2600;   // ms up, the last DIFF_TIP_FADE of it fading
+const DIFF_TIP_FADE = 500;
+function difficultyTip(ctx, state) {
+  const i = state.difficultyIndex ?? 0, d = DIFFICULTIES[i];
+  if (!d || !state.diffTip || !(d.gold > 1 || (d.bounty || 1) > 1)) return;
+  const age = performance.now() - state.diffTip;
+  if (age < 0 || age > DIFF_TIP_FOR) return;
+  const pct = Math.round((Math.max(d.gold, d.bounty || 1) - 1) * 100);
+  const b = DIFF_BTN, half = b.w / 2;
+  const cx = b.x + half * i + half / 2;
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, (DIFF_TIP_FOR - age) / DIFF_TIP_FADE);
+  ctx.font = `13px ${MAP_TYPE}`;
+  const label = `+${pct}%`;
+  const tw = ctx.measureText(label).width;
+  const icon = art.stat_gold_cost ? uiSize('stat_gold_cost') : { w: 0, h: 0 };
+  const gap = icon.w ? 5 : 0, lh = 24, lw = 16 + tw + gap + icon.w;
+  const lx = cx - lw / 2, ly = b.y - lh - 6;
+  ctx.fillStyle = 'rgba(30,26,20,0.94)';
+  ctx.beginPath();
+  ctx.roundRect(lx, ly, lw, lh, 6);
+  ctx.fill();
+  ctx.fillStyle = PANEL_INK;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, lx + 8, ly + lh / 2 + 0.5);
+  if (icon.w) drawUi(ctx, 'stat_gold_cost', lx + 8 + tw + gap + icon.w / 2, ly + lh / 2);
+  ctx.restore();
+}
+
 function drawStart(ctx, state) {
   // THE WORLD, ALWAYS. This is a screen rather than an overlay now: the board
   // behind it is whichever map was last played and has nothing to do with what is
@@ -6302,6 +6337,7 @@ function drawStart(ctx, state) {
   }
 
   difficultyUi(ctx, state.difficultyIndex ?? 0);
+  difficultyTip(ctx, state);
 
   const b = START_BTN;
   ctx.save();

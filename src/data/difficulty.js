@@ -1,7 +1,7 @@
 // How hard the game is, as a choice the player makes on the title screen.
 //
-// TWO KNOBS, AND ONLY TWO: how many enemies a wave sends, and how much gold you
-// start with. Everything else — the enemy stats, the tower stats, the wave
+// THE KNOBS: how many enemies a wave sends, how much gold you start with and earn
+// for each kill, and how hard a boss is hit. Everything else — the enemy stats, the tower stats, the wave
 // order, the map — is the same game at both settings. That is the point: a
 // difficulty should change how much pressure you are under, not which build
 // works, and a setting that quietly retuned enemy health would make every
@@ -59,7 +59,15 @@ export const DIFFICULTIES = [
     // broke at 0.9 / 1.05 and held at the strictly more generous 0.9 / 1.10, which
     // is backwards and was the tell that a single-seed flip means nothing here.
     count: 0.8,
-    gold: 1.1,
+    // A FIFTH MORE GOLD, AT THE START AND FOR EVERY KILL, at the owner's word (it was
+    // a tenth more at the start alone). Bounties are three quarters or more of a
+    // stage's gold, so thinning the waves by a fifth took away about as much gold as
+    // it took away enemies, and Normal came out barely 4% richer per point of enemy
+    // health than Hard. With both at 1.2 it is about a fifth richer, on every stage.
+    // The encyclopedia keeps the written bounties; the stage panel says "+20%" when
+    // Normal is picked (see difficultyTip in src/render.js).
+    gold: 1.2,
+    bounty: 1.2,
     // AND THE BOSSES TAKE 30% MORE of every blow, at the owner's word (it was 20%):
     // whatever lands after his armour — a tower's shot, a soldier's swing, a burn — is
     // 1.3 times as much on Normal (20 becomes 26). Their own numbers, and the
@@ -94,7 +102,8 @@ export const DIFFICULTIES = [
     // column is what it costs — and the honest way to make Hard harder now is to
     // raise the counts in the table, on the map that should carry it.
     count: 1,
-    gold: 1
+    gold: 1,
+    bounty: 1
   }
 ];
 
@@ -158,3 +167,8 @@ export const scaleCount = (n, difficulty) =>
 // level's own number, and the difficulty then scales whatever it finds.
 export const startingGold = (startGold, difficulty) =>
   Math.round(startGold * difficulty.gold);
+
+// WHAT A KILL PAYS at a setting: the creature's bounty, times the setting's, rounded.
+// Read where a kill is paid, in src/enemies.js.
+export const bountyOf = (def, difficulty) =>
+  Math.round((def.bounty || 0) * ((difficulty && difficulty.bounty) || 1));

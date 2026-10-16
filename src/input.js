@@ -349,6 +349,8 @@ export function tap(state, x, y, restart) {
       state.difficultyIndex = ((state.difficultyIndex ?? 0) + 1) % DIFFICULTIES.length;
       saveDifficulty(state.difficultyIndex);
       restart();
+      // "+20%" and a coin over Normal for a moment — see difficultyTip in render.js.
+      state.diffTip = performance.now();
       return press('difficulty', true, { to: DIFFICULTIES[state.difficultyIndex].name });
     }
 
