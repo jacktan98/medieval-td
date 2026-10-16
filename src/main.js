@@ -1,4 +1,4 @@
-import { loadArt, ensureBoard, boardReady, prefetchBoards } from './assets.js';
+import { loadArt, ensureBoard, boardReady, prefetchBoards, versioned } from './assets.js';
 import { loadAudio, fanfare, setLoop, chime, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
 import { level, levels } from './level.js';
 import { STAGES } from './data/overview.js';
@@ -766,7 +766,7 @@ let loadingName = null, nameFailed = false;
   const img = new Image();
   img.onload = () => { loadingName = img; if (!gameUp) drawLoading(loadingFrac); };
   img.onerror = () => { nameFailed = true; if (!gameUp) drawLoading(loadingFrac); };
-  img.src = window.__stamp ? `${NAME_SRC}?v=${window.__stamp}` : NAME_SRC;
+  img.src = versioned(NAME_SRC);
 }
 mapFontReady.then(showWords);
 setTimeout(showWords, 3000);

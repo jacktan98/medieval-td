@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Medieval TD — M1</title>
+<title>Medieval Tower Defense</title>
 <!-- The tab icon: the barracks' crossed swords on the game's own button
      plate, composited from the two files rather than drawn again. It is the
      one piece of art here that has to read at 16px — see the note in
@@ -23,8 +23,8 @@
      and it scales the rest itself. -->
 <link rel="apple-touch-icon" sizes="180x180" href="assets/ui/Apple_Touch_Icon.png">
 
-<!-- The label under the icon. Without this iOS uses the <title>, and the title
-     carries a build marker no player should be reading off their home screen. -->
+<!-- The label under the icon. Without this iOS uses the <title>, which is too long
+     to fit under a home-screen icon. -->
 <meta name="apple-mobile-web-app-title" content="Medieval TD">
 <style>
   html, body {
@@ -83,6 +83,9 @@
   <script>
     (function () {
       var stamp = Math.floor(Date.now() / 60000);
+      // THE PUBLIC BUILD fixes it here instead, with each file's own fingerprint in
+      // window.__hashes: see tools/itch.mjs, which rewrites this line. Do not move it.
+      //@@BUILD@@
       // AND THE SAME STAMP FOR THE ARTWORK AND THE AUDIO, which fetch themselves
       // from inside the modules and had no version at all — see `versioned` in
       // src/assets.js. Published rather than recomputed there so one reload gets
@@ -93,7 +96,7 @@
       // sooner they show. The same URL src/overview.js loads it from, so it is one fetch.
       var font = document.createElement('link');
       font.rel = 'preload'; font.as = 'font'; font.type = 'font/woff2'; font.crossOrigin = 'anonymous';
-      font.href = 'assets/fonts/Lobster-Regular.woff2?v=' + stamp;
+      font.href = 'assets/fonts/Lobster-Regular.woff2?v=' + ((window.__hashes && window.__hashes['assets/fonts/Lobster-Regular.woff2']) || stamp);
       document.head.appendChild(font);
       var mods = [
         'main', 'assets', 'enemies', 'tint', 'flag', 'towers', 'projectiles', 'waves',
@@ -102,7 +105,8 @@
       ];
       var imports = {};
       for (var i = 0; i < mods.length; i++) {
-        imports['./src/' + mods[i] + '.js'] = './src/' + mods[i] + '.js?v=' + stamp;
+        var file = 'src/' + mods[i] + '.js';
+        imports['./' + file] = './' + file + '?v=' + ((window.__hashes && window.__hashes[file]) || stamp);
       }
       var tag = document.createElement('script');
       tag.type = 'importmap';

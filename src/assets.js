@@ -1053,8 +1053,16 @@ export const art = {};
 // APPENDED AT LOAD RATHER THAN BAKED INTO `paths`, and that is the half that
 // matters: half a dozen tools read `paths` to find files ON DISK, and a query
 // string is not part of a filename. The version belongs to the fetch.
+//
+// AND IN THE PUBLIC BUILD, EACH FILE ITS OWN VERSION: tools/itch.mjs writes every
+// file's fingerprint into the page (window.__hashes), so a new release fetches only
+// what changed and a returning player's browser keeps the rest.
 const stamp = typeof window !== 'undefined' && window.__stamp;
-export const versioned = src => stamp ? `${src}?v=${stamp}` : src;
+const hashes = (typeof window !== 'undefined' && window.__hashes) || null;
+export const versioned = src => {
+  const v = (hashes && hashes[src]) || stamp;
+  return v ? `${src}?v=${v}` : src;
+};
 
 // --- WHAT AN ABILITY'S DISC IS MADE OF --------------------------------------------
 //

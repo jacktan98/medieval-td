@@ -15,7 +15,7 @@ import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
 import { solo, answer, play, playAwake, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
-import { ADMIN_BTN, openAdmin, tapAdmin } from './admin.js';
+import { ADMIN_BTN, ADMIN_ON, openAdmin, tapAdmin } from './admin.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { tapTitle } from './titlepage.js';
 import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, skipTutorial } from './tutorial.js';
@@ -290,7 +290,7 @@ export function tap(state, x, y, restart) {
     if ((state.stage === null || state.stage === undefined) && tapSeal(state, x, y)) return press('ending_seal');
     // THE WORLD MAP'S TOUR, after stage 1, lets only what its arrow is on be pressed
     // (and the dashboard). See src/tutorial.js.
-    if (!mapTourAllows(state, x, y) && !inside(ADMIN_BTN, x, y)) return press('tour_blocked', false);
+    if (!mapTourAllows(state, x, y) && !(ADMIN_ON && inside(ADMIN_BTN, x, y))) return press('tour_blocked', false);
 
     // 'open', so the book sounds rather than the click.
     if (hitBookButton(state, x, y)) { openBook(state); return press('book', 'open'); }
@@ -308,7 +308,7 @@ export function tap(state, x, y, restart) {
 
     // The corner button, and the only way into the dashboard. Tested before the
     // map row for the usual reason — it is drawn on top, so it answers first.
-    if (inside(ADMIN_BTN, x, y)) { openAdmin(state); return press('admin'); }
+    if (ADMIN_ON && inside(ADMIN_BTN, x, y)) { openAdmin(state); return press('admin'); }
 
     // THE WORLD MAP, with nothing chosen yet. Only a stage marker answers a tap
     // here — everything else on screen is scenery, and a tap on the sea should do

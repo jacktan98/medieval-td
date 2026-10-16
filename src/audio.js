@@ -40,6 +40,8 @@
 // lazily, and every entry point returns quietly when there is no context. In
 // Node there never is one, and the sim runs in silence without knowing why.
 
+import { versioned } from './assets.js';
+
 // The quiet after a Category A clip, in seconds.
 const GAP = 1;
 
@@ -1679,8 +1681,7 @@ export function loadAudio() {
 // sprite was, and for the same reason.
 function fetchClip(key) {
   const src = paths[key];
-  const stamp = typeof window !== 'undefined' && window.__stamp;
-  return fetch(stamp ? `${src}?v=${stamp}` : src)
+  return fetch(versioned(src))
     .then(r => (r.ok ? r.arrayBuffer() : Promise.reject(new Error(r.status))))
     .then(data => ctx.decodeAudioData(data))
     .then(buf => { clips[key] = analyse(buf, GAIN[key] ?? 1, LOUDER.has(key), LIFT[key] ?? 1); });

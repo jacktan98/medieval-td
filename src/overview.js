@@ -22,7 +22,7 @@
 // assets/map/Overview_Map.svg by tools/overview.mjs and committed. Nothing here
 // measures the artwork; it reads the numbers that tool wrote.
 
-import { art } from './assets.js';
+import { art, versioned } from './assets.js';
 import { drawExitFlag, EXIT_TALL } from './flag.js';
 import { STAGES, STAGE_COUNT, playable, FALLS } from './data/overview.js';
 import { levels } from './level.js';
@@ -1322,8 +1322,7 @@ export const MAP_FONT = 'Lobster';
 let fontSettled;
 export const mapFontReady = new Promise(r => { fontSettled = r; });
 if (typeof FontFace !== 'undefined' && typeof document !== 'undefined' && document.fonts) {
-  const v = (typeof window !== 'undefined' && window.__stamp) ? `?v=${window.__stamp}` : '';
-  const face = new FontFace(MAP_FONT, `url(assets/fonts/Lobster-Regular.woff2${v})`);
+  const face = new FontFace(MAP_FONT, `url(${versioned('assets/fonts/Lobster-Regular.woff2')})`);
   face.load().then(f => {
     document.fonts.add(f);
     nameCanvas = null;

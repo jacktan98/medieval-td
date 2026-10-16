@@ -1,2 +1,5 @@
 # Written by tools/combine.mjs to look at, never loaded
 *_combined.png
+
+# The itch.io build, made by tools/itch.mjs
+dist/

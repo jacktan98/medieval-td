@@ -42,7 +42,7 @@ import { soundLevel } from './audio.js';
 import { weeds, drawWeed, drawSandWind } from './desert.js';
 import { STAGES, playable } from './data/overview.js';
 import { SMOKE_TRIM, SMOKE_LIFE } from './smoke.js';
-import { PIN, ADMIN_BTN, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
+import { PIN, ADMIN_BTN, ADMIN_ON, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_Y, TABS as ADMIN_TABS,
          CLOSE_BTN as ADMIN_CLOSE, RESET_BTN, PROGRESS_BTN, PREV_BTN, NEXT_BTN,
          mapSelect, mapList, mapOptions, waveTabs,
          groupRows, unitRows, unitPages, unitCols, stepper, goldStepper, adminGold, keys,
@@ -6413,6 +6413,8 @@ function drawSeal(ctx, cx, cy, r, word, stars) {
 // `label`: the ending's Skip uses this button, in its place, while it plays — see
 // src/ending.js.
 export function drawAdminDoor(ctx, label = 'Admin') {
+  // The public build has no dashboard (ADMIN_ON in src/admin.js); its Skips still show.
+  if (label === 'Admin' && !ADMIN_ON) return;
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';

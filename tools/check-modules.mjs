@@ -71,11 +71,16 @@ for (const page of PAGES) {
     console.log(`Every page publishes its stamp, so the artwork is versioned too.`);
   }
 
-  // AND BOTH LOADERS USE IT. A stamp published and never read is the same bug with
-  // an extra step, and it would survive the check above untouched.
-  for (const [file, want] of [['src/assets.js', /window\.__stamp/], ['src/audio.js', /window\.__stamp/]]) {
+  // AND EVERY LOADER USES IT. A stamp published and never read is the same bug with
+  // an extra step, and it would survive the check above untouched. src/assets.js reads
+  // it (and the public build's per-file window.__hashes) in `versioned`; everything
+  // else that fetches a file goes through `versioned`.
+  const reads = [['src/assets.js', /window\.__stamp/, 'read window.__stamp'], ['src/assets.js', /window\.__hashes/, 'read window.__hashes'],
+    ['src/audio.js', /fetch\(versioned\(/, 'fetch through versioned()'], ['src/main.js', /versioned\(NAME_SRC\)/, 'load the name through versioned()'],
+    ['src/overview.js', /versioned\('assets\/fonts\//, 'load the font through versioned()']];
+  for (const [file, want, what] of reads) {
     if (want.test(readFileSync(file, 'utf8'))) continue;
-    console.log(`\n${file} does not read window.__stamp — its fetches are unversioned.`);
+    console.log(`\n${file} does not ${what} — its fetches are unversioned.`);
     bad++;
   }
 }

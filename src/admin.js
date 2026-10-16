@@ -676,6 +676,12 @@ export function adminWaves(level) {
 // down there would read as a third thing to press before starting.
 export const ADMIN_BTN = { x: 858, y: 484, w: 84, h: 38 };
 
+// NOT IN THE PUBLIC BUILD, at the owner's word: the itch.io zip (tools/itch.mjs) sets
+// window.__public, and the dashboard's door is neither drawn nor answered there, so
+// no player meets the unlock codes. Everywhere else — the owner's copy, the tools —
+// it is as it always was.
+export const ADMIN_ON = !(typeof window !== 'undefined' && window.__public);
+
 // Everything below is laid out inside the full 960x540 board, because the
 // dashboard covers it completely — the same as the encyclopedia, and for the same
 // reason: while it is up, nothing underneath may act on a tap.
