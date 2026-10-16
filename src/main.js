@@ -1,5 +1,5 @@
 import { loadArt, ensureBoard, boardReady, prefetchBoards, versioned } from './assets.js';
-import { loadAudio, fanfare, setLoop, chime, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
+import { loadAudio, fanfare, setLoop, keepLoop, chime, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
 import { level, levels } from './level.js';
 import { STAGES } from './data/overview.js';
 import { openingDelay } from './data/waves.js';
@@ -87,6 +87,8 @@ function fitToDisplay() {
 
 // Every background loop any board asks for — see `ambience` on the levels.
 const AMBIENT = [...new Set(levels.flatMap(l => (l.ambience || []).map(a => a.clip)))];
+// The boss music's level, scaling the clip's own: under the battle rather than over it.
+const BOSS_MUSIC = 0.6;
 
 const state = {};
 
@@ -319,7 +321,11 @@ function newGame() {
     tier4: [],
     // THE BOSS WHO GOT AWAY, by name, if one walked out of the exit — which is a loss
     // whatever the lives said, and the summary says so (src/render.js).
-    bossEscaped: null
+    bossEscaped: null,
+    // THE BOSS FIGHT IS ON, from the moment a boss enters the battle until he falls:
+    // what the boss music plays for (bossMusic below). Set where his entrance line is
+    // said, in src/enemies.js and src/villagers.js; cleared as his fall begins.
+    bossFight: false
   });
 
   // AND ANY PREBUILT BARRACKS GETS ITS SQUAD, which cannot happen inside the
@@ -665,6 +671,13 @@ function frame(now) {
   setLoop('fishing_reel', playing && !state.paused && !reading && !!(vp && vp.reeling), 1, 'board_reel');
   // AND STAGE 7'S FISH SIZZLING, for as long as the cook holds it over the fire.
   setLoop('fish_cooking', playing && !state.paused && !reading && !!(vp && vp.cooking), 1, 'board_cook');
+  // AND THE BOSS MUSIC, at the owner's word, from the boss entering the battle until
+  // he falls (`bossFight`, set in src/enemies.js and src/villagers.js), over the
+  // board's own sounds and under the battle. Off at the result, like everything here.
+  setLoop('boss_music', playing && !!state.bossFight, BOSS_MUSIC, 'board_boss_music');
+  // Fetched from the start of a board with a boss on it (stage 15's camp, stage 16's
+  // balcony), so it is ready when he walks on.
+  if (playing && vp && vp.plan && (vp.plan.muster || vp.plan.balcony)) keepLoop('boss_music');
 
   // Outside the step, so a selection is dropped even while the game is paused at
   // a result — and before the draw, so the box never renders a dead reference.

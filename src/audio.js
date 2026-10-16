@@ -447,6 +447,9 @@ const paths = {
   rock_hit_ground: 'assets/audio/sfx/Rock_hit_ground.mp3',
   rock_kill_enemy:  'assets/audio/sfx/Rock_kill_enemy.mp3',
   thug_dies:       'assets/audio/sfx/Thug_dies.mp3',
+  // A GIANT'S, at the owner's word: what a Club or Boulder Giant says in place of
+  // `Thug_dies`, on the same kill — see `slain` on their defs in data/waves.js.
+  giant_dies:      'assets/audio/sfx/Giant_dies.mp3',
   soldier_dies:    'assets/audio/sfx/Soldier_dies.mp3',
   // A paladin's sword. His own blow rather than one of the three generic takes,
   // because a tier 4 squad should be audibly the one doing the fighting — and
@@ -627,6 +630,12 @@ const paths = {
   villager_intruders: 'assets/audio/villagers/Villager_enemy_say_get_rid_of_these_intruders_brothers.mp3',
   flag_waving:     'assets/audio/map/Flag_waving.mp3',
   bird_chirping:   'assets/audio/map/Bird_chirping.mp3',
+  // THE MUSIC, at the owner's word, in a folder of its own (assets/audio/music): the
+  // start page's, on the start page only (mapAudio in src/overview.js), and the boss
+  // fight's, from the boss entering the battle until he falls (src/main.js). Both
+  // loops, and both fetched only when first wanted — see LOOPED and MUSIC below.
+  start_music:     'assets/audio/music/Start_page_music.mp3',
+  boss_music:      'assets/audio/music/Boss_fight_music.mp3',
   // THE BOARDS' OWN SOUNDS, stages 1 to 5. Fire and river LOOP for as long as the
   // board is played (`ambience` on the level); the welding loops while stage 4's
   // smith has his pipe in the fire; things landing is one thud a landing.
@@ -1153,6 +1162,8 @@ export const CUE = {
   // men at the top is supposed to sound like.
   monkKill:     ['monk_kill_enemy'],
   meleeKill:    ['thug_dies'],
+  // The giants' own, in place of meleeKill's — `slain` on their defs.
+  giantDies:    ['giant_dies'],
   // A PALADIN finishing a man, split out of meleeKill for the same reason the rock
   // and the ball were split out of the arrow's: it is a different event to watch.
   // Every other melee kill in the game is a spearman, a pikeman or a knight and
@@ -1699,8 +1710,12 @@ function fetchClip(key) {
 const LOOPED = new Set([
   'bird_chirping', 'river_flowing', 'lake_water', 'dark_background', 'crows_cawing',
   'desert_wind', 'fountain_water', 'fire_crackling', 'fishing_reel', 'fish_cooking',
-  'steel_welding', 'marching', 'flag_waving'
+  'steel_welding', 'marching', 'flag_waving', 'start_music', 'boss_music'
 ]);
+// THE MUSIC fades in and out over MUSIC_FADE rather than LOOP_FADE: a march has to stop
+// on the flag going in, but a piece of music cut in a third of a second sounds broken.
+const MUSIC = new Set(['start_music', 'boss_music']);
+const MUSIC_FADE = 1.5;
 const RELEASE_AFTER = 30;
 const fetching = new Map();
 const wanted = new Map();
@@ -1710,6 +1725,12 @@ function wantClip(key) {
   fetching.set(key, fetchClip(key)
     .catch(() => console.warn('Missing or unreadable audio:', paths[key]))
     .finally(() => fetching.delete(key)));
+}
+// A LOOP FETCHED AHEAD OF ITS MOMENT, asked every frame the way setLoop is: the boss
+// music is six megabytes, and a board with a boss on it has it ready before he walks
+// on rather than starting it seconds after his entrance.
+export function keepLoop(key) {
+  if (ctx && LOOPED.has(key)) wantClip(key);
 }
 let sweptAt = 0;
 function sweepLoops() {
@@ -1919,8 +1940,9 @@ export function setLoop(key, on, level = 1, name = key) {
     try {
       live.g.gain.cancelScheduledValues(now);
       live.g.gain.setValueAtTime(live.g.gain.value, now);
-      live.g.gain.linearRampToValueAtTime(0, now + LOOP_FADE);
-      live.src.stop(now + LOOP_FADE);
+      const fade = MUSIC.has(live.key) ? MUSIC_FADE : LOOP_FADE;
+      live.g.gain.linearRampToValueAtTime(0, now + fade);
+      live.src.stop(now + fade);
     } catch { /* already ended */ }
     return;
   }
@@ -1942,7 +1964,7 @@ export function setLoop(key, on, level = 1, name = key) {
   g.gain.value = 0;
   src.connect(g).connect(amb);
   src.start(0, c.offset);
-  g.gain.linearRampToValueAtTime(c.gain * level, now + LOOP_FADE);
+  g.gain.linearRampToValueAtTime(c.gain * level, now + (MUSIC.has(key) ? MUSIC_FADE : LOOP_FADE));
 
   loops.set(name, { src, g, key });
 }

@@ -3,27 +3,23 @@
 The long pieces of music: whole tracks rather than the short clips in the
 other audio folders. Put them here as .mp3.
 
-## What goes here
+| File | Where it plays |
+|------|----------------|
+| `Start_page_music.mp3` | the start page, and only there. It starts with the player's first tap (a browser plays no sound before one) and fades out as Start is tapped and the world map's own sounds come in. |
+| `Boss_fight_music.mp3` | a boss fight: from the boss entering the battle (his entrance line) until he falls. Over the board's own background sounds and under the battle. |
 
-- **Trailer music.** For the trailer video only. The game never loads it, so it is
-  left out of the itch.io upload and costs players nothing to download.
-- **Boss music.** For the boss fights. It plays over the board in place of the
-  stage's own background sounds while a boss is on the road.
+Both loop for as long as they are wanted, fade in and out over 1.5 seconds, and
+ride the Ambience slider in the pause menu. Each is fetched only when it is
+first wanted, so neither slows the loading bar. Their levels: TITLE_MUSIC in
+src/overview.js and BOSS_MUSIC in src/main.js.
 
-## Names
-
-Name a file for what it is, in the same style as the other clips, e.g.
-Trailer_music.mp3, Boss_music.mp3, or Boss_music_Captain_Thug.mp3 if each boss is
-to have his own.
+The trailer music is not kept here: the game does not use it, so it would only
+make the itch.io upload bigger.
 
 ## Before uploading
 
-- **Boss music loops.** It plays over and over for as long as the fight lasts, so
-  the end should run into the start without a gap or a jump. Trim any silence at
-  either end.
-- **About 1 to 3 minutes** is plenty for a looping piece. Longer only makes the
-  game slower to load.
-- **MP3 at 128 to 192 kbps** keeps a 2 minute track around 2 to 3 MB.
-
-Nothing here plays in the game until it is wired up in src/audio.js. Say when a
-file is in and it will be added.
+- **Music that loops** plays over and over, so the end should run into the start
+  without a gap or a jump. Trim any silence at either end.
+- **About 1 to 3 minutes** is plenty for a looping piece.
+- **MP3 at 128 to 192 kbps** keeps a 3 minute track around 3 to 4 MB. The two
+  here are 256 kbps, about 6 MB each.

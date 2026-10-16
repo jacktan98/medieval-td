@@ -26,7 +26,7 @@ assets/audio/sfx/     Arrow_shot.mp3, Attack_1.mp3, Attack_2.mp3, Attack_3.mp3,
                       War_cry.mp3, Bomb_sound.mp3, Boulder_hit.mp3,
                       Dark_crow_dies.mp3, Wings_flap.mp3, Vanish_effect.mp3,
                       Fire_status.mp3, Fuse_lit.mp3, Club_swing.mp3, Artillery_fires.mp3,
-                      Thug_dies.mp3, Soldier_dies.mp3, Boss_fall_dead.mp3,
+                      Thug_dies.mp3, Giant_dies.mp3, Soldier_dies.mp3, Boss_fall_dead.mp3,
                       Dark_crow_caw.mp3
 
 assets/audio/map/     Bird_chirping.mp3, Flag_planted.mp3, Flag_waving.mp3, Rally_flag_planted.mp3,
@@ -88,8 +88,8 @@ assets/audio/enemies/ Thug_1.mp3 .. Thug_2.mp3
                       Dark_Priest_1.mp3 .. Dark_Priest_2.mp3
 ```
 
-`assets/audio/music/` holds the long pieces of music (trailer and boss music),
-described in its own README.
+`assets/audio/music/` holds the long pieces of music: Start_page_music.mp3 and
+Boss_fight_music.mp3, described in its own README.
 
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,

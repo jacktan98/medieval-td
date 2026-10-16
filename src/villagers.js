@@ -1554,6 +1554,8 @@ function musterRound(state, vp, m, dt) {
     // seconds later (`ready`, below).
     Object.assign(cap, { phase: 'ready', at: vp.t, idle: false });
     say(BOSS_BATTLE);
+    // And the boss music starts with his line (bossMusic in src/main.js).
+    state.bossFight = true;
   }
   if (cap.phase === 'ready' && lineDone(vp, cap) && vp.t - cap.doneAt >= m.after) {
     const v = state.villagers[m.captain], last = m.captainWay[m.captainWay.length - 1];
@@ -1917,6 +1919,8 @@ function balconyRound(state, vp, b, dt) {
       B.phase = 'speak'; B.at = vp.t;
       const lines = e.def.lines && e.def.lines.enters;
       if (lines) vp.say = { cue: lines, until: vp.t + 4 };
+      // And the boss music starts with his line (bossMusic in src/main.js).
+      state.bossFight = true;
     }
   } else if (B.phase === 'speak') {
     if (lineDone(vp, B) && vp.t - B.doneAt >= b.pause) { B.phase = 'indoor'; B.leg = 0; B.at = vp.t; }

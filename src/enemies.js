@@ -215,6 +215,11 @@ export function spawn(state, typeId, from = null) {
   // (NOT WHEN HE HAS ALREADY SPOKEN: stage 15's Captain says his lines at the camp
   // wall — walking in, and walking out — and steps onto the road quietly, `quiet`.)
   if (def.boss && def.lines && def.lines.enters && !(from && from.quiet)) bossSay(state.enemies[state.enemies.length - 1], def.lines.enters);
+  // AND HIS MUSIC STARTS, at the owner's word: "when boss starts entering battle".
+  // A boss who walks on quietly starts it where he says his line instead (stage 15's
+  // camp wall and stage 16's balcony, in src/villagers.js), and the one standing on
+  // the balcony all game is made through here quietly too.
+  if (def.boss && !(from && from.quiet)) state.bossFight = true;
   // A RALLY THUG SHOUTS AS HE WALKS ON, at the owner's word — on entering the field,
   // not on his banner first reaching someone, which on the late boards (he marches
   // last, behind the magic-users, and is the slowest thing on the road) hardly ever
@@ -1418,6 +1423,8 @@ export function updateEnemies(state, dt) {
       freeCrow(e);
       e.flock = null;
       begin(e, 'fall');
+      // The boss music fades as he goes down (bossMusic in src/main.js).
+      state.bossFight = false;
       return true;
     }
 
@@ -1519,6 +1526,9 @@ export function updateEnemies(state, dt) {
          // is a man killed by an assassin whichever hand did it, which is the same
          // reading that sends Deadeye's ball to the musket's line.
          : e.killedBy === 'assassin' || e.killedBy === 'knife' ? CUE.assassinKill
+         // A GIANT says his own in place of the generic one, at the owner's word —
+         // `slain` on his def; a thug and everyone else, Thug_dies.
+         : e.def.slain ? CUE[e.def.slain]
          : CUE.meleeKill);
       // Falls where it stood, facing whatever killed it rather than facing the
       // way it was walking — see dropCorpse. The fallback is its heading, and

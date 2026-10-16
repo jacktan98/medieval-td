@@ -1000,6 +1000,8 @@ export const enemyTypes = {
     spriteFaces: -1,
     dead: 'dead_giant',
     deadTrim: [117, 195, 278, 122],
+    // HIS OWN DEATH CRY in place of Thug_dies, at the owner's word (src/enemies.js).
+    slain: 'giantDies',
     deadPivot: [0.171, 0.783],
     // AND THEN 30 -> 25 WITH A SWEEP AND BACK TO 40 WITHOUT ONE, later and
     // separately — see `damage` below. What follows is the pass BEFORE those, kept
@@ -1113,6 +1115,8 @@ export const enemyTypes = {
     spriteFaces: -1,
     dead: 'dead_boulder_giant',
     deadTrim: [114, 196, 284, 121],
+    // HIS OWN DEATH CRY in place of Thug_dies, at the owner's word (src/enemies.js).
+    slain: 'giantDies',
     deadPivot: [0.158, 0.876],
     hp: 800,
     damageType: 'physical',
