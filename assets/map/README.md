@@ -791,8 +791,9 @@ hand:
   names dropped. **This is the one the game loads**, under the key `overview` in
   `src/assets.js`.
 - `Overview_Map_names.svg` — the names alone, in the colour they were drawn, on no
-  ground at all. The game draws it over the parchment, under the key
-  `overviewNames`.
+  ground at all. **Not loaded any more**: the game sets the names as text in
+  Lobster, at the owner's word (NAME_TEXT in `src/overview.js`), in the same
+  places. Kept as the source of where each name sits.
 
 Run the tool after every redraw of any layer:
 

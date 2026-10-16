@@ -6877,7 +6877,7 @@ function drawMapDoor(ctx, key, at, label) {
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  // IN LOBSTER, like the region names — a test, at the owner's word. See MAP_FONT
+  // IN LOBSTER, like the region names, at the owner's word. See MAP_FONT
   // in src/overview.js, which loads it; the system font stands in until it has.
   ctx.font = `17px ${MAP_TYPE}`;
   ctx.lineWidth = 4;

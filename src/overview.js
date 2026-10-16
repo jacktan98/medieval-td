@@ -28,6 +28,7 @@ import { STAGES, STAGE_COUNT, playable, FALLS } from './data/overview.js';
 import { levels } from './level.js';
 import { bestStars, unlockedStages, saveUnlocked, MAX_STARS } from './score.js';
 import { DIFFICULTIES } from './data/difficulty.js';
+import { MAX_SCALE } from './data/ui.js';
 // AMBIENT MOTION, and the only line that ties it to this file. See src/motion.js
 // for what it does and how to switch it off or take it out.
 import { drawMotion, drawWater, drawPulse, drawSplash, drawLeapingFish } from './motion.js';
@@ -1279,34 +1280,27 @@ function stillMap(ctx, tf, img) {
   return stillSheet;
 }
 
-// --- THE REGION NAMES, AS TEXT: a test ---------------------------------------
+// --- THE REGION NAMES, AS TEXT ------------------------------------------------
 //
-// The owner's ask: "let's test using the text font for encyclopedia and upgrades
-// for the town names. Let's remove Overview map layer 9 and use this font style to
-// replace them. I will see whether it is a good fit."
-//
-// So the artist's lettering (layer 9, pulled out to Overview_Map_names.svg) is no
-// longer loaded, and each name is set in the world map doors' label style — bold
-// system type in the UI's cream with a dark edge, see drawMapDoor in render.js —
-// centred where the artist's name sat. Everything downstream is unchanged: this
-// hands back an image like the one it replaces, and it goes through the same fog.
-//
-// TO GO BACK: set NAMES_AS_TEXT to false and restore `overviewNames` in assets.js.
-// The artist's files are still in assets/map.
-const NAMES_AS_TEXT = true;
+// Set in Lobster rather than drawn, at the owner's word — tried as a test and
+// confirmed: the artist's lettering (layer 9, pulled out to Overview_Map_names.svg,
+// which is kept as the source) is not loaded, and each name is set in the world
+// map doors' label style — the UI's cream with a dark edge, see drawMapDoor in
+// render.js — centred where the artist's name sat. It hands back an image as the
+// drawn layer did, and goes through the same fog.
 // Each name's centre, measured off the artist's layer 9 (half its 1920 x 1080).
 const NAME_TEXT = [
   ['Oakhaven', 119, 120], ['Winchester', 378, 149], ['Serene Peak', 729, 83],
   ['Dawnford', 657, 238], ['Ironforge', 804, 302], ['Fernshadow', 488, 400],
   ['Sandshroud', 216, 449], ['Dark Hollow', 713, 416]
 ];
-// LOBSTER, as a second test at the owner's word: "can you use lobster font style for
-// the text in overview map. Want to see how it looks like". It has one weight, so no
-// bold — its strokes are heavy enough already. The system font stands in until the
+// LOBSTER, at the owner's word. It has one weight, so no bold — its strokes are heavy
+// enough already. The system font stands in until the
 // file has arrived, and the names are redrawn the moment it does.
 const NAME_FONT = '20px Lobster, system-ui, sans-serif';
-// Rasterised at twice the board, so it stays sharp on the glass the map is drawn to.
-const NAME_K = 2;
+// Rasterised at the canvas's largest scale (MAX_SCALE in data/ui.js), so it stays
+// sharp on the sharpest glass the map is drawn to.
+const NAME_K = MAX_SCALE;
 let nameCanvas = null;
 // Bumped when the names have to be drawn again — the font arriving — and part of
 // every cache key the names go into, so nothing keeps the old lettering.
@@ -1332,7 +1326,6 @@ if (typeof FontFace !== 'undefined' && typeof document !== 'undefined' && docume
 } else fontSettled(false);
 
 function namesArt() {
-  if (!NAMES_AS_TEXT) return art.overviewNames || null;
   if (nameCanvas || typeof document === 'undefined') return nameCanvas;
   nameCanvas = document.createElement('canvas');
   nameCanvas.width = 960 * NAME_K;

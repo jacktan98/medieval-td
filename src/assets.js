@@ -1014,9 +1014,9 @@ export const paths = {
   start_4:     'assets/start/Start_Page_4.svg',
   start_name:  'assets/start/Start_Page_Name.svg'
   // THE REGION NAMES used to be the second image here — `overviewNames:
-  // 'assets/map/Overview_Map_names.svg'`, the artist's lettering from layer 9. For
-  // now they are set as text instead, at the owner's word, as a test: see
-  // NAMES_AS_TEXT in src/overview.js, which says how to put them back.
+  // 'assets/map/Overview_Map_names.svg'`, the artist's lettering from layer 9. They
+  // are set as text in Lobster instead, at the owner's word: see NAME_TEXT in
+  // src/overview.js.
 };
 
 // Art the game is wired for but does not have yet. A miss here is expected, so
