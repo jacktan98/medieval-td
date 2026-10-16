@@ -87,6 +87,10 @@ assets/audio/enemies/ Thug_1.mp3 .. Thug_2.mp3
                       Plague_Doctor_1.mp3 .. Plague_Doctor_2.mp3
                       Dark_Priest_1.mp3 .. Dark_Priest_2.mp3
 ```
+
+`assets/audio/music/` holds the long pieces of music (trailer and boss music),
+described in its own README.
+
                       Captain_Thug_enters.mp3, Captain_Thug_pause.mp3,
                       Captain_Thug_heal.mp3, Captain_Thug_kill_soldier.mp3,
                       Captain_Thug_before_dying.mp3,
