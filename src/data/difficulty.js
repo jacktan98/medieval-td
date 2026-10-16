@@ -68,11 +68,12 @@ export const DIFFICULTIES = [
     // Normal is picked (see difficultyTip in src/render.js).
     gold: 1.2,
     bounty: 1.2,
-    // AND THE BOSSES TAKE 30% MORE of every blow, at the owner's word (it was 20%):
-    // whatever lands after his armour — a tower's shot, a soldier's swing, a burn — is
-    // 1.3 times as much on Normal (20 becomes 26). Their own numbers, and the
+    // AND THE BOSSES TAKE 20% MORE of every blow, at the owner's word (20%, then 30%,
+    // and back to 20% once Normal's gold went up to a fifth more): whatever lands after
+    // his armour — a tower's shot, a soldier's swing, a burn — is 1.2 times as much on
+    // Normal (20 becomes 24). Their own numbers, and the
     // encyclopedia's, stay as written. See `frail` on an enemy in src/enemies.js.
-    bossTaken: 1.3
+    bossTaken: 1.2
   },
   {
     id: 'hard',
