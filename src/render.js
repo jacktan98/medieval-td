@@ -8631,15 +8631,17 @@ function drawPauseRow(ctx, state) {
 
 // --- THE SOUND SETTINGS, under Restart and Quit -------------------------------
 //
-// At the owner's word: two sliders on a dark plate, Ambience and Effects — see the
-// note above SOUND_KINDS in audio.js for which sound is which. Tapped anywhere on a
+// At the owner's word: two sliders on a dark plate, Music and Effects — see the
+// note above SOUND_KINDS in audio.js for which sound is which. (Music is the kind
+// stored as 'ambience': the music and the background loops ride it together, so it
+// was renamed on screen and nowhere else, and a saved volume carries over.) Tapped anywhere on a
 // track it jumps there, and dragged it follows the finger (see input.js). Kept
 // between visits, by audio.js.
 const SOUND_PANEL = { x: 330, y: 150, w: 300, h: 92 };
 const SOUND_TRACK_X = SOUND_PANEL.x + 108;
 const SOUND_TRACK_W = SOUND_PANEL.w - 108 - 26;
 const SOUND_ROWS = [
-  { kind: 'ambience', label: 'Ambience', y: SOUND_PANEL.y + 28 },
+  { kind: 'ambience', label: 'Music', y: SOUND_PANEL.y + 28 },
   { kind: 'effects', label: 'Effects', y: SOUND_PANEL.y + 64 }
 ];
 const SOUND_KNOB_R = 9;

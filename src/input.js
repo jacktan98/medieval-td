@@ -586,6 +586,13 @@ const ARM_WINDOW = 3000;
 // its buttons is dead. Same for a rally point half-placed — the board is armed
 // for a tap that will now be ignored. Both are cleared, so a paused game shows
 // nothing that invites an action it will refuse.
+// THE GAME PAUSES ITSELF when the player cannot be playing it: the tab hidden, the
+// phone locked, or the phone turned upright (see the hooks in main.js). Only a battle
+// in progress, and only into a pause — coming back, the player unpauses it.
+export function autoPause(state) {
+  if (state.started && !state.result && !state.paused) togglePause(state);
+}
+
 function togglePause(state) {
   state.paused = !state.paused;
   // A half-pressed Restart or Quit never survives the pause it was pressed in, in

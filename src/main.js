@@ -1,5 +1,5 @@
 import { loadArt, ensureBoard, boardReady, prefetchBoards, versioned } from './assets.js';
-import { loadAudio, fanfare, setLoop, keepLoop, chime, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
+import { loadAudio, fanfare, setLoop, keepLoop, chime, sleepAudio, unlock, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
 import { level, levels } from './level.js';
 import { STAGES } from './data/overview.js';
 import { openingDelay } from './data/waves.js';
@@ -22,7 +22,7 @@ import { updateImpacts } from './impacts.js';
 import { updateSmoke } from './smoke.js';
 import { updateWaves } from './waves.js';
 import { draw, tierMarks, setDeviceScale, stagePhoto } from './render.js';
-import { attachInput } from './input.js';
+import { attachInput, autoPause } from './input.js';
 import { validate, selectionInfo } from './select.js';
 import { noticeFoes, noticeTowers } from './newfoe.js';
 import { makeTutorial, updateTutorial, makeMapTour, updateMapTour } from './tutorial.js';
@@ -394,6 +394,19 @@ if (REPLAY) {
   attachInput(canvas, state, newGame);
   // A game left by closing the page is still worth watching, up to where it was left.
   addEventListener('pagehide', () => { if (state.started && !state.result) stopRecording(state, 'left'); });
+  // AWAY FROM THE GAME — another tab, the window minimised, the phone locked: the
+  // battle pauses, at the owner's word, so nobody comes back to a lost stage, and the
+  // sound sleeps until the page is back. See autoPause in src/input.js.
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { autoPause(state); sleepAudio(); } else unlock();
+  });
+  // AND A PHONE TURNED UPRIGHT, which covers the board with the note asking for it to
+  // be turned back (#turn in index.html): the battle pauses under the note.
+  if (typeof matchMedia === 'function') {
+    const upright = matchMedia('(orientation: portrait) and (pointer: coarse)');
+    const check = () => { if (upright.matches) autoPause(state); };
+    if (upright.addEventListener) upright.addEventListener('change', check);
+  }
 }
 // A VISIT, into the player log: phone or mouse, and the screen it is played on.
 track('visit', { ver: gameVersion(), touch: typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches,

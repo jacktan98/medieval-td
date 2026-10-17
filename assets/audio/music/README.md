@@ -9,7 +9,7 @@ other audio folders. Put them here as .mp3.
 | `Boss_fight_music.mp3` | a boss fight: from the boss entering the battle (his entrance line) until he falls. Over the board's own background sounds and under the battle. |
 
 Both loop for as long as they are wanted, fade in and out over 1.5 seconds, and
-ride the Ambience slider in the pause menu. Each is fetched only when it is
+ride the Music slider in the pause menu (with the background sounds). Each is fetched only when it is
 first wanted, so neither slows the loading bar. Their levels: TITLE_MUSIC in
 src/overview.js and BOSS_MUSIC in src/main.js.
 

@@ -63,10 +63,48 @@
     width: min(100dvw, 177.78dvh);
     aspect-ratio: 16 / 9;
   }
+  /* TURN THE PHONE SIDEWAYS, at the owner's word: a phone held upright shows the
+     board as a strip across the middle, too small to tap. Only on a touch screen
+     held upright — a narrow desktop window is not a phone — and over everything,
+     with a phone drawn turning. The battle pauses under it (src/main.js). In the
+     game's own colours and Lobster, which src/overview.js loads for the page. */
+  #turn {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: #23201c;
+    color: #FFEFD4;
+    font-family: Lobster, Georgia, serif;
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    padding: 0 32px;
+  }
+  @media (orientation: portrait) and (pointer: coarse) {
+    #turn { display: flex; }
+  }
+  #turn svg { width: 96px; height: 96px; animation: turn 2.4s ease-in-out infinite; }
+  #turn p { margin: 0; font-size: 30px; line-height: 1.25; text-shadow: 0 2px 0 #0e0c0a; }
+  #turn small { font-size: 19px; opacity: 0.75; }
+  @keyframes turn {
+    0%, 20% { transform: rotate(0deg); }
+    45%, 75% { transform: rotate(-90deg); }
+    100% { transform: rotate(0deg); }
+  }
 </style>
 </head>
 <body>
   <div id="wrap"><canvas id="game" width="960" height="540"></canvas></div>
+  <div id="turn">
+    <svg viewBox="0 0 96 96" aria-hidden="true">
+      <rect x="30" y="10" width="36" height="76" rx="7" fill="none" stroke="#FFEFD4" stroke-width="5"/>
+      <line x1="42" y1="76" x2="54" y2="76" stroke="#FFEFD4" stroke-width="5" stroke-linecap="round"/>
+    </svg>
+    <p>Turn your phone sideways to play<br><small>The game is played in landscape</small></p>
+  </div>
 
   <!-- Cache busting. GitHub Pages serves static files with max-age=600, and a
        ?v on main.js alone never helped: the modules it imports keep their own

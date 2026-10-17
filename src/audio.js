@@ -1551,10 +1551,10 @@ let busB = null;
 
 // --- THE PLAYER'S TWO VOLUMES -------------------------------------------------
 //
-// Set from the pause menu, at the owner's word, and kept between visits. There is
-// no music in the game, so the two are:
+// Set from the pause menu, at the owner's word, and kept between visits. The two are:
 //
-//   AMBIENCE — every LOOP: a board's birds, river, wind, fire and fountain, the
+//   AMBIENCE — shown as MUSIC on the slider, at the owner's word: the start page's
+//              and the boss fight's music, and every other LOOP: a board's birds, river, wind, fire and fountain, the
 //              villagers' welding, reeling and sizzling, and the world map's birds,
 //              march and flag. Anything that goes on for as long as a situation does.
 //              AND THE MAP'S ONE-OFF NOISES, at the owner's word — see MAP_ONE_OFFS.
@@ -1841,6 +1841,14 @@ function report() {
 // suspend the context again, and without this the game would come back mute.
 export function unlock() {
   if (ctx && ctx.state !== 'running') ctx.resume().catch(() => {});
+}
+
+// QUIET WHILE NOBODY IS LOOKING: a browser keeps a hidden tab's sound playing, so the
+// music and the board's birds went on under whatever the player had switched to. The
+// whole context is suspended — every loop and clip held where it is — and woken
+// again (`unlock` above) when the page is back. See the visibility hook in main.js.
+export function sleepAudio() {
+  if (ctx && ctx.state === 'running') ctx.suspend().catch(() => {});
 }
 
 // A REPLY THAT MUST BE HEARD — buying a star upgrade, at the owner's word: "whenever
