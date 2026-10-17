@@ -61,6 +61,7 @@ import { forgetIntro } from './tutorial.js';
 import { forgetEnding, startEnding } from './ending.js';
 import { resetUpgrades } from './upgrades.js';
 import { clearAchievements } from './achievements.js';
+import { clearStats } from './stats.js';
 import { openAchievements } from './achievepage.js';
 import { STAGES, STAGE_COUNT } from './data/overview.js';
 // The difficulties themselves, and the two rules that turn a tuned Hard number
@@ -1487,6 +1488,8 @@ export function tapAdmin(state, x, y, restart) {
     resetUpgrades();
     // AND NOTHING IS EARNED. See src/achievements.js.
     clearAchievements();
+    // AND THE TOTALS ARE BACK AT NOTHING. See src/stats.js.
+    clearStats();
     state.unlocked = 0;
     state.stage = null;
     state.pendingReveal = null;

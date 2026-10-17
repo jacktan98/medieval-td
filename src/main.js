@@ -37,6 +37,7 @@ import { useLevel } from './level.js';
 import { soundLevel, setSoundLevel } from './audio.js';
 import { canvasScale } from './data/ui.js';
 import { countAchievements, checkRecords, flushAchievements, toasts } from './achievements.js';
+import { stat, flushStats } from './stats.js';
 
 // HOW LONG AFTER A STAGE STARTS ITS NEW TOWERS ARE ANNOUNCED. Game seconds.
 const TOWER_ALERT_DELAY = 1;
@@ -325,7 +326,9 @@ function newGame() {
     // THE BOSS FIGHT IS ON, from the moment a boss enters the battle until he falls:
     // what the boss music plays for (bossMusic below). Set where his entrance line is
     // said, in src/enemies.js and src/villagers.js; cleared as his fall begins.
-    bossFight: false
+    bossFight: false,
+    // This battle's end, counted into the player's totals once. See src/stats.js.
+    resultCounted: false
   });
 
   // AND ANY PREBUILT BARRACKS GETS ITS SQUAD, which cannot happen inside the
@@ -638,6 +641,15 @@ function frame(now) {
   if (!state.started && !state.book && !state.upgrades && !state.achievements) updateEnding(state, real);
   // The achievements' counts, saved now and then rather than every frame.
   flushAchievements();
+  // THE PLAYER'S TOTALS (src/stats.js): time in battle, on the real clock and not
+  // while paused, and each battle's end counted once — the summary stays up for many
+  // frames.
+  if (state.started && !state.paused && !state.result) stat('seconds', real);
+  if (state.result && !state.resultCounted) {
+    state.resultCounted = true;
+    stat(state.result === 'won' ? 'won' : 'lost');
+  }
+  flushStats();
   // AND THE NEXT POP-UP COMES IN WITH ITS SOUND — but not over the result's stars:
   // an achievement a stage's stars earned waits until the last one has rung, and a
   // second beat after it. render.js draws only a pop-up that has been let in here.

@@ -53,14 +53,15 @@ import { PIN, ADMIN_BTN, ADMIN_ON, PANEL as ADMIN_PANEL, TITLE_Y as ADMIN_TITLE_
          roadRows, reachedBtn, starStepper, roadStars, canReach } from './admin.js';
 import { enemyTypes, FOE_NOTES } from './data/waves.js';
 import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
-import { rungState, canBuy, starsLeft, boughtIn } from './upgrades.js';
+import { rungState, canBuy, starsLeft, boughtIn, starsEarned } from './upgrades.js';
+import { stats, towersBuilt, favouriteTower, playTime } from './stats.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
 import { drawTutorial, drawMapTour, verbs, showsSkip } from './tutorial.js';
 import { drawTitle } from './titlepage.js';
 import { ACHIEVEMENTS, ACHIEVEMENTS_TITLE, UNLOCKED_TITLE } from './data/achievements.js';
 import { earned, earnedCount, progressOf, toasts, byId } from './achievements.js';
-import { ACHIEVE_ICON, ACH_SHEET, ACH_PANEL, ACH_DONE, ACH_COUNT, achBox, shownAchievement } from './achievepage.js';
+import { ACHIEVE_ICON, ACH_SHEET, ACH_PANEL, ACH_DONE, ACH_COUNT, ACH_STATS, achBox, shownAchievement } from './achievepage.js';
 import { drawEnding } from './ending.js';
 import { alertRects, medallionOf, MEDALLION_FEET, ALERT_BAR_H, alertFigure, FOE_CLOSE, FOE_STATS, towerNamed } from './newfoe.js';
 import { STATUS, STATUS_ORDER, STATUS_H, STATUS_GAP } from './data/status.js';
@@ -7333,7 +7334,17 @@ function drawAchievements(ctx, state) {
   ctx.textBaseline = 'middle';
   ctx.fillStyle = UP_INK;
   ctx.font = `28px ${MAP_TYPE}`;
-  ctx.fillText(ACHIEVEMENTS_TITLE, 480, UP_TITLE_Y);
+  ctx.fillText(state.achPage ? 'Stats' : ACHIEVEMENTS_TITLE, 480, UP_TITLE_Y);
+
+  // PAGE 2, THE PLAYER'S TOTALS, behind the Stats button. See src/stats.js.
+  bookButton(ctx, ACH_STATS, state.achPage ? 'Achievements' : 'Stats', 0, `20px ${MAP_TYPE}`, UI_INK);
+  if (state.achPage) {
+    drawStatsPage(ctx);
+    bookButton(ctx, ACH_DONE, 'Done', 0, `20px ${MAP_TYPE}`, UI_INK);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    return;
+  }
 
   // HOW MANY ARE EARNED, top right, on the plate the Upgrades screen keeps its stars
   // on: the trophy and "3/20", sized to what it holds.
@@ -7396,6 +7407,58 @@ function drawAchievements(ctx, state) {
 
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
+}
+
+// THE STATS PAGE: two cards on the sheet, the player's battles on the left and their
+// army on the right, a total to a row — the name on the left, the figure on the right,
+// a faint rule under each. The cards are the achievement panel's paper.
+const STAT_CARDS = [
+  { x: 36, title: 'Battles', rows: s => [
+    ['Stages won', grouped(s.won)],
+    ['Stages lost', grouped(s.lost)],
+    ['Stars earned', `${starsEarned()} / ${STAGES.filter(st => st.level !== null).length * 3}`],
+    ['Bosses defeated', grouped(s.bosses)],
+    ['Lives lost', grouped(s.lives)],
+    ['Time in battle', playTime(s.seconds)]
+  ] },
+  { x: 492, title: 'Army', rows: s => [
+    ['Enemies defeated', grouped(s.kills)],
+    ['Gold earned', grouped(s.goldEarned)],
+    ['Gold spent', grouped(s.goldSpent)],
+    ['Towers built', grouped(towersBuilt())],
+    ['Favorite tower', favouriteTower() || 'None yet'],
+    ['Villagers greeted', grouped(s.villagers)]
+  ] }
+];
+const STAT_CARD = { y: 84, w: 432, h: 370, rowY: 92, rowStep: 46, pad: 30 };
+function drawStatsPage(ctx) {
+  const s = stats(), c = STAT_CARD;
+  ctx.textBaseline = 'middle';
+  STAT_CARDS.forEach((card, k) => {
+    paperRect(ctx, card.x, c.y, c.w, c.h, 31 + k * 7, CARD_TONE, CARD_TEAR, CARD_EDGE_INK, 1.4, true);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = UP_NAME;
+    ctx.font = `25px ${MAP_TYPE}`;
+    ctx.fillText(card.title, card.x + c.w / 2, c.y + 40);
+    card.rows(s).forEach(([label, value], i) => {
+      const y = c.y + c.rowY + i * c.rowStep;
+      ctx.fillStyle = UP_INK;
+      ctx.font = `18px ${MAP_TYPE}`;
+      ctx.textAlign = 'left';
+      ctx.fillText(label, card.x + c.pad, y);
+      ctx.font = `20px ${MAP_TYPE}`;
+      ctx.textAlign = 'right';
+      ctx.fillText(value, card.x + c.w - c.pad, y);
+      if (i < 5) {
+        ctx.strokeStyle = 'rgba(58,48,38,0.18)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(card.x + c.pad, y + c.rowStep / 2);
+        ctx.lineTo(card.x + c.w - c.pad, y + c.rowStep / 2);
+        ctx.stroke();
+      }
+    });
+  });
 }
 
 // The panel down the right: the name, whether it is earned, what it asks, and how

@@ -21,6 +21,10 @@ export const ACH_SHEET = UP_SHEET;
 export const ACH_PANEL = UP_PANEL;
 export const ACH_DONE = UP_DONE;
 export const ACH_R = UP_R;
+// PAGE 2, THE PLAYER'S TOTALS, at the owner's word (see src/stats.js): behind a Stats
+// button where the Upgrades screen keeps its Reset, which reads Achievements on page 2
+// and goes back. `state.achPage` is 0 or 1.
+export const ACH_STATS = { x: UP_DONE.x - 20 - 170, y: UP_DONE.y, w: 170, h: UP_DONE.h };
 // The earned count's slot, where the Upgrades screen keeps its stars.
 export const ACH_COUNT = { x: 852, y: 30, w: 78, h: 38 };
 
@@ -60,6 +64,7 @@ export function openAchievements(state, all = false) {
   state.achAll = all;
   state.achPick = 0;
   state.achHover = null;
+  state.achPage = 0;
 }
 
 export function closeAchievements(state) {
@@ -71,11 +76,14 @@ export function closeAchievements(state) {
 // Every tap while the screen is up comes here and nowhere else: it covers the board.
 export function tapAchievements(state, x, y) {
   if (inside(ACH_DONE, x, y)) { closeAchievements(state); return 'tap'; }
+  // Turning to the other page sounds as the book's pages do.
+  if (inside(ACH_STATS, x, y)) { state.achPage = state.achPage ? 0 : 1; state.achHover = null; return 'flip'; }
+  if (state.achPage) return null;
   const i = achAt(x, y);
   if (i !== null) { state.achPick = i; return 'tap'; }
   return null;
 }
 
 export function hoverAchievements(state, x, y) {
-  state.achHover = achAt(x, y);
+  state.achHover = state.achPage ? null : achAt(x, y);
 }

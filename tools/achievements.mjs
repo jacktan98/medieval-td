@@ -227,7 +227,7 @@ A.countAchievements(false);
 const src = f => readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
 const hooks = [
   ['enemies.js', /st\.id === 'burnt' && st\.by === 'cannonball'/, 'Fiery Shot\'s burn damage'],
-  ['enemies.js', /countKill\(e\);/, 'Knife Throw, Deadeye and Heavy Bolt kills'],
+  ['enemies.js', /countKill\(e[,)]/, 'Knife Throw, Deadeye and Heavy Bolt kills'],
   ['units.js', /note\('holylight'\)/, 'a Holy Light finished'],
   ['input.js', /noteVillagerTap\(level\.id/, 'a villager tapped'],
   ['input.js', /noteTier4\(state, next\)/, 'a tier 4 tower built'],

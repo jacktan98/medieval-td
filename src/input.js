@@ -22,6 +22,7 @@ import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, sk
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { hitAchievementsButton, openAchievements, tapAchievements, hoverAchievements } from './achievepage.js';
 import { noteVillagerTap, noteTier4, note } from './achievements.js';
+import { stat, statTower } from './stats.js';
 import { AIM_MODES } from './data/towers.js';
 import { DIFFICULTIES } from './data/difficulty.js';
 import { saveDifficulty, summaryReady } from './score.js';
@@ -515,6 +516,7 @@ export function tap(state, x, y, restart) {
     greetVillager(state, state.selected.ref);
     // Counted for Friend of the People, and on Dark Hollow for Know Thy Enemy.
     noteVillagerTap(level.id, state.selected.ref);
+    stat('villagers');
   }
   // Picking somebody up is an action and so is putting them down; tapping bare
   // ground twice is not.
@@ -656,6 +658,9 @@ function run(state, item) {
   if (item.act === 'build') {
     const def = item.family.tiers[0];
     state.gold -= def.cost;
+    // The player's totals: gold spent, and a tower of this family. See src/stats.js.
+    stat('goldSpent', def.cost);
+    statTower(item.family.id);
     // THE OBJECT ITSELF IS BUILT IN src/towers.js, because this is no longer the
     // only place a tower comes from: stage 2 opens with one already standing. Two
     // copies of a thirty-field literal do not fail when they drift, they behave
@@ -687,6 +692,7 @@ function run(state, item) {
     // pressable, so this never runs without one.
     const next = item.to;
     state.gold -= next.cost;
+    stat('goldSpent', next.cost);
     t.def = next;
     t.spent += next.cost;
     // For Grand Arsenal: every tier 4 tower in one stage. See src/achievements.js.
@@ -762,6 +768,7 @@ function run(state, item) {
     if (['wrath', 'fortitude'].includes(item.ability.id) && t.abilities.includes('wrath') &&
         t.abilities.includes('fortitude')) note('blessing');
     state.gold -= item.cost;
+    stat('goldSpent', item.cost);
     t.spent += item.cost;
     item.owned = true;
     item.available = false;

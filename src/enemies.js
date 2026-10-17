@@ -19,6 +19,7 @@ import { track, where } from './analytics.js';
 import { rand } from './rng.js';
 import { DIFFICULTIES, bountyOf } from './data/difficulty.js';
 import { note } from './achievements.js';
+import { stat } from './stats.js';
 
 // Which road, and which side of it. Two decisions made once, on the way in,
 // and then kept for the figure's whole life.
@@ -867,9 +868,14 @@ function turnTo(e, x) {
 // both of which are the ballista's `bolt`, told from a plain one by `killedWith`.
 // See src/achievements.js.
 const KILL_COUNTS = { knife: 'knife', deadeye: 'deadeye' };
-export const countKill = e => {
+// AND THE PLAYER'S TOTALS: one more enemy defeated, the gold it paid, and a boss
+// among them. See src/stats.js.
+export const countKill = (e, bounty = 0) => {
   if (KILL_COUNTS[e.killedBy]) note(KILL_COUNTS[e.killedBy]);
   else if (e.killedBy === 'bolt' && e.killedWith === 'heavybolt') note('heavykill');
+  stat('kills');
+  stat('goldEarned', bounty);
+  if (e.def && e.def.boss) stat('bosses');
 };
 
 export function updateEnemies(state, dt) {
@@ -1353,7 +1359,7 @@ export function updateEnemies(state, dt) {
     // the stall clock could each disagree about. Nothing downstream has to learn
     // what a boss is; the keep simply falls.
     if (e.def.ends) { state.lives = 0; state.bossEscaped = e.def.name; }
-    else state.lives -= e.def.leak;
+    else { state.lives -= e.def.leak; stat('lives', e.def.leak); }
     // INTO THE PLAYER LOG: what got through, and where.
     track('leak', { ...where(state), enemy: e.def.name, lost: e.def.ends ? 'all' : e.def.leak });
   }
@@ -1405,9 +1411,10 @@ export function updateEnemies(state, dt) {
     }
 
     if (e.hp <= 0 && e.def.finale && !downed(e)) {
-      state.gold += bountyOf(e.def, DIFFICULTIES[state.difficultyIndex ?? -1]);
+      const bounty = bountyOf(e.def, DIFFICULTIES[state.difficultyIndex ?? -1]);
+      state.gold += bounty;
       state.slain = (state.slain || 0) + 1;   // for the villagers — see src/villagers.js
-      countKill(e);
+      countKill(e, bounty);
       // At the BIRD for a crow — he dies in the air — and on the ground for the rest.
       state.hits.push({ x: e.x, y: e.y - airLift(e), life: 0.25 });
       // NO KILL LINE. Every other death in this game answers with a cry keyed to
@@ -1462,9 +1469,10 @@ export function updateEnemies(state, dt) {
     }
 
     if (e.hp <= 0) {
-      state.gold += bountyOf(e.def, DIFFICULTIES[state.difficultyIndex ?? -1]);
+      const bounty = bountyOf(e.def, DIFFICULTIES[state.difficultyIndex ?? -1]);
+      state.gold += bounty;
       state.slain = (state.slain || 0) + 1;   // for the villagers — see src/villagers.js
-      countKill(e);
+      countKill(e, bounty);
       state.hits.push({ x: e.x, y: e.y, life: 0.25 });
       // A kill sounds like whatever landed the last blow, and the two are
       // different sounds because they are different events to watch: an arrow
