@@ -53,8 +53,9 @@ usable button rather than a blank disc.
 | `Aim_Near_Exit_Icon.png` | `aim_exit`, the standing order | 30 box |
 | `Aim_Most_Health_Icon.png` | `aim_tough`     | 30 box       |
 | `Aim_Ranged_Enemies_Icon.png` | `aim_ranged` | 30 box       |
-| `Favicon.png`            | the browser tab icon: the shield, with its arrow, from the start page's name | 64 x 64, and read at 16 |
-| `Apple_Touch_Icon.png`   | the iPhone home screen icon: the start page's name over its scene | 180 x 180, opaque |
+| `App_Icon.svg`           | the artist's app icon, the shield and its two arrows: the source of the two below, not loaded by the game | 512 square, drawn off centre — the two are cut from the drawing itself |
+| `Favicon.png`            | the browser tab icon: `App_Icon.svg` on a cream tile with rounded corners | 64 x 64, and read at 16 |
+| `Apple_Touch_Icon.png`   | the iPhone home screen icon: `App_Icon.svg` on cream, edge to edge | 180 x 180, opaque |
 | `High_Altar_Holy_Wrath.png`       | the badge over every tower it buffs   | 20 tall |
 | `High_Altar_Divine_Fortitude.png` | the badge over every barracks it buffs | 20 tall |
 
@@ -64,13 +65,11 @@ usable button rather than a blank disc.
 every browser that shows it will shrink it: 16px on a tab, 32 on a bookmark bar.
 That is a smaller box than anything else in this project has to survive.
 
-IT IS THE SHIELD FROM THE START PAGE'S NAME now, at the owner's word ("use the start
-page name as the icon"): the whole name, arrow to torch, is far too wide to read in a
-16px square, so the tab carries the one part of it that is a bold shape on its own —
-the shield, cut from `assets/start/Start_Page_Name.svg` with the arrow through it and
-its own dark edge and shadow. (It was the barracks' crossed swords on
-`Button_Plate_Icon.png`, which held its shape on white and dark tabs by the plate; the
-shield holds it by its black edge.)
+IT IS THE ARTIST'S APP ICON now, `App_Icon.svg` — the shield with two arrows in it —
+cut from its sheet and set on a CREAM TILE (#FFEFD4, the game's cream), at the owner's
+word: the cream holds the black-edged drawing apart from a dark tab and a white one
+alike, the job the button plate under the crossed swords used to do. Redraw
+`App_Icon.svg` and ask for the two icons to be made from it again.
 
 **If you replace it, the test is the only one that matters here: shrink your
 drawing to 16 x 16 and look at it.** Every candidate in this folder was tried
@@ -100,10 +99,9 @@ them would have spoiled the favicon if it had been reused:
 - **It must be opaque, edge to edge.** iOS composites transparency onto black
   and then applies its own rounded mask, so the favicon's cream disc on a clear
   ground would arrive as a disc in a black box. This one fills the square with
-  the start page's own scene — sky, mountains and road — with the start page's
-  name over it, at the owner's word: at 180 the whole name can be read.
-- **The corners are cut off.** iOS rounds them at about 22%, so the name sits
-  12 px in from each side and its sword and torch stay inside the curve.
+  the game's cream, `#FFEFD4`, with the app icon in the middle, at the owner's word.
+- **The corners are cut off.** iOS rounds them at about 22%, so the drawing sits
+  inside 136 px of the 180 and its arrowheads stay clear of the curve.
 
 180 x 180 is the largest size iOS asks for and it scales the rest itself, so one
 file is enough. `node tools/check-modules.mjs` checks that both icons are wired
