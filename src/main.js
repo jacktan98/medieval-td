@@ -806,7 +806,7 @@ const showWords = () => { if (loadingWords) return; loadingWords = true; if (!ga
 // its 1920 x 1080 sheet, its shadow included. Until it has arrived the screen is the
 // bar alone; if it never does, the words stand in.
 const NAME_SRC = 'assets/start/Start_Page_Name.svg';
-const NAME_CROP = { x: 470, y: 106, w: 922, h: 398 };
+const NAME_CROP = { x: 470, y: 126, w: 922, h: 378 };
 const NAME_W = 440;
 let loadingName = null, nameFailed = false;
 {
