@@ -17,7 +17,7 @@ export const TALLY_TITLE = 'Your campaign';
 export const CREDITS = [
   'Medieval TD',
   '',
-  'Created by Jack Tan',
+  'Created by NoobStickz',
   '',
   'Thank you for playing!'
 ];

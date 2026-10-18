@@ -80,7 +80,9 @@ check(!!ASSET_URLS.icon_achievements && existsSync(ASSET_URLS.icon_achievements)
 console.log('\nThe screen and its door\n');
 const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 check(!overlap(ACHIEVE_BTN, UPGRADES_BTN) && !overlap(ACHIEVE_BTN, BOOK_ICON_HIT), 'the trophy\'s tap box is clear of the hammer and the book');
-check(ACHIEVE_BTN.x + ACHIEVE_BTN.w <= UPGRADES_BTN.x, 'and stands left of the hammer');
+// RIGHT OF THE HAMMER, the pair centred on x 480 at the owner's word.
+check(UPGRADES_BTN.x + UPGRADES_BTN.w <= ACHIEVE_BTN.x, 'and stands right of the hammer');
+check(UPGRADES_BTN.x + UPGRADES_BTN.w < 480 && ACHIEVE_BTN.x > 480, 'the two either side of the middle');
 check(hitAchievementsButton(ACHIEVE_BTN.x + 5, ACHIEVE_BTN.y + 5), 'the trophy answers a tap');
 check(ACHIEVEMENTS.every((_, i) => achAt(achBox(i).cx, achBox(i).cy) === i), 'every button answers a tap on itself');
 {

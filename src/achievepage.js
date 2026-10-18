@@ -11,11 +11,11 @@
 import { ACHIEVEMENTS } from './data/achievements.js';
 import { UP_SHEET, UP_PANEL, UP_DONE, UP_R } from './upgradepage.js';
 
-// THE WORLD MAP'S WAY IN: the artist's trophy, in the forest left of the hammer,
-// with "Achievements" under it. ACHIEVE_BTN is the whole of the trophy and its label,
-// for the tap.
-export const ACHIEVE_ICON = { cx: 362, foot: 492 };
-export const ACHIEVE_BTN = { x: 306, y: 428, w: 112, h: 94 };
+// THE WORLD MAP'S WAY IN: the artist's trophy, right of the hammer at the bottom
+// middle, with "Achievements" under it — see UPGRADES_ICON for the pair's spacing.
+// ACHIEVE_BTN is the whole of the trophy and its label, for the tap.
+export const ACHIEVE_ICON = { cx: 550, foot: 492 };
+export const ACHIEVE_BTN = { x: 494, y: 428, w: 112, h: 94 };
 
 export const ACH_SHEET = UP_SHEET;
 export const ACH_PANEL = UP_PANEL;

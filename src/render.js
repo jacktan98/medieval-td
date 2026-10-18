@@ -58,7 +58,7 @@ import { stats, towersBuilt, favouriteTower, playTime } from './stats.js';
 import { SETTINGS_ICON, SETTINGS_SHEET, SETTINGS_TITLE_Y, SETTINGS_SOUND, SETTINGS_RESET, settingsDone, mapGearShown } from './settings.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
-import { drawTutorial, drawMapTour, verbs, showsSkip } from './tutorial.js';
+import { drawTutorial, drawMapTour, verbs, showsSkip, doorScale } from './tutorial.js';
 import { drawTitle } from './titlepage.js';
 import { ACHIEVEMENTS, ACHIEVEMENTS_TITLE, UNLOCKED_TITLE } from './data/achievements.js';
 import { earned, earnedCount, progressOf, toasts, byId } from './achievements.js';
@@ -6221,12 +6221,12 @@ function drawStart(ctx, state) {
   // saying something the flag already says by being the only thing on the screen
   // that moves. The owner asked for it gone.
   if (state.stage === null || state.stage === undefined) {
-    // THE BOOK, BOTTOM LEFT, AND THE UPGRADES, BOTTOM MIDDLE: the artist's icons
-    // with their names under them.
-    drawMapDoor(ctx, 'icon_book', BOOK_ICON, 'Encyclopedia');
-    // AND THE TROPHY, in the forest left of the hammer, at the owner's word.
-    drawMapDoor(ctx, 'icon_achievements', ACHIEVE_ICON, 'Achievements');
-    drawUpgradesButton(ctx);
+    // THE BOOK, BOTTOM LEFT, AND THE UPGRADES AND THE TROPHY, BOTTOM MIDDLE: the
+    // artist's icons with their names under them — each only once stage 1 is won, and
+    // popping out as it arrives (doorScale in src/tutorial.js).
+    popDoor(ctx, doorScale(state, 'book'), BOOK_ICON, () => drawMapDoor(ctx, 'icon_book', BOOK_ICON, 'Encyclopedia'));
+    popDoor(ctx, doorScale(state, 'upgrades'), UPGRADES_ICON, () => drawUpgradesButton(ctx));
+    popDoor(ctx, doorScale(state, 'achievements'), ACHIEVE_ICON, () => drawMapDoor(ctx, 'icon_achievements', ACHIEVE_ICON, 'Achievements'));
     if (!state.ending) drawAdminDoor(ctx);
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
@@ -6363,8 +6363,9 @@ function drawStart(ctx, state) {
   // time to read, and the whole reason the book exists is the decision they are
   // about to make with 220 gold — but Start is still what they came for, so it
   // keeps the middle of the panel and this sits below.
-  // THE BOOK STAYS WHERE IT WAS ON THE MAP, bottom left, over the dimmed world.
-  drawMapDoor(ctx, 'icon_book', BOOK_ICON, 'Encyclopedia');
+  // THE BOOK STAYS WHERE IT WAS ON THE MAP, bottom left, over the dimmed world — once
+  // the map has it (doorScale in src/tutorial.js).
+  popDoor(ctx, doorScale(state, 'book'), BOOK_ICON, () => drawMapDoor(ctx, 'icon_book', BOOK_ICON, 'Encyclopedia'));
   drawAdminDoor(ctx);
 
   ctx.textAlign = 'left';
@@ -6875,6 +6876,20 @@ function drawFoeCard(ctx, state) {
 // border follows the book and the hammer rather than boxing them — a little
 // thicker here, where the picture is bigger and the map behind it busier.
 const DOOR_HALO = 2.5;
+// A DOOR AT A SCALE, swelled about the middle of its icon: 0 is not there at all, and
+// a door popping out runs a little past 1 on its way in.
+function popDoor(ctx, k, at, draw) {
+  if (k <= 0) return;
+  if (k === 1) { draw(); return; }
+  const my = at.foot - 20;
+  ctx.save();
+  ctx.translate(at.cx, my);
+  ctx.scale(k, k);
+  ctx.translate(-at.cx, -my);
+  draw();
+  ctx.restore();
+}
+
 function drawMapDoor(ctx, key, at, label) {
   if (art[key] && ui[key]) {
     const { w, h } = uiSize(key);

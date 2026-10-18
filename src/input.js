@@ -19,7 +19,7 @@ import { ADMIN_BTN, ADMIN_ON, openAdmin, tapAdmin, resetCampaign } from './admin
 import { hitSettingsButton, insideSettings, hitSettingsReset, hitSettingsDone, openSettings, closeSettings, mapGearShown, SETTINGS_SOUND } from './settings.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { tapTitle } from './titlepage.js';
-import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, skipTutorial } from './tutorial.js';
+import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, skipTutorial, doorShown } from './tutorial.js';
 import { hitUpgradesButton, openUpgrades, tapUpgrades, hoverUpgrades } from './upgradepage.js';
 import { hitAchievementsButton, openAchievements, tapAchievements, hoverAchievements } from './achievepage.js';
 import { noteVillagerTap, noteTier4, note } from './achievements.js';
@@ -305,15 +305,15 @@ export function tap(state, x, y, restart) {
     if (!mapTourAllows(state, x, y) && !(ADMIN_ON && inside(ADMIN_BTN, x, y))) return press('tour_blocked', false);
 
     // 'open', so the book sounds rather than the click.
-    if (hitBookButton(state, x, y)) { openBook(state); return press('book', 'open'); }
+    if (doorShown(state, 'book') && hitBookButton(state, x, y)) { openBook(state); return press('book', 'open'); }
 
     // THE UPGRADES SCREEN, from the world map only — beside the book there.
-    if ((state.stage === null || state.stage === undefined) && hitUpgradesButton(x, y)) {
+    if ((state.stage === null || state.stage === undefined) && doorShown(state, 'upgrades') && hitUpgradesButton(x, y)) {
       openUpgrades(state);
       return press('upgrades');
     }
     // AND THE ACHIEVEMENTS, left of it.
-    if ((state.stage === null || state.stage === undefined) && hitAchievementsButton(x, y)) {
+    if ((state.stage === null || state.stage === undefined) && doorShown(state, 'achievements') && hitAchievementsButton(x, y)) {
       openAchievements(state);
       return press('achievements');
     }

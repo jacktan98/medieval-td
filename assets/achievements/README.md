@@ -13,7 +13,7 @@ renumbering its file too, or changing its `icon`.
 
 | File | What it is |
 |------|------------|
-| `Achievements_Icon.png` | the world map's Achievements button, left of the Upgrades hammer, with the word under it (61 x 55: 0.3 per source px, the same scale as the Encyclopedia book and the hammer); also the stand-in for any achievement without an icon of its own |
+| `Achievements_Icon.png` | the world map's Achievements button, right of the Upgrades hammer at the bottom middle, with the word under it (61 x 55: 0.3 per source px, the same scale as the Encyclopedia book and the hammer); also the stand-in for any achievement without an icon of its own |
 | `Achievements_1.png` | Fast Learner |
 | `Achievements_2.png` | Seasoned General |
 | `Achievements_3.png` | Legend of the Realm |

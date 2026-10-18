@@ -19,8 +19,12 @@ import { checkRecords } from './achievements.js';
 // THE WORLD MAP'S WAY IN: the artist's hammer, at the bottom middle of the map, with
 // "Upgrades" under it — laid out as the book is at the bottom left. See BOOK_ICON in
 // book.js. UPGRADES_BTN is the whole of the hammer and its label, for the tap.
-export const UPGRADES_ICON = { cx: 480, foot: 492 };
-export const UPGRADES_BTN = { x: 432, y: 428, w: 96, h: 94 };
+// LEFT OF THE MIDDLE, with the trophy right of it, at the owner's word: the two
+// sides swapped and the pair centred on the gap between them — the hammer's label
+// (65 wide) ends 25 left of x 480 and the trophy's (89) begins 25 right of it, so the
+// stars badge on the hammer's shoulder has room in the gap. See ACHIEVE_ICON.
+export const UPGRADES_ICON = { cx: 423, foot: 492 };
+export const UPGRADES_BTN = { x: 375, y: 428, w: 96, h: 94 };
 
 export const UP_SHEET = { x: 8, y: 8, w: 944, h: 524 };
 export const UP_TITLE_Y = 40;

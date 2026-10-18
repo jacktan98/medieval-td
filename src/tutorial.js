@@ -20,7 +20,8 @@
 // FOR A NEW PLAYER: it runs on stage 1 until stage 1 has been won once — or until the
 // player presses Skip, bottom right, where the Admin button is on the world map
 // (SKIP_TUTORIAL). A skip is the whole tutorial: these steps, and the encyclopedia,
-// the upgrades and stage 2's flag on the world map after it. The admin dashboard's
+// the upgrades, the achievements and stage 2's flag on the world map after it — whose
+// three doors then pop out together rather than one by one (doorShown). The admin dashboard's
 // fresh start brings it back.
 //
 // THE STEPS ARE READ OFF THE GAME, not off the taps: a step is done when the board
@@ -40,6 +41,7 @@ import { art } from './assets.js';
 import { ui } from './data/ui.js';
 import { BOOK_ICON_HIT } from './book.js';
 import { UPGRADES_BTN } from './upgradepage.js';
+import { ACHIEVE_BTN } from './achievepage.js';
 import { STAGES } from './data/overview.js';
 import { track, addToVersion } from './analytics.js';
 
@@ -86,6 +88,7 @@ const SAY = {
   // ON THE WORLD MAP, once stage 1 is won: see MAP_STEPS.
   book:     '{Click} on Encyclopedia to review towers, units and enemies. It will help you plan a better defense.',
   upgrades: '{Click} on Upgrades to spend your hard-earned stars. Upgrades make your towers stronger.',
+  achievements: '{Click} on Achievements to see the feats you can accomplish on your campaign.',
   next:     'Your next battle is here, General. {Click} on the blue banner when you are ready!',
   // A NEW GAME'S FIRST WORDS, on the world map: see INTRO.
   intro:    'General, our scouts report large numbers of thugs heading towards Oakhaven. {Click} on the blue banner to head there!'
@@ -295,11 +298,16 @@ const STEPS = [
 // itself to stage 2, and for nothing else to be open.
 const onMap = s => !s.started && (s.stage === null || s.stage === undefined) && !s.reveal &&
   (s.pendingReveal === null || s.pendingReveal === undefined) && s.book === null && !s.upgrades && !s.achievements && !s.admin;
+// EACH DOOR POPS OUT AS ITS STEP BEGINS, at the owner's word — the encyclopedia, then
+// the upgrades, then the achievements — and not before: see doorShown below.
+const reveal = id => (s, tut) => { (tut.shown ||= {})[id] = true; };
 const MAP_STEPS = [
-  { say: 'book', lock: true, when: onMap, point: () => ({ ...BOOK_ICON_HIT, from: 'up' }),
+  { say: 'book', lock: true, when: onMap, start: reveal('book'), point: () => ({ ...BOOK_ICON_HIT, from: 'up' }),
     done: (s, tut) => !!tut.sawBook && s.book === null },
-  { say: 'upgrades', lock: true, when: onMap, point: () => ({ ...UPGRADES_BTN, from: 'up' }),
+  { say: 'upgrades', lock: true, when: onMap, start: reveal('upgrades'), point: () => ({ ...UPGRADES_BTN, from: 'up' }),
     done: (s, tut) => !!tut.sawUpgrades },
+  { say: 'achievements', lock: true, when: onMap, start: reveal('achievements'), point: () => ({ ...ACHIEVE_BTN, from: 'up' }),
+    done: (s, tut) => !!tut.sawAchievements },
   // AND BACK FROM THE UPGRADES, stage 2's flag, until its panel is opened.
   // NOT LOCKED, at the owner's word: the player is free from here, and the arrow is a
   // pointer rather than a gate.
@@ -328,7 +336,46 @@ const store = () => { try { return globalThis.localStorage || null; } catch { re
 const introSeen = () => { try { return !!store()?.getItem(INTRO_KEY); } catch { return true; } };
 function saveIntro() { try { store()?.setItem(INTRO_KEY, '1'); } catch { /* private mode: this visit only */ } }
 export function forgetIntro() {
-  try { store()?.removeItem(INTRO_KEY); store()?.removeItem(SKIPPED_KEY); } catch { /* nothing kept */ }
+  try { store()?.removeItem(INTRO_KEY); store()?.removeItem(SKIPPED_KEY); store()?.removeItem(DOORS_KEY); } catch { /* nothing kept */ }
+  for (const id of DOORS) delete popAt[id];
+}
+
+// --- THE WORLD MAP'S THREE DOORS: the Encyclopedia, the Upgrades, the Achievements ---
+//
+// NOT THERE FOR A NEW PLAYER, at the owner's word: none of the three is on the world
+// map — nor the book on a stage's panel — until stage 1 has been won. Then they POP
+// OUT: one at a time with the map's tour that follows a win with the tutorial (each as
+// its step begins, MAP_STEPS above), or all three together for a player who skipped it.
+// And none while the ending plays.
+//
+// The pop is once per player (DOORS_KEY, kept), so a returning player's map does not
+// pop its doors at them every visit; a campaign reset asks for it again (forgetIntro).
+const DOORS = ['book', 'upgrades', 'achievements'];
+const DOORS_KEY = 'medieval-td/doors';
+const POP = 0.5;              // seconds a door takes to pop out
+const popAt = {};
+export function doorShown(state, id) {
+  if (state.ending || state.pendingEnding) return false;
+  if (!sealOf(firstStage())) return false;
+  const tour = state.mapTour;
+  if (tour && tour.list === 'map' && !tour.done) return !!(tour.shown && tour.shown[id]);
+  return true;
+}
+// HOW BIG A DOOR IS DRAWN, 0 to 1 and a little past it as it pops: 0 while it is not
+// there, and an overshoot on the way in (an "ease out back").
+export function doorScale(state, id) {
+  if (!doorShown(state, id)) return 0;
+  const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+  if (popAt[id] === undefined) {
+    let seen = false;
+    try { seen = !!store()?.getItem(DOORS_KEY); } catch { /* none kept */ }
+    popAt[id] = seen ? -1e9 : now;
+    if (DOORS.every(d => popAt[d] !== undefined)) { try { store()?.setItem(DOORS_KEY, '1'); } catch { /* this visit only */ } }
+  }
+  const u = Math.min(1, (now - popAt[id]) / POP);
+  if (u >= 1) return 1;
+  const c1 = 1.70158, c3 = c1 + 1;
+  return Math.max(0, 1 + c3 * (u - 1) ** 3 + c1 * (u - 1) ** 2);
 }
 
 // SKIP, at the owner's word: in stage 1, in the Admin button's place and style (see
@@ -394,6 +441,7 @@ export function updateMapTour(state, dt) {
   if (tour && !tour.done) {
     if (state.book !== null && state.book !== undefined) tour.sawBook = true;
     if (state.upgrades) tour.sawUpgrades = true;
+    if (state.achievements) tour.sawAchievements = true;
     if (state.stage === 1) tour.sawNext = true;
   }
   run(state, state.mapTour, dt);
