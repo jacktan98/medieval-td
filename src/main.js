@@ -1,5 +1,5 @@
 import { loadArt, ensureBoard, boardReady, prefetchBoards, versioned } from './assets.js';
-import { loadAudio, fanfare, setLoop, keepLoop, chime, sleepAudio, unlock, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
+import { loadAudio, fanfare, setLoop, keepLoop, chime, sleepAudio, unlock, setBossHush, CUE, VICTORY, LOST, STAR, ACHIEVED } from './audio.js';
 import { level, levels } from './level.js';
 import { STAGES } from './data/overview.js';
 import { openingDelay } from './data/waves.js';
@@ -8,7 +8,7 @@ import { adminWaves, adminGold } from './admin.js';
 import { finish, saveUnlocked, startReveal as startStars, stepStars, savedDifficulty } from './score.js';
 import { startReveal, stepReveal, stageOfLevel, openedStages, roadGrew, mapAudio, mapFontReady } from './overview.js';
 import { STAGE_COUNT } from './data/overview.js';
-import { updateEnemies, spawn } from './enemies.js';
+import { updateEnemies, spawn, downed } from './enemies.js';
 import { updateTowers, frameOf, prebuiltOn } from './towers.js';
 // The families, for resolving what a level says is already standing by name.
 import { families } from './data/towers.js';
@@ -91,8 +91,9 @@ const AMBIENT = [...new Set(levels.flatMap(l => (l.ambience || []).map(a => a.cl
 // The boss music's level, scaling the clip's own, on a bus that is never ducked (see
 // MUSIC in audio.js) — at 0.6 on the ducked one it was lost under the fight. AS LOUD AS
 // THE VOICES, at the owner's word: its average level measured level with a tower's
-// voice line (about 3dB under a death cry), from 0.9, which sat 4dB under them.
-const BOSS_MUSIC = 1.44;
+// voice line (about 3dB under a death cry), from 0.9, which sat 4dB under them; and
+// then half as loud again, at the owner's word, from 1.44.
+const BOSS_MUSIC = 2.16;
 
 const state = {};
 
@@ -703,6 +704,11 @@ function frame(now) {
   // he falls (`bossFight`, set in src/enemies.js and src/villagers.js), over the
   // board's own sounds and under the battle. Off at the result, like everything here.
   setLoop('boss_music', playing && !!state.bossFight, BOSS_MUSIC, 'board_boss_music');
+  // AND EVERYTHING ELSE HUSHED while it comes in, at the owner's word: from the music
+  // starting until the boss can be attacked — on the road, among the enemies, and not
+  // already going down. On stage 15 that is the Captain's walk out from the camp wall,
+  // and on stage 16 the Harbinger's way down through the citadel to its door.
+  setBossHush(playing && !!state.bossFight && !state.enemies.some(e => e.def.boss && !downed(e)));
   // Fetched from the start of a board with a boss on it (stage 15's camp, stage 16's
   // balcony), so it is ready when he walks on.
   if (playing && vp && vp.plan && (vp.plan.muster || vp.plan.balcony)) keepLoop('boss_music');

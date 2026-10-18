@@ -259,8 +259,8 @@ const MAP_AMBIENT = [...new Set(STAGES.flatMap(s => (s.level === null ? [] : lev
 // wakes it, and the music starts then.)
 // On the undimmed music bus (MUSIC in audio.js). AS LOUD AS THE VOICES, at the
 // owner's word: its average level measured level with a tower's voice line, from 0.45,
-// which sat 7.6dB under them.
-const TITLE_MUSIC = 1.08;
+// which sat 7.6dB under them; and then a fifth louder again, at the owner's word.
+const TITLE_MUSIC = 1.3;
 export function mapAudio(state) {
   // Not the map's sounds on the start page (see src/titlepage.js): its music only.
   const onMap = !state.started && !state.title;

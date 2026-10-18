@@ -1594,6 +1594,12 @@ let fxA = null;
 let fxB = null;
 let amb = null;
 let ambA = null;
+// THE MUSIC'S OWN BUS, on the Music slider and never ducked or hushed (see MUSIC), and
+// the BOSS'S VOICE'S, on the Effects slider — the two things still heard while the
+// rest is hushed for a boss's entrance (setBossHush below).
+let mus = null;
+let fxL = null;
+let bossHush = false;
 
 // THE MAP'S OWN ONE-OFF NOISES, on the Ambience slider though each is a single
 // sound rather than a loop — the world going about its business, not the battle:
@@ -1603,8 +1609,10 @@ const MAP_ONE_OFFS = new Set([
   'church_bell', 'hammering_nail', 'anvil_hit', 'cutting_tree', 'factory',
   'water_splash', 'things_land', 'wings_flap', 'flag_planted'
 ]);
-// Where a clip goes in place of the bus its caller named.
-const routed = (key, bus) => !MAP_ONE_OFFS.has(key) ? bus : bus === busA ? ambA : amb;
+// Where a clip goes in place of the bus its caller named. A boss's own lines go round
+// Category A's slider node on one of their own, so they can be heard through the hush.
+const routed = (key, bus) => MAP_ONE_OFFS.has(key) ? (bus === busA ? ambA : amb)
+  : LOUDER.has(key) && bus === busA ? fxL : bus;
 export const soundLevel = kind => levels[kind] ?? 1;
 export function setSoundLevel(kind, v) {
   if (!SOUND_KINDS.includes(kind)) return;
@@ -1616,11 +1624,26 @@ function applyLevels() {
   if (!ctx) return;
   const now = ctx.currentTime;
   // A short glide rather than a step, so dragging a slider does not crackle.
-  const set = (node, v) => { node.gain.cancelScheduledValues(now); node.gain.setTargetAtTime(v * v, now, 0.02); };
-  set(fxA, levels.effects);
-  set(fxB, levels.effects);
-  set(amb, levels.ambience);
-  set(ambA, levels.ambience);
+  const set = (node, v, k = 0.02) => { node.gain.cancelScheduledValues(now); node.gain.setTargetAtTime(v * v, now, k); };
+  // Hushed for a boss's entrance: everything but the music and his voice, faded out
+  // over a third of a second or so rather than cut.
+  const hush = bossHush ? 0 : 1, k = 0.12;
+  set(fxA, levels.effects * hush, k);
+  set(fxB, levels.effects * hush, k);
+  set(amb, levels.ambience * hush, k);
+  set(ambA, levels.ambience * hush, k);
+  set(fxL, levels.effects);
+  set(mus, levels.ambience);
+}
+
+// A BOSS'S ENTRANCE, at the owner's word: from the moment his music starts until he
+// can be attacked, every other sound is hushed — the battle, the board's background,
+// the villagers at work — and only the music and his own lines are heard. Said every
+// frame by main.js, which knows when that is; only a change does anything.
+export function setBossHush(on) {
+  if (on === bossHush) return;
+  bossHush = on;
+  applyLevels();
 }
 
 // When Category A may speak again, on the context's clock.
@@ -1666,6 +1689,12 @@ export function loadAudio() {
   amb.connect(busB);
   ambA = ctx.createGain();
   ambA.connect(master);
+  mus = ctx.createGain();
+  mus.connect(master);
+  mus.gain.value = levels.ambience ** 2;
+  fxL = ctx.createGain();
+  fxL.connect(master);
+  fxL.gain.value = levels.effects ** 2;
   fxA.gain.value = levels.effects ** 2;
   fxB.gain.value = levels.effects ** 2;
   amb.gain.value = levels.ambience ** 2;
@@ -1718,7 +1747,9 @@ const LOOPED = new Set([
 // every voice and kill line; in a boss fight those come almost without a break, and
 // the boss music, ducked through all of them, could not be heard at all — the owner's
 // report from stage 16. So music goes on ambA, the Music slider's bus that is never
-// ducked (see the diagram above), at the levels TITLE_MUSIC and BOSS_MUSIC set.
+// ducked (see the diagram above), at the levels TITLE_MUSIC and BOSS_MUSIC set — `mus`,
+// a bus of its own beside ambA, so that a boss's hush (setBossHush) can take ambA down
+// and leave the music.
 const MUSIC = new Set(['start_music', 'boss_music']);
 const MUSIC_FADE = 1.5;
 const RELEASE_AFTER = 30;
@@ -1975,7 +2006,7 @@ export function setLoop(key, on, level = 1, name = key) {
 
   const g = ctx.createGain();
   g.gain.value = 0;
-  src.connect(g).connect(MUSIC.has(key) ? ambA : amb);
+  src.connect(g).connect(MUSIC.has(key) ? mus : amb);
   src.start(0, c.offset);
   g.gain.linearRampToValueAtTime(c.gain * level, now + (MUSIC.has(key) ? MUSIC_FADE : LOOP_FADE));
 

@@ -6,7 +6,7 @@ other audio folders. Put them here as .mp3.
 | File | Where it plays |
 |------|----------------|
 | `Start_page_music.mp3` | the start page, and only there. It starts with the player's first tap (a browser plays no sound before one) and fades out as Start is tapped and the world map's own sounds come in. |
-| `Boss_fight_music.mp3` | a boss fight: from the boss entering the battle (his entrance line) until he falls. Over the board's own background sounds and under the battle. |
+| `Boss_fight_music.mp3` | a boss fight: from the boss entering the battle (his entrance line) until he falls. Until he can be attacked — his walk out from the camp wall, or down through the citadel — every other sound is hushed but his own lines; after that the battle comes back in under the music. |
 
 Both loop for as long as they are wanted, fade in and out over 1.5 seconds, and
 ride the Music slider in the pause menu (with the background sounds), on a bus of their own that is never turned down under the battle's voices. Each is fetched only when it is
