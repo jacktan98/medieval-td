@@ -88,10 +88,11 @@ function fitToDisplay() {
 
 // Every background loop any board asks for — see `ambience` on the levels.
 const AMBIENT = [...new Set(levels.flatMap(l => (l.ambience || []).map(a => a.clip)))];
-// The boss music's level, scaling the clip's own: about as loud as the battle's own
-// sounds, on a bus that is never ducked (see MUSIC in audio.js) — at 0.6 on the ducked
-// one it was lost under the fight.
-const BOSS_MUSIC = 0.9;
+// The boss music's level, scaling the clip's own, on a bus that is never ducked (see
+// MUSIC in audio.js) — at 0.6 on the ducked one it was lost under the fight. AS LOUD AS
+// THE VOICES, at the owner's word: its average level measured level with a tower's
+// voice line (about 3dB under a death cry), from 0.9, which sat 4dB under them.
+const BOSS_MUSIC = 1.44;
 
 const state = {};
 
