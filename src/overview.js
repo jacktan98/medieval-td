@@ -257,7 +257,9 @@ const MAP_AMBIENT = [...new Set(STAGES.flatMap(s => (s.level === null ? [] : lev
 // start page only, fading out as Start is tapped and the map's own sounds come in.
 // (A browser lets no sound play before the player's first tap; any tap on the page
 // wakes it, and the music starts then.)
-const TITLE_MUSIC = 1;
+// 0.45 on the undimmed music bus (MUSIC in audio.js): as loud as it was at 1 on the
+// background bus, which sits at 0.45.
+const TITLE_MUSIC = 0.45;
 export function mapAudio(state) {
   // Not the map's sounds on the start page (see src/titlepage.js): its music only.
   const onMap = !state.started && !state.title;

@@ -1569,7 +1569,7 @@ let busB = null;
 //   fxB ──┐                   ├── master ── speakers
 //   amb ──┴── busB (ducked) ──┘
 //
-// (ambA is the flag planted on the world map, the one map noise that speaks on
+// (ambA carries the music — see MUSIC — and the flag planted on the world map, the one map noise that speaks on
 // Category A's bus — busA is never ducked, so going round it changes nothing else.)
 //
 // A slider's 0..1 is SQUARED on the way to the gain: the ear hears loudness on a
@@ -1714,6 +1714,11 @@ const LOOPED = new Set([
 ]);
 // THE MUSIC fades in and out over MUSIC_FADE rather than LOOP_FADE: a march has to stop
 // on the flag going in, but a piece of music cut in a third of a second sounds broken.
+// AND IT IS NOT DUCKED. The other loops ride the background bus, which drops 9dB under
+// every voice and kill line; in a boss fight those come almost without a break, and
+// the boss music, ducked through all of them, could not be heard at all — the owner's
+// report from stage 16. So music goes on ambA, the Music slider's bus that is never
+// ducked (see the diagram above), at the levels TITLE_MUSIC and BOSS_MUSIC set.
 const MUSIC = new Set(['start_music', 'boss_music']);
 const MUSIC_FADE = 1.5;
 const RELEASE_AFTER = 30;
@@ -1970,7 +1975,7 @@ export function setLoop(key, on, level = 1, name = key) {
 
   const g = ctx.createGain();
   g.gain.value = 0;
-  src.connect(g).connect(amb);
+  src.connect(g).connect(MUSIC.has(key) ? ambA : amb);
   src.start(0, c.offset);
   g.gain.linearRampToValueAtTime(c.gain * level, now + (MUSIC.has(key) ? MUSIC_FADE : LOOP_FADE));
 

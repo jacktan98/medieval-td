@@ -88,8 +88,10 @@ function fitToDisplay() {
 
 // Every background loop any board asks for — see `ambience` on the levels.
 const AMBIENT = [...new Set(levels.flatMap(l => (l.ambience || []).map(a => a.clip)))];
-// The boss music's level, scaling the clip's own: under the battle rather than over it.
-const BOSS_MUSIC = 0.6;
+// The boss music's level, scaling the clip's own: about as loud as the battle's own
+// sounds, on a bus that is never ducked (see MUSIC in audio.js) — at 0.6 on the ducked
+// one it was lost under the fight.
+const BOSS_MUSIC = 0.9;
 
 const state = {};
 
