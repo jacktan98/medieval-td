@@ -1,7 +1,7 @@
 Medieval Tower Defense
-Created by Jack Tan
+Created by NoobStickz
 
-Artwork: drawn by hand by Jack Tan.
+Artwork: drawn by hand by NoobStickz.
 
 Font: Lobster, by Pablo Impallari, under the SIL Open Font License 1.1
 (see assets/fonts/OFL.txt).

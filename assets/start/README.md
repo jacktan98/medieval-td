@@ -37,7 +37,7 @@ name dropping in) and so one part can be redrawn without the rest.
 - **1920 × 1080**, the same as the stage maps, for the background and any layer
   meant to be laid over the whole screen.
 - **Leave room for the buttons**: the Start button goes under the logo in the
-  middle, the music and sound buttons in a corner, and "Created by Jack Tan" along
+  middle, the music and sound buttons in a corner, and "Created by NoobStickz" along
   the bottom. Nothing important under those.
 
 The drafts to draw over are the three title page mockups (A Castle Gate, B Old Map,
