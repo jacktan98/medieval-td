@@ -92,8 +92,8 @@ const AMBIENT = [...new Set(levels.flatMap(l => (l.ambience || []).map(a => a.cl
 // MUSIC in audio.js) — at 0.6 on the ducked one it was lost under the fight. AS LOUD AS
 // THE VOICES, at the owner's word: its average level measured level with a tower's
 // voice line (about 3dB under a death cry), from 0.9, which sat 4dB under them; and
-// then half as loud again, at the owner's word, from 1.44.
-const BOSS_MUSIC = 2.16;
+// then half as loud again, at the owner's word, from 1.44, and half again from 2.16.
+const BOSS_MUSIC = 3.24;
 
 const state = {};
 
