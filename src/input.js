@@ -15,7 +15,8 @@ import { pickFigure } from './select.js';
 import { greetVillager } from './villagers.js';
 import { solo, answer, play, playAwake, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
-import { ADMIN_BTN, ADMIN_ON, openAdmin, tapAdmin } from './admin.js';
+import { ADMIN_BTN, ADMIN_ON, openAdmin, tapAdmin, resetCampaign } from './admin.js';
+import { hitSettingsButton, insideSettings, hitSettingsReset, hitSettingsDone, openSettings, closeSettings, mapGearShown, SETTINGS_SOUND } from './settings.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { tapTitle } from './titlepage.js';
 import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, skipTutorial } from './tutorial.js';
@@ -140,10 +141,12 @@ export function attachInput(canvas, state, restart) {
   canvas.addEventListener('pointermove', e => {
     // DRAGGING A SOUND SLIDER, by mouse or by finger — the one drag in the game.
     if (state.soundDrag) {
-      if (!state.paused) { state.soundDrag = null; return; }
-      setSoundLevel(state.soundDrag, soundValueAt(at(e).x));
+      if (!state.paused && !state.settings) { state.soundDrag = null; return; }
+      setSoundLevel(state.soundDrag, soundValueAt(at(e).x, state.settings ? SETTINGS_SOUND : undefined));
       return;
     }
+    // THE SETTINGS cover the screen while they are up: nothing under them follows the mouse.
+    if (state.settings) return;
     if (e.pointerType !== 'mouse') return;
 
     // A paused game does not follow the mouse either, and neither does one with
@@ -256,7 +259,12 @@ export function attachInput(canvas, state, restart) {
 // spends nothing, and a test that re-implemented the branch it is checking would
 // hold nothing at all. Nothing in the game calls it from outside.
 export function tap(state, x, y, restart) {
-  // THE START PAGE, first of all: only its Start answers. See src/titlepage.js.
+  // THE SETTINGS, over the start page or the world map, own every tap while they are up.
+  if (state.settings) return tapSettings(state, x, y, restart);
+
+  // THE START PAGE, first of all: only its Start answers — and the settings' gear in
+  // the corner. See src/titlepage.js and src/settings.js.
+  if (state.title && hitSettingsButton(x, y)) { openSettings(state, 'title'); return press('settings'); }
   if (state.title) return tapTitle(state, x, y) ? press('title_start', 'awake') : false;
 
   // THE ADMIN DASHBOARD SWALLOWS EVERYTHING, and it is tested first because it
@@ -289,6 +297,9 @@ export function tap(state, x, y, restart) {
     // THE ENDING TAKES EVERY TAP while it plays, and its seal replays it. See src/ending.js.
     if (state.ending) return press('ending', tapEnding(state, x, y));
     if ((state.stage === null || state.stage === undefined) && tapSeal(state, x, y)) return press('ending_seal');
+    // THE SETTINGS' GEAR, top right on the map at rest — before the tour's lock, which
+    // has no business keeping the player from their volume.
+    if (mapGearShown(state) && hitSettingsButton(x, y)) { openSettings(state, 'map'); return press('settings'); }
     // THE WORLD MAP'S TOUR, after stage 1, lets only what its arrow is on be pressed
     // (and the dashboard). See src/tutorial.js.
     if (!mapTourAllows(state, x, y) && !(ADMIN_ON && inside(ADMIN_BTN, x, y))) return press('tour_blocked', false);
@@ -572,6 +583,34 @@ function tapPaused(state, x, y, restart) {
     return press(`arm:${hit}`);
   }
 
+  state.armed = null;
+  return false;
+}
+
+// THE SETTINGS PANEL (src/settings.js): the sliders as the pause menu's, Done, a tap
+// off the panel to close it, and on the world map Reset campaign — which asks first,
+// as Restart and Quit do, and then puts the campaign back to nothing walked and rebuilds
+// the map, the opening road and all.
+function tapSettings(state, x, y, restart) {
+  const slider = hitSoundSlider(x, y, SETTINGS_SOUND);
+  if (slider) {
+    state.armed = null;
+    setSoundLevel(slider, soundValueAt(x, SETTINGS_SOUND));
+    state.soundDrag = slider;
+    return press(`sound:${slider}`);
+  }
+  if (hitSettingsReset(state, x, y)) {
+    const now = performance.now();
+    if (state.armed && state.armed.id === 'reset' && now < state.armed.until) {
+      resetCampaign(state);
+      closeSettings(state);
+      restart();
+      return press('reset_campaign');
+    }
+    state.armed = { id: 'reset', until: now + ARM_WINDOW };
+    return press('arm:reset');
+  }
+  if (hitSettingsDone(state, x, y) || !insideSettings(x, y)) { closeSettings(state); return press('settings_close'); }
   state.armed = null;
   return false;
 }

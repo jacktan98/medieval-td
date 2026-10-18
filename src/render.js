@@ -55,6 +55,7 @@ import { enemyTypes, FOE_NOTES } from './data/waves.js';
 import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft, boughtIn, starsEarned } from './upgrades.js';
 import { stats, towersBuilt, favouriteTower, playTime } from './stats.js';
+import { SETTINGS_ICON, SETTINGS_SHEET, SETTINGS_TITLE_Y, SETTINGS_SOUND, SETTINGS_RESET, settingsDone, mapGearShown } from './settings.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
 import { drawTutorial, drawMapTour, verbs, showsSkip } from './tutorial.js';
@@ -80,7 +81,7 @@ export function draw(ctx, state) {
   ctx.clearRect(0, 0, 960, 540);
   // THE START PAGE, before the world map, is the whole screen while it is up — and an
   // achievement's pop-up over it. See src/titlepage.js.
-  if (state.title) { drawTitle(ctx); drawAchievementToast(ctx); return; }
+  if (state.title) { drawTitle(ctx); drawSettingsGear(ctx); drawSettings(ctx, state); drawAchievementToast(ctx); return; }
 
   // THE BOARD SHAKES AS THE BOSS TURNS — see bossShake. Everything on the board
   // moves together, a hair enlarged so no edge shows; the HUD below does not.
@@ -168,6 +169,10 @@ export function draw(ctx, state) {
   // And the dashboard over everything, on the same terms: it is opened from the
   // title screen, it covers the board, and it owns every tap while it is up.
   if (state.admin) drawAdmin(ctx, state);
+
+  // THE SETTINGS' GEAR on the world map at rest, and the panel it opens over it.
+  if (mapGearShown(state)) drawSettingsGear(ctx);
+  drawSettings(ctx, state);
 
   // AN ACHIEVEMENT JUST EARNED, top right, over whatever is up. See src/achievements.js.
   drawAchievementToast(ctx);
@@ -8713,18 +8718,24 @@ const SOUND_KNOB_R = 9;
 const SOUND_PAD_Y = 18;
 const SOUND_PAD_X = 16;
 
+// THE SAME TWO SLIDERS ON ANOTHER PLATE: the settings panel (src/settings.js) draws
+// them where it wants them, so every number below is taken off the plate passed in —
+// the pause menu's when none is.
+const trackX = p => p.x + (SOUND_TRACK_X - SOUND_PANEL.x);
+const rowsOf = p => SOUND_ROWS.map(r => ({ ...r, y: p.y + (r.y - SOUND_PANEL.y) }));
+
 // Where along a slider `x` falls, 0..1.
-export const soundValueAt = x => Math.max(0, Math.min(1, (x - SOUND_TRACK_X) / SOUND_TRACK_W));
+export const soundValueAt = (x, p = SOUND_PANEL) => Math.max(0, Math.min(1, (x - trackX(p)) / SOUND_TRACK_W));
 
 // The slider under a tap, as its kind, or null.
-export function hitSoundSlider(x, y) {
-  if (x < SOUND_TRACK_X - SOUND_PAD_X || x > SOUND_TRACK_X + SOUND_TRACK_W + SOUND_PAD_X) return null;
-  const row = SOUND_ROWS.find(r => Math.abs(y - r.y) <= SOUND_PAD_Y);
+export function hitSoundSlider(x, y, p = SOUND_PANEL) {
+  if (x < trackX(p) - SOUND_PAD_X || x > trackX(p) + SOUND_TRACK_W + SOUND_PAD_X) return null;
+  const row = rowsOf(p).find(r => Math.abs(y - r.y) <= SOUND_PAD_Y);
   return row ? row.kind : null;
 }
 
-function drawSoundPanel(ctx) {
-  const p = SOUND_PANEL;
+function drawSoundPanel(ctx, p = SOUND_PANEL) {
+  const TX = trackX(p);
   // SOLID, unlike the buttons above it, which are see-through: a plate this size
   // let the plots, stones and grass under it show through the sliders.
   ctx.beginPath();
@@ -8736,7 +8747,7 @@ function drawSoundPanel(ctx) {
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
   ctx.font = `15px ${MAP_TYPE}`;
-  for (const row of SOUND_ROWS) {
+  for (const row of rowsOf(p)) {
     const v = soundLevel(row.kind);
     ctx.fillStyle = UI_INK;
     ctx.fillText(row.label, p.x + 18, row.y + 1);
@@ -8745,14 +8756,14 @@ function drawSoundPanel(ctx) {
     ctx.lineWidth = 6;
     ctx.strokeStyle = 'rgba(255,239,212,0.22)';
     ctx.beginPath();
-    ctx.moveTo(SOUND_TRACK_X, row.y);
-    ctx.lineTo(SOUND_TRACK_X + SOUND_TRACK_W, row.y);
+    ctx.moveTo(TX, row.y);
+    ctx.lineTo(TX + SOUND_TRACK_W, row.y);
     ctx.stroke();
-    const kx = SOUND_TRACK_X + v * SOUND_TRACK_W;
+    const kx = TX + v * SOUND_TRACK_W;
     if (v > 0) {
       ctx.strokeStyle = UI_GOLD;
       ctx.beginPath();
-      ctx.moveTo(SOUND_TRACK_X, row.y);
+      ctx.moveTo(TX, row.y);
       ctx.lineTo(kx, row.y);
       ctx.stroke();
     }
@@ -8766,6 +8777,44 @@ function drawSoundPanel(ctx) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+// --- THE SETTINGS (src/settings.js) --------------------------------------------
+//
+// THE GEAR, top right on the start page and the world map, with the cream border the
+// map's doors wear (drawHaloed), so it reads on sky and on forest alike.
+function drawSettingsGear(ctx) {
+  if (!art.icon_settings || !ui.icon_settings) return;
+  const { w, h } = uiSize('icon_settings');
+  drawHaloed(ctx, art.icon_settings, ui.icon_settings.trim, SETTINGS_ICON.cx - w / 2, SETTINGS_ICON.cy - h / 2, w, h, DOOR_HALO);
+}
+
+// THE PANEL: the screen dimmed, a dark plate in the middle as the pause menu's sound
+// plate is, "Settings" over the two sliders, and the buttons under them — Reset
+// campaign asking before it acts, as Restart and Quit do.
+function drawSettings(ctx, state) {
+  if (!state.settings) return;
+  ctx.save();
+  ctx.fillStyle = 'rgba(14,12,10,0.6)';
+  ctx.fillRect(0, 0, 960, 540);
+  const s = SETTINGS_SHEET;
+  ctx.beginPath();
+  ctx.roundRect(s.x, s.y, s.w, s.h, 12);
+  ctx.fillStyle = '#211E1A';
+  ctx.fill();
+  panelBox(ctx, s.x, s.y, s.w, s.h, { r: 12, press: true });
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = UI_INK;
+  ctx.font = `26px ${MAP_TYPE}`;
+  ctx.fillText('Settings', 480, SETTINGS_TITLE_Y);
+  ctx.restore();
+  drawSoundPanel(ctx, SETTINGS_SOUND);
+  const armed = state.armed && performance.now() < state.armed.until ? state.armed.id : null;
+  if (state.settings === 'map') askButton(ctx, SETTINGS_RESET, 'Reset campaign', armed === 'reset');
+  askButton(ctx, settingsDone(state), 'Done', false);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
 }
 
 // One of the two buttons that ask before they act, drawn plain or as a question.

@@ -208,6 +208,9 @@ export const ui = {
   // AND THE THIRD, the trophy, left of the hammer — the same 0.3: 204 x 182 in its
   // file, 61 x 55 on the map, about the book's size.
   icon_achievements: { trim: [154, 165, 204, 182], h: 182 * 0.3 },
+  // THE SETTINGS' GEAR, top right on the start page and the world map: 308 square in
+  // its file, 46 on the screen — a little smaller than the doors, as a corner control.
+  icon_settings: { trim: [102, 102, 308, 308], h: 46 },
   btn_cancel:   { trim: [199, 199, 114, 114], fit: 36 },
 
   // Glyphs. Six sit on buttons that show a price and get the smaller box; the

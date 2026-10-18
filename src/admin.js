@@ -677,6 +677,35 @@ export function adminWaves(level) {
 // down there would read as a third thing to press before starting.
 export const ADMIN_BTN = { x: 858, y: 484, w: 84, h: 38 };
 
+// THE CAMPAIGN, BACK TO NOTHING WALKED — the dashboard's reset, and the player's own
+// Reset campaign in the world map's settings (src/settings.js). The caller rebuilds
+// the game after it (restart), which newGame does from what this leaves.
+export function resetCampaign(state) {
+  resetProgress();
+  clearStars();
+  // AND EVERY CREATURE IS NEW AGAIN, so the "New enemy!" alerts come back — the
+  // owner's "fresh start with no memory". See src/newfoe.js.
+  forgetFoes();
+  // AND EVERY TOWER, so the encyclopedia locks again and "New tower!" comes back.
+  forgetTowers();
+  // AND THE WORLD MAP POINTS AT STAGE 1 AGAIN, as for a new player. See src/tutorial.js.
+  forgetIntro();
+  state.mapTour = null;
+  // AND THE ENDING IS UNSEEN AGAIN, its seal gone and the fog back. See src/ending.js.
+  forgetEnding();
+  state.ending = null;
+  // AND EVERY STAR SPENT ON UPGRADES COMES BACK — there are no stars left to
+  // have spent. See src/upgrades.js.
+  resetUpgrades();
+  // AND NOTHING IS EARNED. See src/achievements.js.
+  clearAchievements();
+  // AND THE TOTALS ARE BACK AT NOTHING. See src/stats.js.
+  clearStats();
+  state.unlocked = 0;
+  state.stage = null;
+  state.pendingReveal = null;
+}
+
 // NOT IN THE PUBLIC BUILD, at the owner's word: the itch.io zip (tools/itch.mjs) sets
 // window.__public, and the dashboard's door is neither drawn nor answered there, so
 // no player meets the unlock codes. Everywhere else — the owner's copy, the tools —
@@ -1470,29 +1499,7 @@ export function tapAdmin(state, x, y, restart) {
   // gold stars over a stage they had not played. A reset that leaves the old
   // score sitting there has not reset anything the player can see.
   if (on(PROGRESS_BTN)) {
-    resetProgress();
-    clearStars();
-    // AND EVERY CREATURE IS NEW AGAIN, so the "New enemy!" alerts come back — the
-    // owner's "fresh start with no memory". See src/newfoe.js.
-    forgetFoes();
-    // AND EVERY TOWER, so the encyclopedia locks again and "New tower!" comes back.
-    forgetTowers();
-    // AND THE WORLD MAP POINTS AT STAGE 1 AGAIN, as for a new player. See src/tutorial.js.
-    forgetIntro();
-    state.mapTour = null;
-    // AND THE ENDING IS UNSEEN AGAIN, its seal gone and the fog back. See src/ending.js.
-    forgetEnding();
-    state.ending = null;
-    // AND EVERY STAR SPENT ON UPGRADES COMES BACK — there are no stars left to
-    // have spent. See src/upgrades.js.
-    resetUpgrades();
-    // AND NOTHING IS EARNED. See src/achievements.js.
-    clearAchievements();
-    // AND THE TOTALS ARE BACK AT NOTHING. See src/stats.js.
-    clearStats();
-    state.unlocked = 0;
-    state.stage = null;
-    state.pendingReveal = null;
+    resetCampaign(state);
     closeAdmin(state);
     restart();
     return true;

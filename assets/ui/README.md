@@ -14,6 +14,7 @@ usable button rather than a blank disc.
 | `Life_Icon.png`          | the lives icon    | 30 x 24      |
 | `Button_Plate_Icon.png`  | the menu disc     | 60 diameter  |
 | `Encyclopedia_Icon.png`  | the world map's Encyclopedia button, bottom left, with the word under it | 59 x 56 (0.3 per source px, the same scale as the Upgrades hammer) |
+| `Settings_Icon.png`      | the settings gear, top right on the start page and the world map; opens the Music and Effects sliders (and Reset campaign on the map). A stand-in drawn in code, a grey gear with a black edge — redraw it at 512 square and it is used as it is | 46 tall |
 | `Confirm_Icon.png`       | the tick a purchase is confirmed with | 30 box |
 | `Cancel_Button_Icon.png` | the centre cancel | 36 diameter  |
 | `Archery_Icon.png`       | `bow`             | 27 x 32 box  |

@@ -668,6 +668,8 @@ export const paths = {
   // And the trophy between them, which opens the achievements; it lives with the
   // achievement icons. See assets/achievements/README.md.
   icon_achievements: 'assets/achievements/Achievements_Icon.png',
+  // And the settings' gear, top right on the start page and the map (src/settings.js).
+  icon_settings:   'assets/ui/Settings_Icon.png',
   btn_cancel:      'assets/ui/Cancel_Button_Icon.png',
   glyph_bow:       'assets/ui/Archery_Icon.png',
   glyph_swords:    'assets/ui/Barracks_Icon.png',
