@@ -16,7 +16,7 @@ import { greetVillager } from './villagers.js';
 import { solo, answer, play, playAwake, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, ADMIN_ON, openAdmin, tapAdmin, resetCampaign } from './admin.js';
-import { hitSettingsButton, insideSettings, hitSettingsReset, hitSettingsDone, openSettings, closeSettings, mapGearShown, SETTINGS_SOUND } from './settings.js';
+import { hitSettingsButton, insideSettings, hitSettingsReset, hitSettingsDone, hitSettingsFull, toggleFullscreen, openSettings, closeSettings, mapGearShown, SETTINGS_SOUND } from './settings.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { tapTitle } from './titlepage.js';
 import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, skipTutorial, doorShown } from './tutorial.js';
@@ -226,7 +226,12 @@ export function attachInput(canvas, state, restart) {
     }
   });
 
-  const letGo = () => { state.soundDrag = null; };
+  const letGo = () => {
+    state.soundDrag = null;
+    // FULL SCREEN, asked for by the tap that landed on its button and done here, as the
+    // finger lifts — the moment a browser counts as the player's own. See src/settings.js.
+    if (state.wantFullscreen) { state.wantFullscreen = false; toggleFullscreen(); }
+  };
   canvas.addEventListener('pointerup', letGo);
   canvas.addEventListener('pointercancel', letGo);
   // A finger dragging a slider must not be taken for a pan, which would cancel it.
@@ -599,6 +604,7 @@ function tapSettings(state, x, y, restart) {
     state.soundDrag = slider;
     return press(`sound:${slider}`);
   }
+  if (hitSettingsFull(x, y)) { state.armed = null; state.wantFullscreen = true; return press('fullscreen'); }
   if (hitSettingsReset(state, x, y)) {
     const now = performance.now();
     if (state.armed && state.armed.id === 'reset' && now < state.armed.until) {

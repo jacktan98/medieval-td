@@ -11,12 +11,24 @@
 export const SETTINGS_ICON = { cx: 914, cy: 44 };
 export const SETTINGS_BTN = { x: 880, y: 10, w: 68, h: 68 };
 
-// THE PANEL, in the middle of the screen: the title, the two sliders, and the buttons
-// in a row under them — Reset campaign and Done on the map, Done alone on the start page.
-export const SETTINGS_SHEET = { x: 290, y: 120, w: 380, h: 250 };
-export const SETTINGS_TITLE_Y = 158;
-export const SETTINGS_SOUND = { x: 330, y: 186, w: 300, h: 92 };
-const ROW_Y = 306, ROW_H = 38;
+// FULL SCREEN, at the owner's word, where the device allows it — a phone's browser on
+// Android, a computer — and nowhere else: an iPhone's Safari lets nothing but a video
+// fill its screen, and a button there would do nothing. Asked of the page once.
+const doc = typeof document !== 'undefined' ? document : null;
+export const FULLSCREEN_OK = !!(doc && (doc.fullscreenEnabled || doc.webkitFullscreenEnabled));
+export const isFullscreen = () => !!(doc && (doc.fullscreenElement || doc.webkitFullscreenElement));
+
+// THE PANEL, in the middle of the screen: the title, the two sliders, Full screen under
+// them where the device has it, and the buttons in a row at the foot — Reset campaign
+// and Done on the map, Done alone on the start page. The panel grows by the Full screen
+// row where there is one, and stays centred.
+const FULL_ROW = FULLSCREEN_OK ? 56 : 0;
+const TOP = 120 - FULL_ROW / 2;
+export const SETTINGS_SHEET = { x: 290, y: TOP, w: 380, h: 250 + FULL_ROW };
+export const SETTINGS_TITLE_Y = TOP + 38;
+export const SETTINGS_SOUND = { x: 330, y: TOP + 66, w: 300, h: 92 };
+export const SETTINGS_FULL = { x: 380, y: TOP + 186, w: 200, h: 38 };
+const ROW_Y = TOP + 186 + FULL_ROW, ROW_H = 38;
 export const SETTINGS_RESET = { x: 328, y: ROW_Y, w: 170, h: ROW_H };
 export const SETTINGS_DONE_MAP = { x: 522, y: ROW_Y, w: 110, h: ROW_H };
 export const SETTINGS_DONE_TITLE = { x: 425, y: ROW_Y, w: 110, h: ROW_H };
@@ -27,6 +39,24 @@ export const hitSettingsButton = (x, y) => inside(SETTINGS_BTN, x, y);
 export const insideSettings = (x, y) => inside(SETTINGS_SHEET, x, y);
 export const hitSettingsReset = (state, x, y) => state.settings === 'map' && inside(SETTINGS_RESET, x, y, 8);
 export const hitSettingsDone = (state, x, y) => inside(settingsDone(state), x, y, 8);
+export const hitSettingsFull = (x, y) => FULLSCREEN_OK && inside(SETTINGS_FULL, x, y, 8);
+
+// INTO FULL SCREEN, or out of it — the whole page, so the board keeps its own fitting,
+// and on a phone turned sideways for good while it lasts. A browser takes it only from
+// the player's own press, and on a touch screen that is the finger LIFTING, not landing
+// — so the tap asks (`state.wantFullscreen`) and input.js answers on pointerup.
+export function toggleFullscreen() {
+  if (!FULLSCREEN_OK) return;
+  if (isFullscreen()) {
+    (doc.exitFullscreen || doc.webkitExitFullscreen).call(doc)?.catch?.(() => {});
+    return;
+  }
+  const el = doc.documentElement;
+  const ask = el.requestFullscreen || el.webkitRequestFullscreen;
+  const done = ask.call(el, { navigationUI: 'hide' });
+  const lock = () => { try { screen.orientation?.lock?.('landscape')?.catch?.(() => {}); } catch { /* not this device */ } };
+  if (done && done.then) done.then(lock).catch(() => {}); else lock();
+}
 
 // WHERE IT WAS OPENED is what it offers: 'title' or 'map'.
 export function openSettings(state, where) {

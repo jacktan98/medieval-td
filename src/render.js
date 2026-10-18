@@ -55,7 +55,7 @@ import { enemyTypes, FOE_NOTES } from './data/waves.js';
 import { UPGRADES, UPGRADE_FAMILIES, UPGRADE_COSTS } from './data/upgrades.js';
 import { rungState, canBuy, starsLeft, boughtIn, starsEarned } from './upgrades.js';
 import { stats, towersBuilt, favouriteTower, playTime } from './stats.js';
-import { SETTINGS_ICON, SETTINGS_SHEET, SETTINGS_TITLE_Y, SETTINGS_SOUND, SETTINGS_RESET, settingsDone, mapGearShown } from './settings.js';
+import { SETTINGS_ICON, SETTINGS_SHEET, SETTINGS_TITLE_Y, SETTINGS_SOUND, SETTINGS_RESET, SETTINGS_FULL, FULLSCREEN_OK, isFullscreen, settingsDone, mapGearShown } from './settings.js';
 import { UPGRADES_ICON, UP_SHEET, UP_TITLE_Y, UP_STARS, upBox, upFamily, UP_PANEL, UP_BUY, UP_RESET,
          UP_DONE, shownRung } from './upgradepage.js';
 import { drawTutorial, drawMapTour, verbs, showsSkip, doorScale } from './tutorial.js';
@@ -8825,6 +8825,7 @@ function drawSettings(ctx, state) {
   ctx.fillText('Settings', 480, SETTINGS_TITLE_Y);
   ctx.restore();
   drawSoundPanel(ctx, SETTINGS_SOUND);
+  if (FULLSCREEN_OK) askButton(ctx, SETTINGS_FULL, isFullscreen() ? 'Exit full screen' : 'Full screen', false);
   const armed = state.armed && performance.now() < state.armed.until ? state.armed.id : null;
   if (state.settings === 'map') askButton(ctx, SETTINGS_RESET, 'Reset campaign', armed === 'reset');
   askButton(ctx, settingsDone(state), 'Done', false);
