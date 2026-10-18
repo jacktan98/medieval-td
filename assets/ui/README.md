@@ -53,8 +53,8 @@ usable button rather than a blank disc.
 | `Aim_Near_Exit_Icon.png` | `aim_exit`, the standing order | 30 box |
 | `Aim_Most_Health_Icon.png` | `aim_tough`     | 30 box       |
 | `Aim_Ranged_Enemies_Icon.png` | `aim_ranged` | 30 box       |
-| `Favicon.png`            | the browser tab icon | 64 x 64, and read at 16 |
-| `Apple_Touch_Icon.png`   | the iPhone home screen icon | 180 x 180, opaque |
+| `Favicon.png`            | the browser tab icon: the shield, with its arrow, from the start page's name | 64 x 64, and read at 16 |
+| `Apple_Touch_Icon.png`   | the iPhone home screen icon: the start page's name over its scene | 180 x 180, opaque |
 | `High_Altar_Holy_Wrath.png`       | the badge over every tower it buffs   | 20 tall |
 | `High_Altar_Divine_Fortitude.png` | the badge over every barracks it buffs | 20 tall |
 
@@ -64,11 +64,13 @@ usable button rather than a blank disc.
 every browser that shows it will shrink it: 16px on a tab, 32 on a bookmark bar.
 That is a smaller box than anything else in this project has to survive.
 
-It is composited rather than drawn — the barracks' crossed swords laid on
-`Button_Plate_Icon.png` at 52% of the disc — so it is the artist's own artwork
-without a new file to keep in step. The plate is what makes it work: a filled
-cream disc with a black rim holds a silhouette on a white tab and a dark one
-alike, where a bare transparent glyph disappeared into both.
+IT IS THE SHIELD FROM THE START PAGE'S NAME now, at the owner's word ("use the start
+page name as the icon"): the whole name, arrow to torch, is far too wide to read in a
+16px square, so the tab carries the one part of it that is a bold shape on its own —
+the shield, cut from `assets/start/Start_Page_Name.svg` with the arrow through it and
+its own dark edge and shadow. (It was the barracks' crossed swords on
+`Button_Plate_Icon.png`, which held its shape on white and dark tabs by the plate; the
+shield holds it by its black edge.)
 
 **If you replace it, the test is the only one that matters here: shrink your
 drawing to 16 x 16 and look at it.** Every candidate in this folder was tried
@@ -98,10 +100,10 @@ them would have spoiled the favicon if it had been reused:
 - **It must be opaque, edge to edge.** iOS composites transparency onto black
   and then applies its own rounded mask, so the favicon's cream disc on a clear
   ground would arrive as a disc in a black box. This one fills the square with
-  the board's own grass, `rgb(50, 58, 40)`, read off the running game rather
-  than typed.
-- **The corners are cut off.** iOS rounds them at about 22%, so the swords sit
-  inside 14% of every edge and nothing of them is lost.
+  the start page's own scene — sky, mountains and road — with the start page's
+  name over it, at the owner's word: at 180 the whole name can be read.
+- **The corners are cut off.** iOS rounds them at about 22%, so the name sits
+  12 px in from each side and its sword and torch stay inside the curve.
 
 180 x 180 is the largest size iOS asks for and it scales the rest itself, so one
 file is enough. `node tools/check-modules.mjs` checks that both icons are wired

@@ -800,7 +800,7 @@ function step(state, dt) {
 // has failed, or 3 seconds have passed), the screen is the bar alone.
 let loadingFrac = 0, loadingWords = false, gameUp = false;
 const showWords = () => { if (loadingWords) return; loadingWords = true; if (!gameUp) drawLoading(loadingFrac); };
-// THE START PAGE'S NAME IN PLACE OF THE WORDS "Medieval TD", at the owner's word: the
+// THE START PAGE'S NAME IN PLACE OF THE WORDS "Medieval Tower Defense", at the owner's word: the
 // artist's lettering, arrow, shield, sword and torch (assets/start), fetched first and
 // on its own so it is up before the rest of the art. NAME_CROP is the drawing within
 // its 1920 x 1080 sheet, its shadow included. Until it has arrived the screen is the
@@ -831,7 +831,7 @@ function drawLoading(frac) {
   if (loadingName) {
     const h = NAME_W * NAME_CROP.h / NAME_CROP.w;
     ctx.drawImage(loadingName, NAME_CROP.x, NAME_CROP.y, NAME_CROP.w, NAME_CROP.h, 480 - NAME_W / 2, 302 - h, NAME_W, h);
-  } else if (loadingWords && nameFailed) ctx.fillText('Medieval TD', 480, 266);
+  } else if (loadingWords && nameFailed) ctx.fillText('Medieval Tower Defense', 480, 266);
   // The name, the bar and the count, as one group in the middle of the screen.
   const w = 360, h = 14, x = 480 - w / 2, y = 324;
   ctx.fillStyle = 'rgba(240,230,210,0.15)';

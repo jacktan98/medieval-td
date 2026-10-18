@@ -6,7 +6,7 @@ map, with the game's logo and the Start button (like Kingdom Rush 1's).
 In the game: the start page shows after the loading bar, once a visit, before the
 world map (src/titlepage.js). The four scene layers get a light wash there, a touch of
 colour taken out and the edges darkened; the name goes over that as drawn. The
-loading screen draws the name too, in place of the words "Medieval TD" (NAME_SRC in
+loading screen draws the name too, in place of the words "Medieval Tower Defense" (NAME_SRC in
 src/main.js), so a new upload of any of these shows at once.
 
 ## The layers

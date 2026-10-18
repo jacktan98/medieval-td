@@ -1,4 +1,4 @@
-# Medieval TD
+# Medieval Tower Defense
 
 A tower defence played in a browser. Three hand-drawn maps, four families of
 tower with a fork at the top of all four, twenty buildings, sixteen

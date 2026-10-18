@@ -15,7 +15,7 @@ export const TALLY_TITLE = 'Your campaign';
 
 // The credits, a line each. An empty string is a gap.
 export const CREDITS = [
-  'Medieval TD',
+  'Medieval Tower Defense',
   '',
   'Created by NoobStickz',
   '',
