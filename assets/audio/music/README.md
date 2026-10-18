@@ -22,4 +22,6 @@ make the itch.io upload bigger.
   without a gap or a jump. Trim any silence at either end.
 - **About 1 to 3 minutes** is plenty for a looping piece.
 - **MP3 at 128 to 192 kbps** keeps a 3 minute track around 3 to 4 MB. The two
-  here are 256 kbps, about 6 MB each.
+  here were uploaded at 256 kbps (about 6 MB each) and re-exported at 128 kbps
+  (about 3 MB each), which the ear cannot tell apart in the game. A new upload at a
+  higher rate can be re-exported the same way — ask.
