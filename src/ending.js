@@ -122,9 +122,10 @@ function finish(state) {
 // IN THE ADMIN BUTTON'S PLACE AND STYLE, at the owner's word, while the ending plays
 // (src/admin.js ADMIN_BTN; render.js leaves the Admin button out meanwhile).
 export const SKIP_BTN = { x: 858, y: 484, w: 84, h: 38 };
-// SEND FEEDBACK, under the credits, at the owner's word: the form (src/feedback.js),
-// opened as the finger lifts — see input.js. The credits stay up while it is tapped.
-export const FEEDBACK_BTN = { x: 370, y: 380, w: 220, h: 40 };
+// SEND FEEDBACK, under the credits, at the owner's word, in Skip's style: the form
+// (src/feedback.js), opened as the finger lifts — see input.js. The credits stay up
+// while it is tapped.
+export const FEEDBACK_BTN = { x: 395, y: 380, w: 170, h: 38 };
 export function tapEnding(state, x, y) {
   const E = state.ending;
   if (!E) return false;
@@ -447,7 +448,7 @@ function drawCredits(ctx, E) {
     ctx.font = i === 0 ? TITLE_FONT : FONT;
     if (line) ctx.fillText(line, 480, y + PAD + i * LINE + (i === 0 ? -2 : 4));
   });
-  drawButton(ctx, FEEDBACK_BTN, 'Send feedback');
+  drawAdminDoor(ctx, 'Send feedback', FEEDBACK_BTN);
   ctx.restore();
 }
 

@@ -6454,17 +6454,17 @@ function drawSeal(ctx, cx, cy, r, word, stars) {
 // and the stage panel, and the door is on both. Text alignment is the caller's:
 // both call sites are already centred when they get here.
 // `label`: the ending's Skip uses this button, in its place, while it plays — see
-// src/ending.js.
-export function drawAdminDoor(ctx, label = 'Admin') {
+// src/ending.js. `b`: elsewhere, in the same style — the ending's Send feedback.
+export function drawAdminDoor(ctx, label = 'Admin', b = ADMIN_BTN) {
   // The public build has no dashboard (ADMIN_ON in src/admin.js); its Skips still show.
   if (label === 'Admin' && !ADMIN_ON) return;
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  panelBox(ctx, ADMIN_BTN.x, ADMIN_BTN.y, ADMIN_BTN.w, ADMIN_BTN.h, { r: 9 });
+  panelBox(ctx, b.x, b.y, b.w, b.h, { r: 9 });
   ctx.fillStyle = UI_INK;
   ctx.font = `18px ${MAP_TYPE}`;
-  ctx.fillText(label, ADMIN_BTN.x + ADMIN_BTN.w / 2, ADMIN_BTN.y + ADMIN_BTN.h / 2 + 1);
+  ctx.fillText(label, b.x + b.w / 2, b.y + b.h / 2 + 1);
   ctx.restore();
 }
 
