@@ -6,4 +6,4 @@ Artwork: drawn by hand by NoobStickz.
 Font: Lobster, by Pablo Impallari, under the SIL Open Font License 1.1
 (see assets/fonts/OFL.txt).
 
-Sound effects: from free sound libraries.
+Sound effects and music: from ElevenLabs (elevenlabs.io) and Pixabay (pixabay.com).
