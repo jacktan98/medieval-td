@@ -1,6 +1,7 @@
 // THE SETTINGS, at the owner's word: a gear in the top right corner of the start page
 // and of the world map. Tapped, it opens a dark panel with the Music and Effects
-// sliders — the pause menu's own (drawSoundPanel in render.js) — and, on the world
+// sliders — the pause menu's own (drawSoundPanel in render.js) — Send feedback (src/
+// feedback.js), and, on the world
 // map only, Reset campaign, which asks before it acts as Restart and Quit do: the
 // first tap arms it and reads "Confirm?", the second, within a few seconds, does it.
 //
@@ -18,17 +19,19 @@ const doc = typeof document !== 'undefined' ? document : null;
 export const FULLSCREEN_OK = !!(doc && (doc.fullscreenEnabled || doc.webkitFullscreenEnabled));
 export const isFullscreen = () => !!(doc && (doc.fullscreenElement || doc.webkitFullscreenElement));
 
-// THE PANEL, in the middle of the screen: the title, the two sliders, Full screen under
-// them where the device has it, and the buttons in a row at the foot — Reset campaign
-// and Done on the map, Done alone on the start page. The panel grows by the Full screen
-// row where there is one, and stays centred.
-const FULL_ROW = FULLSCREEN_OK ? 56 : 0;
-const TOP = 120 - FULL_ROW / 2;
-export const SETTINGS_SHEET = { x: 290, y: TOP, w: 380, h: 250 + FULL_ROW };
+// THE PANEL, in the middle of the screen: the title, the two sliders, a row under them
+// with Full screen (where the device has it) and Send feedback, and the buttons in a
+// row at the foot — Reset campaign and Done on the map, Done alone on the start page.
+// Send feedback takes the whole middle row where there is no Full screen.
+const TOP = 92;
+export const SETTINGS_SHEET = { x: 290, y: TOP, w: 380, h: 306 };
 export const SETTINGS_TITLE_Y = TOP + 38;
 export const SETTINGS_SOUND = { x: 330, y: TOP + 66, w: 300, h: 92 };
-export const SETTINGS_FULL = { x: 380, y: TOP + 186, w: 200, h: 38 };
-const ROW_Y = TOP + 186 + FULL_ROW, ROW_H = 38;
+export const SETTINGS_FULL = { x: 328, y: TOP + 186, w: 145, h: 38 };
+export const SETTINGS_FEEDBACK = FULLSCREEN_OK
+  ? { x: 487, y: TOP + 186, w: 145, h: 38 }
+  : { x: 380, y: TOP + 186, w: 200, h: 38 };
+const ROW_Y = TOP + 242, ROW_H = 38;
 export const SETTINGS_RESET = { x: 328, y: ROW_Y, w: 170, h: ROW_H };
 export const SETTINGS_DONE_MAP = { x: 522, y: ROW_Y, w: 110, h: ROW_H };
 export const SETTINGS_DONE_TITLE = { x: 425, y: ROW_Y, w: 110, h: ROW_H };
@@ -40,6 +43,7 @@ export const insideSettings = (x, y) => inside(SETTINGS_SHEET, x, y);
 export const hitSettingsReset = (state, x, y) => state.settings === 'map' && inside(SETTINGS_RESET, x, y, 8);
 export const hitSettingsDone = (state, x, y) => inside(settingsDone(state), x, y, 8);
 export const hitSettingsFull = (x, y) => FULLSCREEN_OK && inside(SETTINGS_FULL, x, y, 8);
+export const hitSettingsFeedback = (x, y) => inside(SETTINGS_FEEDBACK, x, y, 8);
 
 // INTO FULL SCREEN, or out of it — the whole page, so the board keeps its own fitting,
 // and on a phone turned sideways for good while it lasts. A browser takes it only from

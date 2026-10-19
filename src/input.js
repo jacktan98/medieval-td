@@ -16,7 +16,7 @@ import { greetVillager } from './villagers.js';
 import { solo, answer, play, playAwake, insist, unlock, selectionCue, familyCue, CUE, SELECT, PAGE_FLIP, bookSound, setSoundLevel, rallySound } from './audio.js';
 import { hitBookButton, openBook, tapBook, hoverBook } from './book.js';
 import { ADMIN_BTN, ADMIN_ON, openAdmin, tapAdmin, resetCampaign } from './admin.js';
-import { hitSettingsButton, insideSettings, hitSettingsReset, hitSettingsDone, hitSettingsFull, toggleFullscreen, openSettings, closeSettings, mapGearShown, SETTINGS_SOUND } from './settings.js';
+import { hitSettingsButton, insideSettings, hitSettingsReset, hitSettingsDone, hitSettingsFull, hitSettingsFeedback, toggleFullscreen, openSettings, closeSettings, mapGearShown, SETTINGS_SOUND } from './settings.js';
 import { hitAlert, openFoeCard, tapFoeCard, hitFoeStat } from './newfoe.js';
 import { tapTitle } from './titlepage.js';
 import { tutorialAllows, shapeMenu, mapTourAllows, setTouch, hitSkipTutorial, skipTutorial, doorShown } from './tutorial.js';
@@ -30,6 +30,7 @@ import { saveDifficulty, summaryReady } from './score.js';
 import { track, where, layerOf, trackLeave } from './analytics.js';
 import { recordInput, recording, stopRecording } from './replay.js';
 import { tapEnding, tapSeal } from './ending.js';
+import { openFeedback } from './feedback.js';
 
 // WHICH BUTTON A TAP PRESSED, named by the branch that answered it, for the player
 // log (src/analytics.js). `press` marks it and passes the branch's own answer on.
@@ -231,6 +232,8 @@ export function attachInput(canvas, state, restart) {
     // FULL SCREEN, asked for by the tap that landed on its button and done here, as the
     // finger lifts — the moment a browser counts as the player's own. See src/settings.js.
     if (state.wantFullscreen) { state.wantFullscreen = false; toggleFullscreen(); }
+    // THE FEEDBACK FORM, the same way: a new tab only from the player's own press.
+    if (state.wantFeedback) { state.wantFeedback = false; openFeedback(); }
   };
   canvas.addEventListener('pointerup', letGo);
   canvas.addEventListener('pointercancel', letGo);
@@ -605,6 +608,7 @@ function tapSettings(state, x, y, restart) {
     return press(`sound:${slider}`);
   }
   if (hitSettingsFull(x, y)) { state.armed = null; state.wantFullscreen = true; return press('fullscreen'); }
+  if (hitSettingsFeedback(x, y)) { state.armed = null; state.wantFeedback = true; return press('feedback'); }
   if (hitSettingsReset(state, x, y)) {
     const now = performance.now();
     if (state.armed && state.armed.id === 'reset' && now < state.armed.until) {
