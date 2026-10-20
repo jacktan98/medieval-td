@@ -35,6 +35,7 @@
 // correctly on sand already — this is about the one colour that does not.
 import { art } from './assets.js';
 import { level } from './level.js';
+import { varyStone } from './stone.js';
 
 // The colour every tower's ground shadow is painted in. The same constant
 // tools/svg.mjs calls SHADOW_FILL and tools/shadow.mjs calls GROUND; it is spelled
@@ -220,7 +221,8 @@ export function shadowSplit(img, id, soft = false) {
     const sg = shadowC.getContext('2d');
     const shadow = sg.createImageData(w, h);
     const bp = body.data, sp = shadow.data;
-    let hits = 0;
+    // A board sheet's building stones, each its own shade, as the base's. See src/stone.js.
+    let hits = id.startsWith('sheet|') ? varyStone(bp, w, h, w / 960) : 0;
     for (let i = 0; i < bp.length; i += 4) {
       if (!isShadow(bp, i)) continue;
       sp[i] = bp[i]; sp[i + 1] = bp[i + 1]; sp[i + 2] = bp[i + 2]; sp[i + 3] = bp[i + 3];

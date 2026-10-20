@@ -11,6 +11,7 @@ import { SPLAT_FADE } from './blood.js';
 import { IMPACT_TRIM, IMPACT_SCALE, IMPACT_FADE, IMPACT_LIE } from './impacts.js';
 import { art, discFace } from './assets.js';
 import { onGround, shadowSplit } from './tint.js';
+import { varyStoneCanvas } from './stone.js';
 import { drawExitFlag } from './flag.js';
 import { drawCrewTurned } from './crew.js';
 import { drawBoardWater, drawBoardLake, drawFountain, drawSplash, drawLeapingFish } from './motion.js';
@@ -219,6 +220,8 @@ function boardBase(ctx, img) {
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
   c.getContext('2d').drawImage(img, 0, 0, w, h);
+  // Each stone of the buildings its own shade. See src/stone.js.
+  varyStoneCanvas(c);
   baseCache = { img, w, h, c };
   return c;
 }

@@ -254,6 +254,32 @@ What this asks of the drawing:
 - **Nothing else in that file.** The sheet is the part, whole. Anything you leave in
   it is also in front of everything.
 
+## The boards' sheets are shaded
+
+At the owner's word the buildings, walls, bridges and trees on every board are lit
+from the top left, in flat colours only: roofs and other tops a fifth lighter, faces
+turned to the right darker, a darker band along the lower right of round things
+(leaf clumps, trunks, dead trees, round towers). The rocks, stepping stones, mats
+and the ground are left as drawn.
+
+`node tools/shade.mjs maps` does it to every board's `_base`, `_front`, `_over`
+and stage 8's `_bell_cover` sheet, in place. The layer files are never touched. A
+sheet it has shaded is marked `data-shaded` and skipped on a second run, so **after
+the splitter rewrites a sheet, run `node tools/shade.mjs maps N` again** (and then
+`node tools/bare-banners.mjs` for stage 8). `DEBUG_TO=<folder>` writes colour-coded
+copies there instead (yellow top, blue right face, cyan front, red band).
+
+A banded shape's outline is kept once in `<defs>` and drawn with `<use>`, so the
+sheets weigh about what they did.
+
+**Each stone its own shade** is done by the game as a board loads (`src/stone.js`),
+because a wall is one shape with the stones drawn over it as lines. It finds the
+buildings' stone by colour: the shading tool gives every wall it shades a grey no
+other drawing uses (`#979797` and `#878787` for the fronts, and the tops' and right
+faces' own greys), so a rock in `#969696` on the grass is never mistaken for one.
+A board redrawn with a new stone grey needs it added to `FACE` and `MARK` in the
+tool and to `STONE_GREYS` in `src/stone.js`.
+
 ## The HUD icons are not world art
 
 `Gold_Icon.png` and `Life_Icon.png` — in `assets/ui`, see above — are the only
@@ -783,8 +809,8 @@ hand:
   is untouched. Run it once after a redraw of the church, before the splitter.
 - `Stage_8_Map_front_bare.svg` — **stage 8's front sheet without the church's two
   banners**: the brick wall behind them as drawn. Written by
-  `node tools/bare-banners.mjs`, to be run after every run of the splitter on
-  stage 8. The banners sway over it, and since the wall under them is the artist's
+  `node tools/bare-banners.mjs`, to be run after every run of the splitter (and of
+  `tools/shade.mjs`) on stage 8. The banners sway over it, and since the wall under them is the artist's
   own rather than rebuilt, its mortar lines run on unbroken where the cloth swings
   away.
 - `Overview_Map_sepia.svg` — the picture layers in browns, with the guide and the

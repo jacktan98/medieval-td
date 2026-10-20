@@ -3885,7 +3885,13 @@ console.log('\n--- the road opens one stage at a time ---\n');
     const groups = allGroups(art);
     const leaves = groups.filter(g => !groups.some(o => o !== g && o.start >= g.start &&
       o.end <= g.end && !(o.start === g.start && o.end === g.end)));
-    const lost = leaves.filter(g => !kept.some(k => k.includes(art.slice(g.start, g.end)))).filter(g => {
+    // KEPT BY ITS OUTLINE, not its whole text: tools/shade.mjs recolours the base's
+    // walls and roofs, and keeps a banded shape's outline once in <defs>.
+    const has = (k, text) => {
+      const ds = [...text.matchAll(/\sd="([^"]*)"/g)].map(m => m[1]);
+      return ds.length ? ds.every(d => k.includes(`d="${d}"`)) : k.includes(text);
+    };
+    const lost = leaves.filter(g => !kept.some(k => has(k, art.slice(g.start, g.end)))).filter(g => {
       const b = bounds(g.subPaths.flat());
       const [x0, y0, x1, y1] = [b.x0 * MAP_SCALE, b.y0 * MAP_SCALE, b.x1 * MAP_SCALE, b.y1 * MAP_SCALE];
       // A villager may have a taller window (`up`) for what he holds over his head —

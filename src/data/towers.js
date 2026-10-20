@@ -147,8 +147,8 @@ const QUARREL_TRIM = [209, 250, 94, 12];
 const XBOW_TRIM = [194, 197, 124, 118];
 const XBOW_ATK_TRIM = [207, 197, 111, 118];
 const CAMP_TRIM = [207, 249, 610, 526];
-const CAMP2_TRIM = [200, 197, 624, 630];
-const CAMP3_TRIM = [200, 201, 624, 621];
+const CAMP2_TRIM = [200, 196, 624, 632];
+const CAMP3_TRIM = [200, 201, 624, 622];
 const SPEAR_TRIM = [172, 198, 168, 116];
 const SPEAR_ATK_TRIM = [133, 198, 196, 116];
 const SPEAR2_TRIM = [174, 196, 163, 120];
@@ -213,7 +213,7 @@ const PAL_ATK_TRIM = [135, 212, 178, 116];
 // anchors. Tier 1 is the same deck with no roof and a cross on a post.
 const MON_TRIM = [241, 228, 542, 568];
 const MON2_TRIM = [274, 165, 476, 694];
-const MON3_TRIM = [277, 165, 469, 694];
+const MON3_TRIM = [277, 165, 470, 694];
 // Tier 4, the High Altar. NARROWER AND TALLER than the three below it —
 // 360 x 804 against tier 3's 469 x 694 — and both halves of that are the drawing
 // rather than a scale change: the belfry sits on a storey of stonework instead

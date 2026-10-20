@@ -740,8 +740,28 @@ What still crosses both archers is the near post: the deck's centre is close to
 that post in x, so a man standing dead centre is behind it by construction. That
 is the drawing being honest, not a number to fix.
 
+## The PNGs are shaded; the SVGs are not
+
+At the owner's word every building is lit from the top left, in flat colours only
+(no gradients): tops a fifth lighter, faces turned toward the viewer as drawn, faces
+turned to the right darker (stone `#b6b6b6` / `#969696` / `#7d7d7d`, timber
+`#8b6b37` / `#74592e` / `#604a26`). Every stone is then its own shade, a little
+lighter or darker than its neighbours, and the lowest stones are darker, some of
+them mossy.
+
+The SVGs stay as the owner drew them. `node tools/shade.mjs towers` draws each
+building's SVG, shades it and writes it over the PNG, so it can be run again at
+any time and gives the same PNG. Which face is which was picked by hand for most
+towers (by the order of the `<path>` tags; see TOWERS in the tool) and read off
+the shapes for the barracks, the Paladin Keep and the Assassin Guild. The Abbey's
+roof cross is kept as drawn. The catapults, the tent and the weapon frames are not
+shaded.
+
 ## After a redraw
 
+0. `node tools/shade.mjs towers <name>` — after uploading a tower's SVG and PNG.
+   A tower whose faces were picked by hand must be picked again (or set to
+   `'auto'`) if its SVG changed, or the wrong paths are shaded.
 1. `node tools/trim.mjs` — paste the new `spriteTrim`. For an ANIMATED building
    take the union of its frames' rects; see the catapult section above.
 2. Re-measure `frontTrims`. They are absolute source pixels, like every trim in
