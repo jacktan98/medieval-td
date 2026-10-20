@@ -520,9 +520,10 @@ hut is wider than the tallest tower and the marker was resized for it.
 
 The `.svg` files beside the PNGs are the originals. Nothing loads them; they are
 here because they are the only place the tower's parts exist as separate
-objects, which is what made the front layer below measurable at all. Only the
-three archery towers have one — the barracks huts are PNG-only, which is fine
-because none of them has a gunner to be in front of.
+objects, which is what made the front layer below measurable at all. Every
+building has one now: the three barracks huts were PNG-only until the owner drew
+their SVGs, so that the shading (lit from the top left) can be worked out from
+their shapes like every other tower's.
 
 The SVGs carry no ids or labels, so the parts are identified by geometry and fill
 colour after composing the transform stack: `#969696` is stone, `#735a31` is
