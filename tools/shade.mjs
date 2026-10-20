@@ -434,7 +434,7 @@ async function shadeSheets(page, files, W, H, owner = [], mark = src => src) {
 }
 
 // THE TOWERS: drawn from their SVG, shaded, every stone its own shade and the lowest
-// stones mossy, and written over the tower's PNG — the PNG is what the game draws.
+// stones darker, and written over the tower's PNG — the PNG is what the game draws.
 // The SVG is never touched, so this can be run again at any time and gives the same
 // PNG; after the owner uploads a tower again, run it again for that tower.
 //
@@ -513,8 +513,8 @@ async function shadeTower(page, f, job) {
 }
 
 // EVERY STONE ITS OWN SHADE: each patch of wall grey between the lines is made a
-// little lighter or darker, and the lowest quarter of the walls darker still, some of
-// it green with moss. Seeded, so the same tower comes out the same every time.
+// little lighter or darker, and the lowest quarter of the walls darker still (no moss,
+// at the owner's word). Seeded, so the same tower comes out the same every time.
 async function stoneInPage([svg, png, N, KEEP, stone]) {
   const load = async t => { const im = new Image(); im.src = t; await im.decode(); return im; };
   const draw = im => { const c = document.createElement('canvas'); c.width = c.height = N; c.getContext('2d').drawImage(im, 0, 0, N, N); return c; };
@@ -542,10 +542,11 @@ async function stoneInPage([svg, png, N, KEEP, stone]) {
     if (px.length < 40) continue;
     const cy = px.reduce((t, q) => t + ((q / N) | 0), 0) / px.length;
     const low = Math.max(0, (cy - (ymax - 0.25 * (ymax - ymin))) / (0.25 * (ymax - ymin)));
-    const k = 1 + (rnd() - 0.55) * 0.26 - low * 0.2, moss = rnd() < 0.45 * low;
+    const k = 1 + (rnd() - 0.55) * 0.26 - low * 0.2;
+    // No moss, at the owner's word; its draw is kept so every stone keeps its shade.
+    rnd();
     for (const q of px) {
       const o = q * 4; let r = d[o] * k, gg = d[o + 1] * k, bb = d[o + 2] * k;
-      if (moss) { r *= 0.93; bb *= 0.86; }
       d[o] = Math.min(255, r); d[o + 1] = Math.min(255, gg); d[o + 2] = Math.min(255, bb);
     }
     stones++;

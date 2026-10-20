@@ -746,8 +746,8 @@ At the owner's word every building is lit from the top left, in flat colours onl
 (no gradients): tops a fifth lighter, faces turned toward the viewer as drawn, faces
 turned to the right darker (stone `#b6b6b6` / `#969696` / `#7d7d7d`, timber
 `#8b6b37` / `#74592e` / `#604a26`). Every stone is then its own shade, a little
-lighter or darker than its neighbours, and the lowest stones are darker, some of
-them mossy.
+lighter or darker than its neighbours, and the lowest stones are darker. No moss
+(green), at the owner's word.
 
 The SVGs stay as the owner drew them. `node tools/shade.mjs towers` draws each
 building's SVG, shades it and writes it over the PNG, so it can be run again at
