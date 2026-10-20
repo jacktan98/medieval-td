@@ -715,6 +715,12 @@ console.log('\nWhat fits, and what you can hit\n');
 
   ok(onBoard(ADMIN_BTN) && ADMIN_BTN.x > 700 && ADMIN_BTN.y > 400,
     'the door is in the bottom-right corner', `${ADMIN_BTN.x}, ${ADMIN_BTN.y}`);
+  // The battle's speed button stands in the door's place, in the door's look.
+  {
+    const { HUD_BTN } = await import('../src/render.js');
+    ok(['x', 'y', 'w', 'h'].every(k => HUD_BTN.speed[k] === ADMIN_BTN[k]),
+      'the speed button stands where the door does', JSON.stringify(HUD_BTN.speed));
+  }
 
   // Every map's longest wave row, and every page of the unit list, has to fit
   // between the header and the footer. Map 3 runs ten waves and is what sizes

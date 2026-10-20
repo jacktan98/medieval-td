@@ -27,7 +27,7 @@ const store = () => {
   try { return globalThis.localStorage || null; } catch { return null; }
 };
 
-const blank = () => ({ got: {}, n: {}, book: [], off: [], tier4: 0 });
+const blank = () => ({ got: {}, n: {}, book: [], off: [], folk: [], tier4: 0 });
 
 function load() {
   const s = store();
@@ -39,6 +39,7 @@ function load() {
       n: raw.n && typeof raw.n === 'object' ? raw.n : {},
       book: Array.isArray(raw.book) ? raw.book : [],
       off: Array.isArray(raw.off) ? raw.off : [],
+      folk: Array.isArray(raw.folk) ? raw.folk : [],
       tier4: Number(raw.tier4) || 0
     };
   } catch { return blank(); }
@@ -160,11 +161,15 @@ export const OFFROAD = {
   m17: [0, 1, 11, 12],
   m18: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 };
-// FRIEND OF THE PEOPLE counts the people: not Dark Hollow's thugs and enemy villagers,
-// and not its crows, at the owner's word.
-const NOT_PEOPLE = ['enemy_villager', 'enemy_box', 'enemy_anvil', 'enemy_steel', 'perched_crow'];
+// FRIEND OF THE PEOPLE: every different villager on stages 1 to 13, each tapped at
+// least once, at the owner's word (it was any 100 taps). Dark Hollow's people are
+// thugs and crows, and are Know Thy Enemy's. By board and by their place in its
+// `villagers` list, as OFFROAD.
+export const PEOPLE = Object.fromEntries(STAGES.slice(0, 13).map(s => levels[s.level])
+  .map(l => [l.id, (l.villagers || []).map((_, n) => n)]));
+export const PEOPLE_COUNT = Object.values(PEOPLE).reduce((n, l) => n + l.length, 0);
 export function noteVillagerTap(levelId, v) {
-  if (!NOT_PEOPLE.includes(v.voice)) note('villagers');
+  if (PEOPLE[levelId] && PEOPLE[levelId].includes(v.n)) noteOnce('villagers', 'folk', `${levelId}:${v.n}`);
   if (OFFROAD[levelId] && OFFROAD[levelId].includes(v.n)) noteOnce('offroad', 'off', `${levelId}:${v.n}`);
 }
 
@@ -193,6 +198,7 @@ export function progressOf(id) {
     : id === 'upgrades' ? rungsBought()
     : id === 'book' ? saved.book.length
     : id === 'offroad' ? saved.off.length
+    : id === 'villagers' ? saved.folk.length
     : id === 'tier4' ? saved.tier4
     : Math.floor(saved.n[id] || 0);
   return [Math.min(done, a.goal), a.goal];

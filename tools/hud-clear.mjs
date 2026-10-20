@@ -128,7 +128,11 @@ const RUNS = [
 // y=63 and 7px either side, well below the picture of it. Either way it is not what
 // this rule measures: the body of any building tall enough to reach up there runs
 // hundreds of px below the plates, so there is always somewhere to tap it.
-const CONTROLS = Object.entries(HUD_BTN).map(([id, b]) => [b.x, b.w, b.y + b.h, id, b.y]);
+// THE TOP ROW ONLY. The speed button sits in the bottom-right corner now, at the
+// owner's word, under the feet of the buildings rather than over their roofs, and
+// gives way to a tower's menu (speedShown in render.js).
+const TOP_ROW = Object.fromEntries(Object.entries(HUD_BTN).filter(([id]) => id !== 'speed'));
+const CONTROLS = Object.entries(TOP_ROW).map(([id, b]) => [b.x, b.w, b.y + b.h, id, b.y]);
 
 // THE INFO PANEL IS NOT A CONTROL, and that distinction is the whole reason it
 // sits in its own list. Nothing is tapped on it; it is 197px of opaque plate in
@@ -313,7 +317,7 @@ for (let i = 0; i < lv.plots.length; i++) {
 // will want when they next look at this: how far into the HUD the worst plot in the
 // campaign actually reaches, and which plot it is.
 {
-  const row = Math.max(...Object.values(HUD_BTN).map(b => b.y + b.h));
+  const row = Math.max(...Object.values(TOP_ROW).map(b => b.y + b.h));
   let low = Infinity, where = '';
   for (const [li, lv] of levels.entries()) {
     useLevel(li);

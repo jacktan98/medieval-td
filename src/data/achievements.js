@@ -32,8 +32,8 @@ export const ACHIEVEMENTS = [
 
   { id: 'quarrels', name: 'Rain of Quarrels', icon: 'ach_9', goal: 50000,
     text: 'Have your crossbowmen deal 50,000 damage in total.' },
-  { id: 'heavykill', name: 'Heavy Hitter', icon: 'ach_10', goal: 40,
-    text: 'Have your ballista engineers kill 40 enemies with Heavy Bolt.' },
+  { id: 'heavykill', name: 'Heavy Hitter', icon: 'ach_10', goal: 80,
+    text: 'Have your ballista engineers kill 80 enemies with Heavy Bolt.' },
   { id: 'holylight', name: 'Saving Grace', icon: 'ach_11', goal: 150,
     text: 'Have your paladins heal themselves fully with Holy Light 150 times.' },
   { id: 'blessing', name: 'Divine Blessing', icon: 'ach_12', goal: 15,
@@ -50,8 +50,8 @@ export const ACHIEVEMENTS = [
 
   { id: 'book', name: 'Patron of the Arts', icon: 'ach_17', goal: 70,
     text: '{Click} on every picture in the Encyclopedia to see it up close.' },
-  { id: 'villagers', name: 'Friend of the People', icon: 'ach_18', goal: 100,
-    text: '{Click} on villagers 100 times. Thugs do not count.' },
+  { id: 'villagers', name: 'Friend of the People', icon: 'ach_18', goal: 64,
+    text: '{Click} on every villager on stages 1 to 13.' },
   { id: 'offroad', name: 'Know Thy Enemy', icon: 'ach_19', goal: 19,
     text: '{Click} on every enemy waiting off the road on stages 14, 15 and 16.' },
   { id: 'tier4', name: 'Grand Arsenal', icon: 'ach_20', goal: 8,

@@ -33,8 +33,8 @@
 // The FRONT and OVER sheets are copies of buildings in the base, drawn again over the
 // figures walking behind them, so they must come out the same colour as the base or
 // the building changes shade as a man walks past. So the base is shaded first and
-// every shape in the other two that is also in the base (the same outline and fill)
-// takes the base's decision.
+// every shape in the other two that is also in the base (the same fill, in the same
+// place) takes the base's decision — leaving it as drawn included.
 //
 // Stones each their own shade is not done here: a wall is one shape with the brick
 // lines drawn over it, so no SVG can colour one brick. The game does it as a board
@@ -58,10 +58,19 @@ const TOP = 1.2, SIDE = 0.835, BAND = 0.82;
 // in the same grey: a wall's face is moved one step lighter, which no eye can see.
 // Tops and right-hand faces are colours only buildings wear already.
 const MARK = { '#969696': '#979797', '#868686': '#878787' };
+// THE OWNER'S OWN CALLS, where the rules read a face another way: by board, the
+// shape's fill and the top-left corner of its box on a 1920x1080 sheet; `as` is
+// 'top', 'side' or 'keep' (as drawn).
+const OWNER = {
+  // Stage 13: the lake's bank is ground, and is left as drawn.
+  13: [{ fill: '#74592e', at: [-64, 211], as: 'keep' }],
+  // Stage 16: the Citadel's walk behind its battlements, dark.
+  16: [{ fill: '#868686', at: [-41, 263], as: 'side' }, { fill: '#868686', at: [0, 286], as: 'side' }],
+};
 
 // The page side: classify every shape on one sheet and colour it. `known` is the
 // base sheet's decisions, keyed by outline and fill, for the front and over sheets.
-function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, DEBUG]) {
+function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, DEBUG, owner = []]) {
   const NS = 'http://www.w3.org/2000/svg', root = document.querySelector('svg');
   if (root.getAttribute('data-shaded')) return null;
   let defs = root.querySelector('defs');
@@ -76,8 +85,6 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
   const dark = f => (NAMED[f] && NAMED[f][1]) || tone(f, BAND);
 
   const els = [...root.querySelectorAll('path,rect,ellipse,circle,polygon')];
-  const key = el => el.getAttribute('fill') + '|' + (el.getAttribute('d') || el.getAttribute('points') ||
-    ['x', 'y', 'width', 'height', 'cx', 'cy', 'rx', 'ry', 'r'].map(a => el.getAttribute(a)).join(','));
 
   // How a shape's outline runs: upright, falling to the right, rising to the right, flat.
   const edges = el => {
@@ -105,7 +112,9 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
 
   const info = els.map(el => {
     const f = (el.getAttribute('fill') || '').toLowerCase(), r = el.getBoundingClientRect();
-    return { el, f, r, area: r.width * r.height, k: key(el) };
+    // Keyed by fill and where it stands, not by its outline's text: a front sheet can
+    // write the same shape another way.
+    return { el, f, r, area: r.width * r.height, k: `${f}|${[r.left, r.top, r.width, r.height].map(v => Math.round(v * 2) / 2).join(',')}` };
   });
   const ground = s => {
     const touch = (s.r.left <= 1) + (s.r.top <= 1) + (s.r.right >= W - 1) + (s.r.bottom >= H - 1);
@@ -133,17 +142,54 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
     return on >= 0.15 * outline(s).length;
   };
 
+  // A ROOF OF FACES MEETING AT ONE PEAK — a hut's cone, a bell tower's spire: three
+  // or more faces of one fill whose highest points meet. At the owner's word the faces
+  // left of the peak are lit and those right of it dark. Keyed by shape: the peak.
+  const peakOf = new Map();
+  {
+    const highest = s => {
+      const el = s.el, m = el.getScreenCTM(), L = el.getTotalLength();
+      let t = [0, Infinity];
+      for (let k = 0; k < 400; k++) { const q = el.getPointAtLength(L * k / 400), y = m.b * q.x + m.d * q.y + m.f; if (y < t[1]) t = [m.a * q.x + m.c * q.y + m.e, y]; }
+      return t;
+    };
+    const flat = faces.filter(s => s.el.getTotalLength).map(s => [s, highest(s)]);
+    for (const [s, t] of flat) {
+      const at = flat.filter(([u, v]) => u.f === s.f && Math.hypot(v[0] - t[0], v[1] - t[1]) < 4);
+      if (at.length >= 3) peakOf.set(s, at.reduce((m, [, v]) => Math.min(m, v[0]), Infinity) / 2 + at.reduce((m, [, v]) => Math.max(m, v[0]), -Infinity) / 2);
+    }
+  }
+  // A PILE OF STOCK — pipes, bars — is the same long shape again and again, each lying
+  // across the next. Not a building: left as drawn, at the owner's word.
+  const same = (a, b) => Math.abs(a.r.width - b.r.width) < 1.5 && Math.abs(a.r.height - b.r.height) < 1.5;
+  const across = (a, b) => { const w = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left), h = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top); return w > 0 && h > 0 && w * h > 0.3 * a.area; };
+  const stock = faces.filter(s => faces.filter(u => u !== s && u.f === s.f && same(s, u) && across(s, u)).length >= 2);
+  // And everything of its grey within the pile: the pipes' ends, what they lie on.
+  const piles = stock.map(s => s.r);
+  const pile = s => piles.some(r => s.r.left >= r.left - 12 && s.r.right <= r.right + 12 && s.r.top >= r.top - 12 && s.r.bottom <= r.bottom + 12) ||
+    stock.some(u => u.f === s.f && across(s, u) && s.area < 2 * u.area);
+
   const out = new Map();   // key -> decision
   for (const s of info) {
-    if (known && known[s.k]) { out.set(s, known[s.k]); continue; }
+    // The base's word, even when it was to leave the shape as drawn: the front sheet
+    // holds less round a shape, and would read some faces another way.
+    if (known && known[s.k]) { if (known[s.k].fill || known[s.k].band) out.set(s, known[s.k]); continue; }
     // (A leaf clump, not a lake's grassy bank drawn in the same green.)
     if (ROUND.includes(s.f) && !ground(s) && s.area >= 20 && s.area < 40000) {
       const d = Math.max(3, Math.min(10, 0.12 * Math.min(s.r.width, s.r.height)));
       out.set(s, { band: [d, s.f === '#5c4828' || s.f === '#5e4927' ? d * 0.5 : d] });
       continue;
     }
+    const call = owner.find(o => o.fill === s.f && Math.abs(o.at[0] - s.r.left) < 2 && Math.abs(o.at[1] - s.r.top) < 2);
+    if (call) { if (call.as !== 'keep') out.set(s, { fill: call.as === 'side' ? side(s.f) : top(s.f) }); continue; }
     if (!s.e) continue;
     const e = s.e;
+    if (pile(s)) continue;
+    if (peakOf.has(s)) {
+      const mid = s.r.left + s.r.width / 2, peak = peakOf.get(s);
+      if (Math.abs(mid - peak) > 0.1 * s.r.width) out.set(s, { fill: mid < peak ? top(s.f) : side(s.f) });
+      continue;
+    }
     // GROUND CLUTTER: a small thing with nothing but small things against it — a rock,
     // a crate, a stepping stone. Not on the owner's list, and left as drawn.
     const inside = (a, u) => a.r.left >= u.r.left - 2 && a.r.right <= u.r.right + 2 && a.r.top >= u.r.top - 2 && a.r.bottom <= u.r.bottom + 2;
@@ -207,6 +253,7 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
   };
   let n = 0;
   const decisions = {};
+  for (const s of info) decisions[s.k] = {};
   for (const [s, d] of out) {
     decisions[s.k] = d;
     const el = s.el;
@@ -231,17 +278,17 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
   return { svg: new XMLSerializer().serializeToString(root), decisions };
 }
 
-async function shadeSheets(page, files, W, H) {
+async function shadeSheets(page, files, W, H, owner = []) {
   let known = null;
   for (const f of files) {
     if (!existsSync(f)) continue;
     await page.setViewportSize({ width: W, height: H });
     await page.setContent(`<body style="margin:0">${readFileSync(f, 'utf8')}</body>`);
-    const r = await page.evaluate(shadeInPage, [W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, !!process.env.DEBUG_TO]);
+    const r = await page.evaluate(shadeInPage, [W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, !!process.env.DEBUG_TO, owner]);
     if (!r) { console.log(`  ${f}: already shaded`); continue; }
     writeFileSync(process.env.DEBUG_TO ? `${process.env.DEBUG_TO}/${f.split('/').pop()}` : f, r.svg);
     if (!known) known = r.decisions;
-    console.log(`  ${f}: ${Object.keys(r.decisions).length} shapes shaded`);
+    console.log(`  ${f}: ${Object.values(r.decisions).filter(d => d.fill || d.band).length} shapes shaded`);
   }
 }
 
@@ -253,24 +300,30 @@ async function shadeSheets(page, files, W, H) {
 // Most towers' faces were picked by hand, by the order of the <path> tags in the
 // file (the first is 0), because a roof of planks or a cone roof is more than the
 // rules above can read. A tower uploaded afresh must be picked again or set to 'auto'
-// (the rules above, which read walls and battlements well). The Abbey's roof cross is
-// drawn in the walls' grey and is `keep`: left as drawn.
+// (the rules above, which read walls and battlements well); `auto: true` beside a
+// list picks those paths by hand and leaves the rest to the rules. The Abbey's roof
+// cross is drawn in the walls' grey and is `keep`: left as drawn.
+//
+// At the owner's word: the cone roofs of the High Altar and the Judgment Temple lit
+// on the faces left of the peak and dark on those right of it, as the boards' huts;
+// and the top of every banner, where it lies over the edge of the roof, lit (the
+// Assassin Guild's, in timber brown, was lit by the rules already).
 const TOWERS = {
   'archery/Archery_Tower_T2': { top: [34, 109], side: [89, 119, 120, 121] },
   'archery/Archery_Tower_T3': { top: [1, 112], side: [3, 108, 109, 110] },
-  'archery/Musketeer_Post': { top: [1, 59, 62, 65, 67], side: [3, 60, 63, 66, 68] },
-  'archery/Crossbow_Sentry': { top: [1, 60, 79, 77, 63], side: [3, 61, 80, 78, 64] },
+  'archery/Musketeer_Post': { top: [1, 59, 62, 65, 67, 56], side: [3, 60, 63, 66, 68] },
+  'archery/Crossbow_Sentry': { top: [1, 60, 79, 77, 63, 57], side: [3, 61, 80, 78, 64] },
   'artillery/Ballista_Turret_Tower': { top: [40, 41, 73, 81, 76, 79], side: [2, 43, 74, 82, 77, 80] },
   'artillery/Cannon_Outpost_Tower': { top: [40, 41, 73, 81, 76, 79], side: [2, 43, 74, 82, 77, 80] },
   'barracks/Barracks_Tower_T2': 'auto',
   'barracks/Barracks_Tower_T3': 'auto',
-  'barracks/Paladin_Keep': 'auto',
+  'barracks/Paladin_Keep': { auto: true, top: [69], side: [] },
   'barracks/Assassin_Guild': 'auto',
   'monastery/Monastery_Tower_T1': { top: [5], side: [7] },
   'monastery/Monastery_Tower_T2': { top: [9, 57], side: [11, 59, 60, 61] },
   'monastery/Monastery_Tower_T3': { top: [1, 26, 27, 29, 31, 33, 35, 52], side: [2, 28, 30, 32, 34, 36, 54, 55, 56], keep: [66] },
-  'monastery/High_Altar': { top: [26], side: [2, 50, 47, 56] },
-  'monastery/Judgment_Temple': { top: [26], side: [2, 44, 41, 50] },
+  'monastery/High_Altar': { top: [26, 35, 58, 62, 66], side: [2, 50, 47, 56, 59, 60, 61, 67, 68] },
+  'monastery/Judgment_Temple': { top: [26, 35, 52, 56, 60], side: [2, 44, 41, 50, 53, 54, 55, 61, 62] },
 };
 // A tower is sorted at about the size it stands on a board drawn at 1920, so the
 // rules' sizes mean the same as on a board.
@@ -280,25 +333,31 @@ const BY_HAND = {
   top: { '#969696': '#b6b6b6', '#74592e': '#8b6b37', '#735a31': '#8a6c3b' },
   side: { '#969696': '#7d7d7d', '#74592e': '#604a26', '#735a31': '#5f4b29' },
 };
+// Any other colour: a fifth lighter, or a sixth darker, as on the boards.
+const tone = (c, k) => '#' + [1, 3, 5].map(i => Math.min(255, Math.round(parseInt(c.slice(i, i + 2), 16) * k)).toString(16).padStart(2, '0')).join('');
 // Kept as drawn through the stone pass: a grey the pass does not take for stone.
 const KEEP = '#9a9692';
 
 async function shadeTower(page, f, job) {
-  const src = readFileSync(`assets/towers/${f}.svg`, 'utf8');
+  let src = readFileSync(`assets/towers/${f}.svg`, 'utf8');
   let svg;
-  if (job === 'auto') {
+  const byHand = src => {
+    let i = -1;
+    return src.replace(/<path\b[^>]*>/g, tag => {
+      i++;
+      if ((job.keep || []).includes(i)) return tag.replace('fill="#969696"', `fill="${KEEP}"`);
+      const up = job.top.includes(i), down = job.side.includes(i);
+      if (!up && !down) return tag;
+      const to = up ? BY_HAND.top : BY_HAND.side;
+      return tag.replace(/fill="(#[0-9a-f]{6})"/, (m, c) => `fill="${to[c] || tone(c, up ? TOP : SIDE)}"`);
+    });
+  };
+  if (job === 'auto' || job.auto) {
+    if (job.auto) src = byHand(src);
     await page.setViewportSize({ width: TOWER_PX, height: TOWER_PX });
     await page.setContent(`<body style="margin:0">${src.replace(/(<svg[^>]*?)\swidth="1024" height="1024"/, `$1 width="${TOWER_PX}" height="${TOWER_PX}"`)}</body>`);
     svg = (await page.evaluate(shadeInPage, [1e6, 1e6, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, null, false])).svg;
-  } else {
-    let i = -1;
-    svg = src.replace(/<path\b[^>]*>/g, tag => {
-      i++;
-      if ((job.keep || []).includes(i)) return tag.replace('fill="#969696"', `fill="${KEEP}"`);
-      const to = job.top.includes(i) ? BY_HAND.top : job.side.includes(i) ? BY_HAND.side : null;
-      return to ? tag.replace(/fill="(#[0-9a-f]{6})"/, (m, c) => `fill="${to[c] || c}"`) : tag;
-    });
-  }
+  } else svg = byHand(src);
   const png = readFileSync(`assets/towers/${f}.png`).toString('base64');
   const r = await page.evaluate(stoneInPage, [svg, png, PNG_PX, KEEP]);
   // The PNG must be the SVG drawn, or the swap would move the tower.
@@ -369,6 +428,6 @@ for (let n = 1; n <= 16; n++) {
   const at = `assets/map/Stage_${n}_Map`;
   console.log(`stage ${n}`);
   // Stage 8's bell cover is a piece of the front sheet, drawn again over the bell.
-  await shadeSheets(page, ['_base', '_front', '_over', '_bell_cover'].map(s => `${at}${s}.svg`), 1920, 1080);
+  await shadeSheets(page, ['_base', '_front', '_over', '_bell_cover'].map(s => `${at}${s}.svg`), 1920, 1080, OWNER[n]);
 }
 await b.close();

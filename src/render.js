@@ -4805,19 +4805,27 @@ const PLATE_H = 24;
 const HUD_GAP = 14;
 const HUD_LEAD = 24;
 const PAUSE_W = Math.round(PLATE_H * aspect('plate_speed'));
-const SPEED_W = Math.round(PLATE_H * aspect('plate_speed'));
 const WAVE_W = Math.round(PLATE_H * aspect('plate_wave'));
-const HUD_ROW_W = PAUSE_W + HUD_GAP + SPEED_W + HUD_GAP + WAVE_W;
 const READOUT_END = 391;
+// PAUSE IN THE MIDDLE, Next Wave beside it, at the owner's word, once the speed
+// button left the row.
 const HUD_X = Math.max(
-  Math.round(480 - HUD_ROW_W / 2),
+  Math.round(480 - PAUSE_W / 2),
   Math.ceil(READOUT_END) + HUD_LEAD
 );
 
+// THE SPEED BUTTON IS THE ADMIN BUTTON'S, in its look and in its place at the bottom
+// right, at the owner's word — and only in the owner's copy: the itch.io build
+// (ADMIN_ON in src/admin.js) has no speed button at all, and plays at 1x.
+// Asked when needed, not as this file loads: src/admin.js and this file import each
+// other, and the one loaded second is not ready while the first one runs.
+export const speedOn = () => ADMIN_ON;
 export const HUD_BTN = {
   pause: { x: HUD_X, y: 9, w: PAUSE_W, h: PLATE_H, art: 'plate_speed' },
-  speed: { x: HUD_X + PAUSE_W + HUD_GAP, y: 9, w: SPEED_W, h: PLATE_H, art: 'plate_speed' },
-  wave:  { x: HUD_X + PAUSE_W + HUD_GAP + SPEED_W + HUD_GAP, y: 9, w: WAVE_W, h: PLATE_H, art: 'plate_wave' }
+  wave:  { x: HUD_X + PAUSE_W + HUD_GAP, y: 9, w: WAVE_W, h: PLATE_H, art: 'plate_wave' },
+  // ADMIN_BTN's own place (src/admin.js), written out: read from there it would not
+  // be ready yet as this file loads.
+  speed: { x: 858, y: 484, w: 84, h: 38 }
 };
 
 // THE BIGGER TAP AGAIN, at the owner's word, once the stage 16 crow that sat under the
@@ -4826,9 +4834,20 @@ export const HUD_BTN = {
 // between the buttons is 14, so 7 a side exactly fills it and no tap is ambiguous.
 const HUD_PAD = 7;
 
+// OUT OF THE WAY OF A TOWER'S MENU: stage 3's corner plot opens a ring whose lowest
+// button lands on it, and the menu is what the player is reaching for then.
+function speedShown(state) {
+  if (!speedOn()) return false;
+  const sp = HUD_BTN.speed, items = (state.menu && state.menu.items) || [];
+  return !items.some(it => it.x + BTN_R > sp.x && it.x - BTN_R < sp.x + sp.w && it.y + BTN_R > sp.y && it.y - BTN_R < sp.y + sp.h);
+}
+
 export function hitHudButton(state, x, y) {
+  const sp = HUD_BTN.speed;
+  if (speedShown(state) && x >= sp.x - 4 && x <= sp.x + sp.w + 4 && y >= sp.y - 4 && y <= sp.y + sp.h + 4) return 'speed';
   if (y > 63) return null;
   for (const [id, b] of Object.entries(HUD_BTN)) {
+    if (id === 'speed') continue;
     if (x < b.x - HUD_PAD || x > b.x + b.w + HUD_PAD) continue;
     if (id === 'wave' && !canCallWave(state)) return null;
     return id;
@@ -5317,7 +5336,7 @@ function drawHud(ctx, state) {
     drawPauseRow(ctx, state);
   }
 
-  hudButton(ctx, HUD_BTN.speed, state.speed === 2 ? '2x' : '1x', null, true);
+  if (speedShown(state)) drawAdminDoor(ctx, state.speed === 2 ? '2x' : '1x', HUD_BTN.speed);
   // No bonus on the first wave, which waits for the player (see updateWaves), so
   // no "+0g" on the button before it.
   const bonus = call ? earlyCallBonus(state) : 0;

@@ -58,7 +58,10 @@ export const DIFFICULTIES = [
     // Do not tune this at 5 seeds when it is run. The search that proposed 0.85
     // broke at 0.9 / 1.05 and held at the strictly more generous 0.9 / 1.10, which
     // is backwards and was the tell that a single-seed flip means nothing here.
-    count: 0.8,
+    //
+    // AND THEN 0.85, at the owner's word: 15% fewer enemies rather than 20%, with the
+    // gold and the bosses' frailty brought down to 15% beside it.
+    count: 0.85,
     // A FIFTH MORE GOLD, AT THE START AND FOR EVERY KILL, at the owner's word (it was
     // a tenth more at the start alone). Bounties are three quarters or more of a
     // stage's gold, so thinning the waves by a fifth took away about as much gold as
@@ -66,14 +69,16 @@ export const DIFFICULTIES = [
     // health than Hard. With both at 1.2 it is about a fifth richer, on every stage.
     // The encyclopedia keeps the written bounties; the stage panel says "+20%" when
     // Normal is picked (see difficultyTip in src/render.js).
-    gold: 1.2,
-    bounty: 1.2,
+    // Since brought down to 15%, at the owner's word, with the count.
+    gold: 1.15,
+    bounty: 1.15,
     // AND THE BOSSES TAKE 20% MORE of every blow, at the owner's word (20%, then 30%,
     // and back to 20% once Normal's gold went up to a fifth more): whatever lands after
     // his armour — a tower's shot, a soldier's swing, a burn — is 1.2 times as much on
     // Normal (20 becomes 24). Their own numbers, and the
     // encyclopedia's, stay as written. See `frail` on an enemy in src/enemies.js.
-    bossTaken: 1.2
+    // Now 15% (20 becomes 23), at the owner's word, with the count and the gold.
+    bossTaken: 1.15
   },
   {
     id: 'hard',

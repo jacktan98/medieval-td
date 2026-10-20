@@ -20,7 +20,10 @@
 
 export const STONE_GREYS = [0x97, 0x87, 0xb6, 0xa1, 0x7d, 0x70, 0x6e];
 
-const SPREAD = 0.26;  // as the towers': up to 13% either side
+// UP TO 6% EITHER SIDE, half the towers' 13%: at 13% a dark wall's lightest stones
+// came out as light as a lit wall's darkest, and the owner read the dark walls as lit.
+// At 6% the three faces' greys never meet.
+const SPREAD = 0.12;
 const BIN = 4;        // board px: a stone's middle, rounded to this, picks its shade
 const SMALLEST = 4;   // board px²: a chip smaller than this is left alone
 

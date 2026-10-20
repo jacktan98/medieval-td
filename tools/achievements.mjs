@@ -52,6 +52,8 @@ check(goal('normal') === STAGES.length && goal('hard') === STAGES.length, 'Norma
 check(goal('upgrades') === rungs, 'Master Smith: every upgrade rung', String(rungs));
 check(goal('book') === pictures, 'Patron of the Arts: every picture in the encyclopedia', String(pictures));
 check(goal('offroad') === off, 'Know Thy Enemy: every enemy off the road', String(off));
+check(goal('villagers') === A.PEOPLE_COUNT && A.byId('villagers').text.includes('1 to 13'), 'Friend of the People: every villager on stages 1 to 13', String(A.PEOPLE_COUNT));
+check(Object.keys(A.PEOPLE).join() === STAGES.slice(0, 13).map(s => levels[s.level].id).join(), 'its boards are stages 1 to 13');
 check(goal('tier4') === A.TIER4.length && A.TIER4.length === 8, 'Grand Arsenal: all 8 tier 4 towers', A.TIER4.join(', '));
 for (const id of ['winchester', 'dawnford', 'ironforge', 'hollow']) check(goal(id) === 3, `${A.byId(id).name}: 3 stages`);
 // The enemies off the road, on stages 14, 15 and 16, each a villager the board has.
@@ -97,21 +99,23 @@ check(ACHIEVEMENTS.every((_, i) => achAt(achBox(i).cx, achBox(i).cy) === i), 'ev
 console.log('\nCounting\n');
 A.clearAchievements();
 A.countAchievements(false);
-A.note('villagers', 500);
+A.noteVillagerTap('m0', { n: 0 });
 check(!A.earned('villagers') && A.progressOf('villagers')[0] === 0, 'nothing counts until the game says so (a replay never does)');
 A.countAchievements(true);
 A.noteVillagerTap('m16', { n: 0, voice: 'enemy_villager' });
 A.noteVillagerTap('m18', { n: 4, voice: 'perched_crow' });
 check(A.progressOf('villagers')[0] === 0, 'a thug or a crow tapped is not a villager for Friend of the People');
-A.noteVillagerTap('m1', { n: 0, voice: null });
-check(A.progressOf('villagers')[0] === 1, 'a villager tapped is');
+A.noteVillagerTap('m0', { n: 0 });
+A.noteVillagerTap('m0', { n: 0 });
+check(A.progressOf('villagers')[0] === 1, 'a villager tapped counts once, however often');
+{
+  const all = Object.entries(A.PEOPLE).flatMap(([id, l]) => l.map(n => [id, n]));
+  for (const [id, n] of all.slice(1, -1)) A.noteVillagerTap(id, { n });
+  check(!A.earned('villagers') && A.progressOf('villagers')[0] === A.PEOPLE_COUNT - 1, 'all but one is not earned', String(A.progressOf('villagers')));
+  A.noteVillagerTap(...[all[all.length - 1]].map(([id, n]) => [id, { n }])[0]);
+  check(A.earned('villagers') && A.toasts.some(t => t.id === 'villagers'), 'the last one earns it, and it pops up');
+}
 A.clearAchievements();
-A.note('villagers', 99);
-check(!A.earned('villagers') && A.progressOf('villagers')[0] === 99, '99 of 100 is not earned', String(A.progressOf('villagers')));
-A.note('villagers');
-check(A.earned('villagers') && A.toasts.some(t => t.id === 'villagers'), 'the 100th earns it, and it pops up');
-A.note('villagers', 50);
-check(A.progressOf('villagers')[0] === 100, 'and the count stops at its goal');
 
 A.noteVillagerTap('m0', { n: 0, voice: null });
 A.noteVillagerTap('m18', { n: 4, voice: 'perched_crow' });
