@@ -58,8 +58,10 @@ const TOP = 1.2, SIDE = 0.835, BAND = 0.82;
 // in the same grey: a wall's face is moved one step lighter, which no eye can see.
 // Tops and right-hand faces are colours only buildings wear already.
 const MARK = { '#969696': '#979797', '#868686': '#878787' };
-// A mountain's shaded faces: a grey no wall uses, so the stones pass leaves them be.
-const MOUNTAIN_DARK = '#7b7b7b';
+// A mountain's lit and shaded faces, at the owner's word made far apart (the start
+// page's wash takes some of the difference away): greys no wall uses, so the stones
+// pass leaves them be.
+const MOUNTAIN_LIT = '#b3b3b3', MOUNTAIN_DARK = '#6a6a6a';
 // THE OWNER'S OWN CALLS, where the rules read a face another way: by board, the
 // shape's fill and the top-left corner of its box on a 1920x1080 sheet; `as` is
 // 'top', 'side' or 'keep' (as drawn).
@@ -72,7 +74,7 @@ const OWNER = {
 
 // The page side: classify every shape on one sheet and colour it. `known` is the
 // base sheet's decisions, keyed by outline and fill, for the front and over sheets.
-async function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, DEBUG, owner = [], MOUNTAIN_DARK = '#7b7b7b']) {
+async function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, DEBUG, owner = [], MOUNTAIN_DARK = '#6a6a6a', MOUNTAIN_LIT = '#b3b3b3']) {
   const NS = 'http://www.w3.org/2000/svg', root = document.querySelector('svg');
   if (root.getAttribute('data-shaded')) return null;
   let defs = root.querySelector('defs');
@@ -267,7 +269,7 @@ async function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, 
   // off the drawing itself: the mountains and their lines are drawn alone, and every
   // patch of grey the lines close off is one face. A face whose top edge runs DOWN to
   // the right is the right-hand side of a peak, turned from the light, and is dark; one
-  // whose top edge climbs to the right is lit, and stays as drawn. The dark faces are
+  // whose top edge climbs to the right is lit. The dark faces are
   // traced into polygons, a little fattened to run under their lines, and every
   // mountain's dark copy is clipped to them — a mountain drawn over another hides the
   // one behind, dark copy and all. In the mountains' own grey (MOUNTAIN_DARK), which
@@ -279,13 +281,18 @@ async function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, 
     for (const el of [...mtns.map(m => m.el), ...lines]) el.setAttribute('data-alone', '1');
     const copy = root.cloneNode(true);
     for (const el of copy.querySelectorAll('path,rect,ellipse,circle,polygon,use,text,image,line,polyline'))
-      if (!el.hasAttribute('data-alone')) el.setAttribute('display', 'none');
+      if (el.closest('defs,clipPath,mask')) continue;   // the artboard's clip, and the like
+      else if (!el.hasAttribute('data-alone')) el.setAttribute('display', 'none');
+      // Every line thickened, so a crease that stops a hair short of the edge still
+      // closes its face off.
+      else el.setAttribute('stroke-width', +(el.getAttribute('stroke-width') || 1) + 8);
     for (const el of root.querySelectorAll('[data-alone]')) el.removeAttribute('data-alone');
     const img = new Image();
     img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(copy))));
     await img.decode();
     const c = document.createElement('canvas'); c.width = W; c.height = H;
     const g = c.getContext('2d'); g.drawImage(img, 0, 0, W, H);
+    if (DEBUG) window.__alone = c.toDataURL();
     const px = g.getImageData(0, 0, W, H).data, N = W * H;
     const grey = i => { const o = i * 4; return px[o + 3] > 250 && Math.abs(px[o] - 150) < 4 && Math.abs(px[o + 1] - 150) < 4 && Math.abs(px[o + 2] - 150) < 4; };
     const seen = new Int32Array(N).fill(-1), dark = new Uint8Array(N), queue = new Int32Array(N);
@@ -309,11 +316,16 @@ async function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, 
       }
       face++;
     }
-    // Fattened by 2px, to run under the lines that bound them.
+    if (DEBUG) {
+      const im = g.createImageData(W, H);
+      for (let i = 0; i < N; i++) if (seen[i] >= 0) { const h = (seen[i] * 97) % 360, o = i * 4; im.data[o] = dark[i] ? 60 : 200; im.data[o + 1] = (h * 0.7) | 0; im.data[o + 2] = dark[i] ? 90 : 220; im.data[o + 3] = 255; }
+      g.putImageData(im, 0, 0); window.__faces = c.toDataURL();
+    }
+    // Fattened by 6px, to run under the lines that bound them (thickened by 8 above).
     const fat = new Uint8Array(N);
     for (let i = 0; i < N; i++) if (dark[i]) {
       const x = i % W, y = (i - x) / W;
-      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
         const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < W && Y < H) fat[Y * W + X] = 1;
       }
     }
@@ -330,7 +342,7 @@ async function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, 
           if (j >= 0 && j < N && fat[j] && !done[j]) { done[j] = 1; queue[len++] = j; }
       }
       const sx0 = s0 % W, sy0 = (s0 - sx0) / W, ring = [[sx0, sy0]];
-      let [cx, cy] = [sx0, sy0], dir = 4;
+      let [cx, cy] = [sx0, sy0], dir = 6;   // as if come up from below: round it clockwise
       for (let step = 0; step < 4 * len + 8; step++) {
         let moved = false;
         for (let t = 0; t < 8; t++) {
@@ -373,7 +385,7 @@ async function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, 
     const id = `peak${n++}`, bare = el.cloneNode();
     for (const a of [...bare.attributes]) if (!GEOMETRY.has(a.name)) bare.removeAttribute(a.name);
     bare.id = id; defs.appendChild(bare);
-    el.replaceWith(use(el, id, {}), use(el, id, { fill: MOUNTAIN_DARK, stroke: 'none', 'clip-path': `url(#${cp.id})` }), use(el, id, { fill: 'none' }));
+    el.replaceWith(use(el, id, { fill: MOUNTAIN_LIT }), use(el, id, { fill: MOUNTAIN_DARK, stroke: 'none', 'clip-path': `url(#${cp.id})` }), use(el, id, { fill: 'none' }));
   }
   const decisions = {};
   for (const s of info) decisions[s.k] = {};
@@ -411,8 +423,10 @@ async function shadeSheets(page, files, W, H, owner = [], mark = src => src) {
     if (!existsSync(f)) continue;
     await page.setViewportSize({ width: W, height: H });
     await page.setContent(`<body style="margin:0">${mark(readFileSync(f, 'utf8'))}</body>`);
-    const r = await page.evaluate(shadeInPage, [W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, !!process.env.DEBUG_TO, owner, MOUNTAIN_DARK]);
+    const r = await page.evaluate(shadeInPage, [W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, !!process.env.DEBUG_TO, owner, MOUNTAIN_DARK, MOUNTAIN_LIT]);
     if (!r) { console.log(`  ${f}: already shaded`); continue; }
+    if (process.env.DEBUG_TO) { const fc = await page.evaluate(() => window.__faces || null); if (fc) writeFileSync(`${process.env.DEBUG_TO}/faces.png`, Buffer.from(fc.split(',')[1], 'base64')); }
+    if (process.env.DEBUG_TO) { const al = await page.evaluate(() => window.__alone || null); if (al) writeFileSync(`${process.env.DEBUG_TO}/alone.png`, Buffer.from(al.split(',')[1], 'base64')); }
     writeFileSync(process.env.DEBUG_TO ? `${process.env.DEBUG_TO}/${f.split('/').pop()}` : f, r.svg);
     if (!known) known = r.decisions;
     console.log(`  ${f}: ${Object.values(r.decisions).filter(d => d.fill || d.band || d.stroke || d.mountain).length} shapes shaded`);

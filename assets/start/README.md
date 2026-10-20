@@ -33,8 +33,9 @@ replaces it needs them again (or ask for them).
 
 At the owner's word, lit from the top left as the boards and towers are, in flat
 colours: the trees' leaves and trunks with a darker band on the lower right, the
-mountains dark on each face whose top edge runs down to the right (the faces are
-read off the drawing, between its crease lines), the archery tower's deck and
+mountains lit (#b3b3b3) on each face whose top edge climbs to the right and dark
+(#6a6a6a) on each one whose top edge runs down to it (the faces are read off the
+drawing, between its crease lines), the archery tower's deck and
 roof lit and its right-hand faces dark (each stone its own shade, by the game as the
 page is drawn: src/stone.js), and the tent's right-hand end dark. The fight and the
 name are not shaded.
