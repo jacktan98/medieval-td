@@ -16,7 +16,10 @@ export const SETTINGS_BTN = { x: 880, y: 10, w: 68, h: 68 };
 // Android, a computer — and nowhere else: an iPhone's Safari lets nothing but a video
 // fill its screen, and a button there would do nothing. Asked of the page once.
 const doc = typeof document !== 'undefined' ? document : null;
-export const FULLSCREEN_OK = !!(doc && (doc.fullscreenEnabled || doc.webkitFullscreenEnabled));
+// NOT ON CRAZYGAMES, whose page has its own and forbids one in the game (window.__portal
+// is set by their build: tools/itch.mjs --crazygames).
+const PORTAL = typeof window !== 'undefined' && window.__portal;
+export const FULLSCREEN_OK = !PORTAL && !!(doc && (doc.fullscreenEnabled || doc.webkitFullscreenEnabled));
 export const isFullscreen = () => !!(doc && (doc.fullscreenElement || doc.webkitFullscreenElement));
 
 // THE PANEL, in the middle of the screen: the title, the two sliders, a row under them
