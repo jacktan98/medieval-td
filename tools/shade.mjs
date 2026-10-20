@@ -564,8 +564,10 @@ async function stoneInPage([svg, png, N, KEEP, stone]) {
 // `band` (a trunk), `keep` (as drawn) and `mountain` (see mountain()); everything
 // else is left to the rules, which read the walls and the leaves well.
 const START = {
-  // The five mountains, and the five trees' trunks.
-  1: { mountain: [4, 5, 6, 7, 8], band: [37, 55, 73, 91, 109] },
+  // The five trees' trunks. The mountains are left as drawn, at the owner's word, for
+  // now (`keep`, with the rocks on the grass); `mountain: [4, 5, 6, 7, 8]` in its
+  // place shades them, lit and dark.
+  1: { band: [37, 55, 73, 91, 109], keep: [4, 5, 6, 7, 8, 175, 176, 178, 180, 182, 184] },
   // The archery tower's roof lit and its right-hand gable dark; the archer and the
   // things at its foot, in the walls' grey, as drawn.
   3: { top: [158], side: [154, 156], keep: [112, 116, 117, 209] },
