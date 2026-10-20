@@ -23,7 +23,7 @@
 // to find the road in the first place, and the same source of truth.
 
 import { makeUnits, moveUnits, nearestOnPath, rallyPoint } from '../src/units.js';
-import { LANE } from '../src/route.js';
+import { KERB } from '../src/route.js';
 import { levels, useLevel } from '../src/level.js';
 import { barracks } from '../src/data/towers.js';
 import { roadPolys, onRoad as onSurface, paletteFor, MAP_SCALE, readArtwork } from './svg.mjs';
@@ -124,7 +124,7 @@ for (const [i, l] of levels.entries()) {
         makeUnits(state, t);
         // The drag: the road nearest this tower, pushed a full lane to one side.
         const near = nearestOnPath(t.x, t.y);
-        t.rally = rallyPoint(t, near.x - near.ty * LANE * side, near.y + near.tx * LANE * side);
+        t.rally = rallyPoint(t, near.x - near.ty * KERB * side, near.y + near.tx * KERB * side);
         moveUnits(state, t);
         for (const u of state.units) {
           posted++;

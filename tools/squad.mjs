@@ -11,7 +11,7 @@
 import { readFileSync } from 'fs';
 import { makeUnits, moveUnits, updateUnits, rallyPoint, nearestOnPath, makeGarrison,
          atEase, REST_SECONDS } from '../src/units.js';
-import { at as pointOn, nearestOn, LANE } from '../src/route.js';
+import { at as pointOn, nearestOn, KERB } from '../src/route.js';
 import { inRange } from '../src/ground.js';
 import { families } from '../src/data/towers.js';
 import * as WAVES from '../src/data/waves.js';
@@ -208,7 +208,7 @@ console.log('\nWhere a flag puts them\n');
           for (const road of lv.routes) {
             const on = nearestOn([road], x, y);
             const raw = -(x - on.x) * on.ty + (y - on.y) * on.tx;
-            const across = Math.max(-LANE, Math.min(LANE, raw));
+            const across = Math.max(-KERB, Math.min(KERB, raw));
             for (let s = 0; s <= road.total; s += 2) {
               const q = pointOn(road, s);
               const px = q.x - q.ty * across, py = q.y + q.tx * across;

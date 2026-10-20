@@ -17,8 +17,10 @@ import { rand } from './rng.js';
 // How far off the centre of the road the outer lanes walk, in px.
 //
 // Enemies do not file down the middle any more — each one picks a lane and
-// keeps it, so a wave arrives as a loose column rather than a snake. Three
-// lanes: the near kerb, the middle, and the far kerb.
+// keeps it, so a wave arrives as a loose column rather than a snake. FIVE lanes, at
+// the owner's word (they were three): the near kerb, between, the middle, between
+// and the far kerb, so fewer men share a lane and throwers can stand in a row across
+// the road (see `ranks` in src/enemies.js).
 //
 // The ceiling comes from the artwork: tools/trace-road.mjs reports how much road
 // there is either side of the centreline at its NARROWEST point, which is 32px
@@ -37,8 +39,15 @@ import { rand } from './rng.js';
 //
 // Setting this to 0 puts every enemy back on the centreline and reproduces the
 // pre-lane balance exactly, which is how that comparison was made.
-export const LANE = 16;
-export const LANES = [-LANE, 0, LANE];
+//
+// 20 SINCE THE FIVE, so the lanes are 10 apart rather than 8: a row of five throwers
+// across the road has to be wide enough to read as a row. Still inside map 1's 32.
+export const LANE = 20;
+export const LANES = [-LANE, -LANE / 2, 0, LANE / 2, LANE];
+// How far off the middle of the road a squad may be posted (src/units.js). It was the
+// outer lane, 16, and stayed 16 when the lanes went to five: where soldiers can stand
+// is a balance of its own and did not move with the enemies.
+export const KERB = 16;
 
 // Pick one at random. Called once per enemy, at spawn — a lane is a decision a
 // figure makes on the way in and then keeps, not something re-rolled per frame.
@@ -51,7 +60,7 @@ const norm = (x, y) => {
   return [x / L, y / L];
 };
 
-// A route, and the three roads-of-their-own its lanes are.
+// A route, and the five roads-of-their-own its lanes are.
 //
 // Each lane is built as its OWN polyline and measured like any other, which is
 // what makes an enemy's speed constant. Walking the centreline and drawing the

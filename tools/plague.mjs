@@ -631,7 +631,7 @@ console.log('\nWhat the knife changes about him\n');
     // survives the wobble; these four are about a DISTANCE, and one lane over is
     // enough to change which side of a 200px reach he starts on.
     doc.route = 0;
-    doc.lane = 1;
+    doc.lane = 2;
     place(doc, Math.max(0, stand - 260));
     const start = Math.round(Math.min(...state.units.map(u => Math.hypot(u.x - doc.x, u.y - doc.y))));
 
@@ -756,7 +756,7 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   // both at random, and a priest on the far kerb is a priest measuring a
   // different fight — the thug died anywhere between 17 and 29 seconds depending
   // on where the two landed.
-  for (const e of state.enemies) { e.route = 0; e.lane = 1; }
+  for (const e of state.enemies) { e.route = 0; e.lane = 2; }
   place(state.enemies[0], Math.max(0, stand - 20));
   place(state.enemies[1], Math.max(0, stand - 70));
   const thug = state.enemies[0];
@@ -791,7 +791,7 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   // at the same distance along "their" road can be a hundred px apart on the
   // screen — which is outside his reach, and the fixture would then be measuring
   // a priest with nobody to heal rather than a priest choosing between two.
-  for (const e of state.enemies) { e.route = 0; e.lane = 1; }
+  for (const e of state.enemies) { e.route = 0; e.lane = 2; }
   const hold = () => { place(priest, 200); place(giant, 230); place(thug, 250); };
   hold();
   giant.hp = 100;    // 100 of 800, far the worse
@@ -846,7 +846,7 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   spawn(state, 'heavy_inf');
   const giant = state.enemies[0];
   for (let i = 0; i < 3; i++) spawn(state, 'dark_priest');
-  for (const e of state.enemies) { e.route = 0; e.lane = 1; }
+  for (const e of state.enemies) { e.route = 0; e.lane = 2; }
   const hold = () => {
     place(giant, 230);
     state.enemies.filter(e => e !== giant).forEach((p, i) => place(p, 200 + i * 12));
@@ -896,7 +896,7 @@ console.log('\nThe Dark Priest, and the stall the owner accepted\n');
   for (let i = 0; i < 3; i++) {
     spawn(state, 'dark_priest');
     const e = state.enemies[i];
-    e.route = 0; e.lane = 1;
+    e.route = 0; e.lane = 2;
     place(e, Math.max(0, stand - 90 - i * 20));
   }
 

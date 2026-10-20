@@ -3,7 +3,7 @@ import { level } from './level.js';
 // enemies.js imports from this file too; the pair has been a cycle since the day
 // units.js was split out, and both sides only call across it at runtime.
 import { pickTarget } from './enemies.js';
-import { at as pointOn, nearestOn, LANE } from './route.js';
+import { at as pointOn, nearestOn, KERB } from './route.js';
 import { dropCorpse } from './corpses.js';
 // The Bomb Thug's ending, in place of the swing every other creature makes. The
 // file imports `fixture` back out of this one — see the note at the top of it.
@@ -256,11 +256,10 @@ const FORMATION = [[-24, 0, 0], [13, -20, -22], [13, 20, 22]];
 // the 93% row; only a deliberate full-kerb rally pays the 75%. Capping at 8 would
 // take the choice away from every player to spare the ones who never make it.
 //
-// LANE, WHICH IS 16, because that is where the OUTER ENEMIES WALK. It is the one
-// principled number available: post the squad a full lane over and its centre
-// sits on the kerb lane an enemy uses, which is exactly the thing a player would
-// slide it across to cover. Wider would be arbitrary.
-const KERB = LANE;
+// 16, WHICH WAS WHERE THE OUTER ENEMIES WALKED when there were three lanes: post the
+// squad a full lane over and its centre sat on the kerb lane an enemy used. The
+// lanes are five and reach 20 now; the squad's reach across stays 16 (KERB in
+// route.js), so a posting is where it always was.
 
 // How far the furthest station is from the rally point, derived from the wedge
 // above rather than typed: 24 back down the road for the point man, or 13 forward

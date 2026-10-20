@@ -798,8 +798,13 @@ for (const d of TURRETS) {
   // where it stands today and no further: a redraw that took it to 4% would fall
   // through and say so, because what was looked at and accepted was 9% and not
   // "whatever this plot happens to be".
+  //
+  // AND STAGE 6'S FIRST PLOT, since the lanes went to five and reach 20 rather than
+  // 16: it was 10.1% and is 9.96%, a corner plot losing a tenth of a point to the
+  // wider outer lanes. Reported to the owner with the change.
   const ACCEPTED = [
-    { id: 'm12', plot: 8, frac: 0.093, slack: 0.02 }
+    { id: 'm12', plot: 8, frac: 0.093, slack: 0.02 },
+    { id: 'm6', plot: 0, frac: 0.0996, slack: 0.02 }
   ];
   const accepted = (id, i) => ACCEPTED.find(a => a.id === id && a.plot === i);
 

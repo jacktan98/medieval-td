@@ -1,5 +1,5 @@
 import { level, remaining } from './level.js';
-import { at as pointOn, laneOf, randomLane, nearestOn, LANE } from './route.js';
+import { at as pointOn, laneOf, randomLane, nearestOn, LANES } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { dropBomb } from './bombs.js';
@@ -27,8 +27,7 @@ import { stat } from './stats.js';
 // The lane is what stops a wave reading as a snake. Enemies used to file down
 // the exact centreline one behind another; now each one walks its own side of
 // the road, so a column arrives loose and ragged the way a body of men actually
-// would. It is three lanes per road — near kerb, middle, far kerb — so a map
-// with two roads in has six ways for an enemy to arrive.
+// would. It is five lanes per road, kerb to kerb — see route.js.
 // WHICH ROAD THE NEXT MAN COMES DOWN, on a board that says how the wave should be
 // divided. Levels without `routeMix` are unchanged: they roll a die per enemy, and
 // on a two-road board that is fine.
@@ -105,7 +104,7 @@ export function spawn(state, typeId, from = null) {
     // and a burn or poison in the status pass below.
     frail: (def.boss && (DIFFICULTIES[state.difficultyIndex ?? -1] || {}).bossTaken) || 1,
     route: ri,
-    lane,            // which of the three, as an index into LANES
+    lane,            // which of the five, as an index into LANES
     s: s0,           // distance walked along that lane's own polyline
     x: at0.x,
     y: at0.y,
@@ -229,7 +228,7 @@ export function spawn(state, typeId, from = null) {
   if (def.rally) solo(WAR_CRY, true, false, true);
   return state.enemies[state.enemies.length - 1];
 }
-const MIDDLE_LANE = 1;
+const MIDDLE_LANE = (LANES.length - 1) / 2;
 
 // IS THIS FIGURE PLAYING OUT ITS DEATH? True for the four seconds a boss spends
 // losing, and false for everything else in the game on every frame of its life.
@@ -1051,7 +1050,7 @@ export function updateEnemies(state, dt) {
     if (e.foe && e.nock > 0) e.nock = 0;
 
     if (now.ranged && !e.foe) {
-      const mark = nearestUnit(state, e.x, e.y, now.ranged.range);
+      const mark = nearestUnit(state, e.x, e.y, now.ranged.range + rankReach(e));
       // SLOWED SLOWS THE THROWING TOO, at the owner's ask: a quarter off how often
       // he swings covers the flask and the arrow as well as the club. The clock is
       // ticked slower rather than the cooldown lengthened, so a man slowed halfway
@@ -1243,17 +1242,17 @@ export function updateEnemies(state, dt) {
     // the shot itself aims with, so he stands exactly when he is shooting — wherever
     // they stand, not only when they are ahead of him on the road.
     const was = e.halted;
-    e.halted = !!now.ranged && (screened(state, e, road) ||
-      !!nearestUnit(state, e.x, e.y, now.ranged.range));
-    // ROOM TO STAND, at the owner's word, from a player's report: every thrower on a
-    // lane halts at the same spot — where the same soldier first comes into range —
-    // so a second archer stopped exactly on top of the first, and when the front one
-    // died the one under him looked like the same man back at full health. So a
-    // thrower does not plant himself on another who is already standing there: he
-    // walks on past him and stops a gap further down the road, still in range. Of
-    // two already standing on one spot, the later one moves.
-    if (e.halted && crowded(state, e, was)) e.halted = false;
-    if (e.halted) continue;
+    const trigger = !!now.ranged && (screened(state, e, road) ||
+      !!nearestUnit(state, e.x, e.y, now.ranged.range + rankReach(e)));
+    // IN RANKS, at the owner's word, from a player's report: every thrower on a lane
+    // halted where the same soldier first came into range, so two on one lane stood
+    // on one spot and a dying front archer looked like the one under him healing.
+    // So they stand in a row across the road, one to a lane, and a full row puts the
+    // next man in a row behind it. See ranks() below. A boss stands where he stands.
+    e.halted = now.ranged && !e.def.boss && !e.def.flying ? ranks(state, e, was, trigger) : trigger;
+    if (e.halted) { slideInto(e, dt); continue; }
+    e.rank = null;
+    e.row = null;
 
     // One number forward along the road, then the position is looked up. The
     // old loop walked from waypoint to waypoint consuming the frame's movement,
@@ -1725,20 +1724,97 @@ const BLOCK_REACH = 45;
 // polyline: how far off it a man is standing, and how far along it. That is the
 // only comparison that means the same thing on all three maps — see the note at
 // the call site about roads that merge and roads that never meet.
-// How far apart two throwers stand on one lane, in px along it: the lanes' own
-// spacing, so a column of archers stands as far apart as the lanes do.
-const STAND_GAP = LANE;
+// THROWERS IN RANKS. A row across the road, one man to a lane, and the next row
+// RANK_GAP further back down it when that one is full.
+//
+// THE ROW SLANTS, at the owner's word (a line drawn across the road on a screenshot):
+// straight across, five men ten pixels apart are one blot. Each lane over stands
+// STAGGER further along the road, so the row runs corner to corner over the road and
+// every man in it can be seen. The first man to halt fixes where the row is; the rest
+// take their places from him (`row`, shared by everyone in it).
+const RANK_GAP = 24, STAGGER = 15;
+// How far ahead a standing front rank is the one a walking thrower is coming up to.
+const RANK_AHEAD = 150;
+// A man standing behind the place the row's first man halted — a back rank, or the
+// far end of the slant — reaches over the ones in front: his range grows by how far
+// back he stands, so he is as dangerous as that man and no more.
+export const rankReach = e => e.row ? Math.max(0, e.row.s - e.s) * 1.2 : 0;
+const rowS = (row, lane, k) => row.s + (row.lane - lane) * STAGGER - k * RANK_GAP;
 
-// Another thrower already standing on this one's lane within STAND_GAP of him.
-// `was` is whether he was standing last frame: a newcomer gives way to anyone
-// standing, and of two who were both standing, the one later in the list does.
-function crowded(state, e, was) {
-  for (const o of state.enemies) {
-    if (o === e) { if (was) return false; continue; }
-    if (!o.halted || o.route !== e.route || o.lane !== e.lane || o.hp <= 0) continue;
-    if (Math.abs(o.s - e.s) < STAND_GAP) return true;
+// Whether thrower `e` stands this frame. `was`: he stood last frame. `trigger`: he
+// has a reason to stand (someone to throw at, or a man in the road ahead).
+function ranks(state, e, was, trigger) {
+  const N = LANES.length;
+  const others = state.enemies.filter(o => o !== e && o.halted && o.rank != null && o.route === e.route && o.hp > 0 && !o.row.gone);
+  const lanes = list => new Set(list.map(o => o.lane));
+  if (was && e.rank != null) {
+    const row = e.row;
+    if (row.gone) return false;
+    // THE ROW FOLLOWS ITS FIRST MAN. While he has a reason to stand, it stands; when
+    // he has none — the men he was throwing at are down — the whole row walks on
+    // together and forms again further up, which is how a line of throwers closes on
+    // a squad that keeps getting up. If he has fallen, the next man takes his place.
+    if (!row.lead || row.lead.hp <= 0 || !state.enemies.includes(row.lead)) row.lead = e;
+    if (row.lead === e) {
+      if (!trigger) { row.gone = true; return false; }
+      return true;
+    }
+    if (e.rank === 0) return true;
+    // A BACK RANK STEPS UP when the front row has room: he walks on and takes it.
+    const front = others.filter(o => o.row === row && o.rank === 0);
+    if (!front.length || lanes(front).size < N) { e.rank = null; e.row = null; return false; }
+    return true;
+  }
+  const front = others.filter(o => o.rank === 0 && o.s > e.s - RANK_AHEAD / 2 && o.s - e.s < RANK_AHEAD);
+  if (!front.length) {
+    if (!trigger) return false;
+    e.rank = 0;
+    e.row = { s: e.s, lane: e.lane, lead: e };
+    return true;
+  }
+  const row = front[0].row;
+  for (let k = 0; k < 20; k++) {
+    const taken = lanes(others.filter(o => o.row === row && o.rank === k));
+    if (taken.size >= N) continue;
+    // The front row waits for a reason to stand; a row behind a full one does not.
+    if (k === 0 && !trigger) return false;
+    const lane = nearestFree(e.lane, taken), at = rowS(row, lane, k);
+    if (k > 0 && e.s < at - 1) return false;
+    take(e, row, k, lane, at);
+    return true;
   }
   return false;
+}
+
+// His own lane if it is free in that row, else the nearest that is.
+function nearestFree(lane, taken) {
+  for (let d = 0; d < LANES.length; d++) {
+    if (lane + d < LANES.length && !taken.has(lane + d)) return lane + d;
+    if (lane - d >= 0 && !taken.has(lane - d)) return lane - d;
+  }
+  return lane;
+}
+
+// His place, and the walk into it: a step sideways, on, or back, at his own pace.
+function take(e, row, k, lane, s) {
+  e.rank = k;
+  e.row = row;
+  if (lane === e.lane && Math.abs(s - e.s) < 0.5) return;
+  e.lane = lane;
+  e.s = s;
+  const p = pointOn(laneOf(level.routes[e.route], lane), s);
+  const far = Math.hypot(p.x - e.x, p.y - e.y);
+  e.slide = { x0: e.x, y0: e.y, x1: p.x, y1: p.y, t: 0, dur: Math.max(0.2, far / (e.def.speed || 30)) };
+  if (p.x !== e.x) turnTo(e, p.x);
+}
+
+function slideInto(e, dt) {
+  const m = e.slide;
+  if (!m) return;
+  m.t = Math.min(1, m.t + dt / m.dur);
+  e.x = m.x0 + (m.x1 - m.x0) * m.t;
+  e.y = m.y0 + (m.y1 - m.y0) * m.t;
+  if (m.t >= 1) e.slide = null;
 }
 
 function screened(state, e, road) {
