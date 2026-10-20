@@ -58,6 +58,8 @@ const TOP = 1.2, SIDE = 0.835, BAND = 0.82;
 // in the same grey: a wall's face is moved one step lighter, which no eye can see.
 // Tops and right-hand faces are colours only buildings wear already.
 const MARK = { '#969696': '#979797', '#868686': '#878787' };
+// A mountain's shaded faces: a grey no wall uses, so the stones pass leaves them be.
+const MOUNTAIN_DARK = '#7b7b7b';
 // THE OWNER'S OWN CALLS, where the rules read a face another way: by board, the
 // shape's fill and the top-left corner of its box on a 1920x1080 sheet; `as` is
 // 'top', 'side' or 'keep' (as drawn).
@@ -70,7 +72,7 @@ const OWNER = {
 
 // The page side: classify every shape on one sheet and colour it. `known` is the
 // base sheet's decisions, keyed by outline and fill, for the front and over sheets.
-function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, DEBUG, owner = []]) {
+function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, DEBUG, owner = [], MOUNTAIN_DARK = '#7b7b7b']) {
   const NS = 'http://www.w3.org/2000/svg', root = document.querySelector('svg');
   if (root.getAttribute('data-shaded')) return null;
   let defs = root.querySelector('defs');
@@ -180,6 +182,14 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
       out.set(s, { band: [d, s.f === '#5c4828' || s.f === '#5e4927' ? d * 0.5 : d] });
       continue;
     }
+    const said = s.el.getAttribute('data-shade');
+    if (said) {
+      const line = s.f === 'none' || !s.f, c = line ? (s.el.getAttribute('stroke') || '').toLowerCase() : s.f;
+      if (said === 'top' || said === 'side') out.set(s, { [line ? 'stroke' : 'fill']: said === 'top' ? top(c) : side(c) });
+      else if (said === 'band') out.set(s, { band: [6, 0] });
+      else if (said === 'mountain') out.set(s, { mountain: true });
+      continue;
+    }
     const call = owner.find(o => o.fill === s.f && Math.abs(o.at[0] - s.r.left) < 2 && Math.abs(o.at[1] - s.r.top) < 2);
     if (call) { if (call.as !== 'keep') out.set(s, { fill: call.as === 'side' ? side(s.f) : top(s.f) }); continue; }
     if (!s.e) continue;
@@ -252,13 +262,62 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
     return u;
   };
   let n = 0;
+  // A MOUNTAIN, at the owner's word: one grey shape with its creases drawn over it as
+  // lines. Each peak's face right of the crease that runs down from it is dark —
+  // bounded by the mountain's own edge from the peak down to the next dip, and a
+  // straight line from there to the crease's foot. The faces left of the creases
+  // stay as drawn. In the mountain's own dark grey, not a wall's (src/stone.js).
+  const creases = [...root.querySelectorAll('path')].filter(el => el.getAttribute('fill') === 'none');
+  const pointsOf = (el, k) => { const m = el.getScreenCTM(), L = el.getTotalLength(); return Array.from({ length: k + 1 }, (_, i) => { const q = el.getPointAtLength(L * i / k); return [m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f]; }); };
+  function mountain(s) {
+    const el = s.el, edge = pointsOf(el, 900).slice(0, -1), N = edge.length;
+    const nearest = ([x, y]) => edge.reduce((b, q, i) => { const d = Math.hypot(q[0] - x, q[1] - y); return d < b[1] ? [i, d] : b; }, [0, Infinity]);
+    const polys = [];
+    for (const c of creases) {
+      if (!near({ r: c.getBoundingClientRect() }, s, 0)) continue;
+      let pts = pointsOf(c, 60);
+      if (pts[0][1] > pts[pts.length - 1][1]) pts = pts.reverse();
+      const [i, d] = nearest(pts[0]);
+      if (d > 10) continue;
+      // A peak: nothing of the edge within 40px either side stands higher.
+      const [px, py] = edge[i];
+      if (edge.some(([x, y]) => Math.abs(x - px) < 40 && y < py - 3)) continue;
+      // Down the right-hand edge to the next dip (or until it stops running right).
+      const side = edge[(i + 1) % N][0] > px ? 1 : -1, run = [];
+      for (let k = 1; k < N; k++) {
+        const q = edge[(i + side * k + N) % N], prev = run.length ? run[run.length - 1] : [px, py];
+        if (q[0] < prev[0] - 0.5 || q[1] < prev[1] - 2) break;
+        run.push(q);
+      }
+      polys.push([...pts.slice().reverse(), [px, py], ...run].map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '));
+    }
+    if (!polys.length) return;
+    const cp = document.createElementNS(NS, 'clipPath');
+    cp.id = `shade${n++}`;
+    cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
+    // The polygons are in screen px; the clip is read in the mountain's own space.
+    const inv = el.getScreenCTM().inverse();
+    for (const p of polys) {
+      const poly = document.createElementNS(NS, 'polygon');
+      poly.setAttribute('points', p.split(' ').map(t => { const [x, y] = t.split(',').map(Number); const q = new DOMPoint(x, y).matrixTransform(inv); return `${q.x.toFixed(1)},${q.y.toFixed(1)}`; }).join(' '));
+      cp.appendChild(poly);
+    }
+    defs.appendChild(cp);
+    const id = `peak${n++}`, bare = el.cloneNode();
+    for (const a of [...bare.attributes]) if (!GEOMETRY.has(a.name)) bare.removeAttribute(a.name);
+    bare.id = id; defs.appendChild(bare);
+    el.replaceWith(use(el, id, {}), use(el, id, { fill: MOUNTAIN_DARK, stroke: 'none', 'clip-path': `url(#${cp.id})` }), use(el, id, { fill: 'none' }));
+  }
   const decisions = {};
   for (const s of info) decisions[s.k] = {};
   for (const [s, d] of out) {
     decisions[s.k] = d;
     const el = s.el;
+    if (DEBUG && (d.mountain || d.stroke)) { if (d.stroke) el.setAttribute('stroke', '#2050ff'); else mountain(s); continue; }
     if (DEBUG) { el.setAttribute('fill', d.fill ? (d.fill === top(s.f) ? '#ffe000' : d.fill === MARK[s.f] ? '#20d0d0' : '#2050ff') : d.band[1] === 0 && d.band[0] > 10 ? '#ff00ff' : '#ff3030'); continue; }
     if (d.fill) { el.setAttribute('fill', d.fill); continue; }
+    if (d.stroke) { el.setAttribute('stroke', d.stroke); continue; }
+    if (d.mountain) { mountain(s); continue; }
     const [dx, dy] = d.band, m = el.getCTM(), det = m.a * m.d - m.b * m.c;
     const lx = (m.d * -dx - m.c * -dy) / det, ly = (-m.b * -dx + m.a * -dy) / det;
     const id = `shape${n}`, cp = document.createElementNS(NS, 'clipPath');
@@ -274,21 +333,22 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
       use(el, id, { fill: lit, stroke: 'none', 'clip-path': `url(#${cp.id})` }),
       use(el, id, { fill: 'none' }));
   }
+  for (const el of root.querySelectorAll('[data-shade]')) el.removeAttribute('data-shade');
   root.setAttribute('data-shaded', '1');
   return { svg: new XMLSerializer().serializeToString(root), decisions };
 }
 
-async function shadeSheets(page, files, W, H, owner = []) {
+async function shadeSheets(page, files, W, H, owner = [], mark = src => src) {
   let known = null;
   for (const f of files) {
     if (!existsSync(f)) continue;
     await page.setViewportSize({ width: W, height: H });
-    await page.setContent(`<body style="margin:0">${readFileSync(f, 'utf8')}</body>`);
-    const r = await page.evaluate(shadeInPage, [W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, !!process.env.DEBUG_TO, owner]);
+    await page.setContent(`<body style="margin:0">${mark(readFileSync(f, 'utf8'))}</body>`);
+    const r = await page.evaluate(shadeInPage, [W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, !!process.env.DEBUG_TO, owner, MOUNTAIN_DARK]);
     if (!r) { console.log(`  ${f}: already shaded`); continue; }
     writeFileSync(process.env.DEBUG_TO ? `${process.env.DEBUG_TO}/${f.split('/').pop()}` : f, r.svg);
     if (!known) known = r.decisions;
-    console.log(`  ${f}: ${Object.values(r.decisions).filter(d => d.fill || d.band).length} shapes shaded`);
+    console.log(`  ${f}: ${Object.values(r.decisions).filter(d => d.fill || d.band || d.stroke || d.mountain).length} shapes shaded`);
   }
 }
 
@@ -415,11 +475,41 @@ async function stoneInPage([svg, png, N, KEEP, stone]) {
   return { mismatch: diff / on, stones, png: c.toDataURL('image/png') };
 }
 
+// THE START PAGE: the scene's trees and mountains (layer 1), the archery tower
+// (layer 3) and the tent (layer 4), shaded in place. The fight (layer 2) and the
+// name are not. A layer the owner uploads again is plain, and is shaded by running
+// this again; a layer already shaded is left alone.
+// By the order of the <path> tags in each file (the first is 0): `top`, `side`,
+// `band` (a trunk), `keep` (as drawn) and `mountain` (see mountain()); everything
+// else is left to the rules, which read the walls and the leaves well.
+const START = {
+  // The five mountains, and the five trees' trunks.
+  1: { mountain: [4, 5, 6, 7, 8], band: [37, 55, 73, 91, 109] },
+  // The archery tower's roof lit and its right-hand gable dark; the archer and the
+  // things at its foot, in the walls' grey, as drawn.
+  3: { top: [158], side: [154, 156], keep: [112, 116, 117, 209] },
+  // The tent's right-hand end and its rolled-back door flaps, as the Militia Camp's.
+  4: { side: [6, 8, 9], keep: [3] },
+};
+const marked = (src, job) => {
+  let i = -1;
+  return src.replace(/<path\b/g, tag => {
+    i++;
+    const said = Object.keys(job).find(k => job[k].includes(i));
+    return said ? `${tag} data-shade="${said}"` : tag;
+  });
+};
+
 const [what, only] = process.argv.slice(2);
-if (what !== 'maps' && what !== 'towers') { console.log('usage: node tools/shade.mjs maps [stage] | towers [name]'); process.exit(1); }
+if (!['maps', 'towers', 'start'].includes(what)) { console.log('usage: node tools/shade.mjs maps [stage] | towers [name] | start'); process.exit(1); }
 const b = await chromium.launch({ executablePath: CHROME });
 const page = await b.newPage();
 if (process.env.DEBUG_TO) page.on('console', m => console.log(m.text()));
+if (what === 'start') {
+  for (const [n, job] of Object.entries(START)) await shadeSheets(page, [`assets/start/Start_Page_${n}.svg`], 1920, 1080, [], src => marked(src, job));
+  await b.close();
+  process.exit(0);
+}
 if (what === 'towers') {
   for (const [f, job] of Object.entries(TOWERS)) {
     if (only && !f.includes(only)) continue;

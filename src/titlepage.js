@@ -9,6 +9,7 @@
 //
 // Not in a replay (replay.html), which goes straight to its board, nor in the tools
 // and test pages, which build their own state: `state.title` is set by main.js alone.
+import { varyStoneCanvas } from './stone.js';
 import { art } from './assets.js';
 import { UI_EDGE, UI_INK } from './render.js';
 
@@ -62,6 +63,8 @@ function scene(ctx) {
   g.fillStyle = '#23201c';
   g.fillRect(0, 0, 960, 540);
   for (let n = 1; n <= 4; n++) if (art[`start_${n}`]) g.drawImage(art[`start_${n}`], 0, 0, 960, 540);
+  // The archery tower's stones each their own shade, as the boards' are. See src/stone.js.
+  varyStoneCanvas(sheet);
   g.save();
   g.globalCompositeOperation = 'saturation';
   g.fillStyle = `rgba(128,128,128,${GREY})`;

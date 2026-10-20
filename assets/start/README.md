@@ -29,6 +29,19 @@ made by the `shadow` filter in the file rather than drawn, so redraw the name an
 the shadow follows it. Both were added to the uploaded file; an upload that
 replaces it needs them again (or ask for them).
 
+## Shaded
+
+At the owner's word, lit from the top left as the boards and towers are, in flat
+colours: the trees' leaves and trunks with a darker band on the lower right, the
+mountains dark on the face right of each peak's crease, the archery tower's deck and
+roof lit and its right-hand faces dark (each stone its own shade, by the game as the
+page is drawn: src/stone.js), and the tent's right-hand end dark. The fight and the
+name are not shaded.
+
+`node tools/shade.mjs start` does it to layers 1, 3 and 4, in place. **A layer
+uploaded again comes plain: run it again.** Its picks are by the order of the
+`<path>` tags (START in the tool), so a redrawn layer may need them picked again.
+
 Drawn in layers so the page can move a little (flags waving, birds circling, the
 name dropping in) and so one part can be redrawn without the rest.
 
