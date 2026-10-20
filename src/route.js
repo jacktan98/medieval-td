@@ -19,8 +19,7 @@ import { rand } from './rng.js';
 // Enemies do not file down the middle any more — each one picks a lane and
 // keeps it, so a wave arrives as a loose column rather than a snake. FIVE lanes, at
 // the owner's word (they were three): the near kerb, between, the middle, between
-// and the far kerb, so fewer men share a lane and throwers can stand in a row across
-// the road (see `ranks` in src/enemies.js).
+// and the far kerb, so fewer men share a lane — and fewer throwers stop on one spot.
 //
 // The ceiling comes from the artwork: tools/trace-road.mjs reports how much road
 // there is either side of the centreline at its NARROWEST point, which is 32px
@@ -40,8 +39,8 @@ import { rand } from './rng.js';
 // Setting this to 0 puts every enemy back on the centreline and reproduces the
 // pre-lane balance exactly, which is how that comparison was made.
 //
-// 20 SINCE THE FIVE, so the lanes are 10 apart rather than 8: a row of five throwers
-// across the road has to be wide enough to read as a row. Still inside map 1's 32.
+// 20 SINCE THE FIVE, so the lanes are 10 apart rather than 8 and men on neighbouring
+// lanes can be told apart. Still inside map 1's 32.
 export const LANE = 20;
 export const LANES = [-LANE, -LANE / 2, 0, LANE / 2, LANE];
 // How far off the middle of the road a squad may be posted (src/units.js). It was the
