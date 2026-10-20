@@ -72,7 +72,7 @@ const OWNER = {
 
 // The page side: classify every shape on one sheet and colour it. `known` is the
 // base sheet's decisions, keyed by outline and fill, for the front and over sheets.
-function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, DEBUG, owner = [], MOUNTAIN_DARK = '#7b7b7b']) {
+async function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, known, DEBUG, owner = [], MOUNTAIN_DARK = '#7b7b7b']) {
   const NS = 'http://www.w3.org/2000/svg', root = document.querySelector('svg');
   if (root.getAttribute('data-shaded')) return null;
   let defs = root.querySelector('defs');
@@ -262,44 +262,111 @@ function shadeInPage([W, H, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, 
     return u;
   };
   let n = 0;
-  // A MOUNTAIN, at the owner's word: one grey shape with its creases drawn over it as
-  // lines. Each peak's face right of the crease that runs down from it is dark —
-  // bounded by the mountain's own edge from the peak down to the next dip, and a
-  // straight line from there to the crease's foot. The faces left of the creases
-  // stay as drawn. In the mountain's own dark grey, not a wall's (src/stone.js).
-  const creases = [...root.querySelectorAll('path')].filter(el => el.getAttribute('fill') === 'none');
-  const pointsOf = (el, k) => { const m = el.getScreenCTM(), L = el.getTotalLength(); return Array.from({ length: k + 1 }, (_, i) => { const q = el.getPointAtLength(L * i / k); return [m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f]; }); };
-  function mountain(s) {
-    const el = s.el, edge = pointsOf(el, 900).slice(0, -1), N = edge.length;
-    const nearest = ([x, y]) => edge.reduce((b, q, i) => { const d = Math.hypot(q[0] - x, q[1] - y); return d < b[1] ? [i, d] : b; }, [0, Infinity]);
-    const polys = [];
-    for (const c of creases) {
-      if (!near({ r: c.getBoundingClientRect() }, s, 0)) continue;
-      let pts = pointsOf(c, 60);
-      if (pts[0][1] > pts[pts.length - 1][1]) pts = pts.reverse();
-      const [i, d] = nearest(pts[0]);
-      if (d > 10) continue;
-      // A peak: nothing of the edge within 40px either side stands higher.
-      const [px, py] = edge[i];
-      if (edge.some(([x, y]) => Math.abs(x - px) < 40 && y < py - 3)) continue;
-      // Down the right-hand edge to the next dip (or until it stops running right).
-      const side = edge[(i + 1) % N][0] > px ? 1 : -1, run = [];
-      for (let k = 1; k < N; k++) {
-        const q = edge[(i + side * k + N) % N], prev = run.length ? run[run.length - 1] : [px, py];
-        if (q[0] < prev[0] - 0.5 || q[1] < prev[1] - 2) break;
-        run.push(q);
+  // MOUNTAINS, at the owner's word: grey shapes with their creases drawn over them as
+  // lines, and a crease stops where it meets another mountain. So the faces are read
+  // off the drawing itself: the mountains and their lines are drawn alone, and every
+  // patch of grey the lines close off is one face. A face whose top edge runs DOWN to
+  // the right is the right-hand side of a peak, turned from the light, and is dark; one
+  // whose top edge climbs to the right is lit, and stays as drawn. The dark faces are
+  // traced into polygons, a little fattened to run under their lines, and every
+  // mountain's dark copy is clipped to them — a mountain drawn over another hides the
+  // one behind, dark copy and all. In the mountains' own grey (MOUNTAIN_DARK), which
+  // no wall uses, so the stones pass (src/stone.js) leaves it alone.
+  async function mountainFaces(mtns) {
+    const boxes = mtns.map(m => m.r);
+    const lines = [...root.querySelectorAll('path')].filter(el => el.getAttribute('fill') === 'none' &&
+      boxes.some(b => near({ r: el.getBoundingClientRect() }, { r: b }, 0)));
+    for (const el of [...mtns.map(m => m.el), ...lines]) el.setAttribute('data-alone', '1');
+    const copy = root.cloneNode(true);
+    for (const el of copy.querySelectorAll('path,rect,ellipse,circle,polygon,use,text,image,line,polyline'))
+      if (!el.hasAttribute('data-alone')) el.setAttribute('display', 'none');
+    for (const el of root.querySelectorAll('[data-alone]')) el.removeAttribute('data-alone');
+    const img = new Image();
+    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(new XMLSerializer().serializeToString(copy))));
+    await img.decode();
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'); g.drawImage(img, 0, 0, W, H);
+    const px = g.getImageData(0, 0, W, H).data, N = W * H;
+    const grey = i => { const o = i * 4; return px[o + 3] > 250 && Math.abs(px[o] - 150) < 4 && Math.abs(px[o + 1] - 150) < 4 && Math.abs(px[o + 2] - 150) < 4; };
+    const seen = new Int32Array(N).fill(-1), dark = new Uint8Array(N), queue = new Int32Array(N);
+    let face = 0;
+    for (let s0 = 0; s0 < N; s0++) {
+      if (seen[s0] >= 0 || !grey(s0)) continue;
+      let len = 0; queue[len++] = s0; seen[s0] = face;
+      for (let q = 0; q < len; q++) {
+        const i = queue[q], x = i % W;
+        for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W])
+          if (j >= 0 && j < N && seen[j] < 0 && grey(j)) { seen[j] = face; queue[len++] = j; }
       }
-      polys.push([...pts.slice().reverse(), [px, py], ...run].map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' '));
+      // Its top edge: the highest pixel in each column, and which way that runs.
+      if (len >= 300) {
+        const top = new Map();
+        for (let q = 0; q < len; q++) { const i = queue[q], x = i % W, y = (i - x) / W; if (!top.has(x) || y < top.get(x)) top.set(x, y); }
+        let sx = 0, sy = 0, sxx = 0, sxy = 0, k = 0;
+        for (const [x, y] of top) { sx += x; sy += y; sxx += x * x; sxy += x * y; k++; }
+        const slope = (k * sxy - sx * sy) / Math.max(1, k * sxx - sx * sx);
+        if (slope > 0) for (let q = 0; q < len; q++) dark[queue[q]] = 1;
+      }
+      face++;
     }
-    if (!polys.length) return;
-    const cp = document.createElementNS(NS, 'clipPath');
-    cp.id = `shade${n++}`;
+    // Fattened by 2px, to run under the lines that bound them.
+    const fat = new Uint8Array(N);
+    for (let i = 0; i < N; i++) if (dark[i]) {
+      const x = i % W, y = (i - x) / W;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+        const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < W && Y < H) fat[Y * W + X] = 1;
+      }
+    }
+    // Each patch's outline, traced round its edge pixels (Moore), then thinned out.
+    const polys = [], done = new Uint8Array(N);
+    const DIRS = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+    const on = (x, y) => x >= 0 && y >= 0 && x < W && y < H && fat[y * W + x];
+    for (let s0 = 0; s0 < N; s0++) {
+      if (!fat[s0] || done[s0]) continue;
+      let len = 0; queue[len++] = s0; done[s0] = 1;
+      for (let q = 0; q < len; q++) {
+        const i = queue[q], x = i % W;
+        for (const j of [x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1, i - W, i + W])
+          if (j >= 0 && j < N && fat[j] && !done[j]) { done[j] = 1; queue[len++] = j; }
+      }
+      const sx0 = s0 % W, sy0 = (s0 - sx0) / W, ring = [[sx0, sy0]];
+      let [cx, cy] = [sx0, sy0], dir = 4;
+      for (let step = 0; step < 4 * len + 8; step++) {
+        let moved = false;
+        for (let t = 0; t < 8; t++) {
+          const d = (dir + 6 + t) % 8, nx = cx + DIRS[d][0], ny = cy + DIRS[d][1];
+          if (on(nx, ny)) { cx = nx; cy = ny; dir = d; moved = true; break; }
+        }
+        if (!moved || (cx === sx0 && cy === sy0)) break;
+        ring.push([cx, cy]);
+      }
+      if (ring.length < 8) continue;
+      const simplify = (pts, eps) => {
+        if (pts.length < 3) return pts;
+        const [a, b] = [pts[0], pts[pts.length - 1]];
+        let best = 0, at = 0;
+        for (let i = 1; i < pts.length - 1; i++) {
+          const [x, y] = pts[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1;
+          const dd = Math.abs((b[1] - a[1]) * x - (b[0] - a[0]) * y + b[0] * a[1] - b[1] * a[0]) / L;
+          if (dd > best) { best = dd; at = i; }
+        }
+        return best > eps ? [...simplify(pts.slice(0, at + 1), eps).slice(0, -1), ...simplify(pts.slice(at), eps)] : [a, b];
+      };
+      const half = ring.length >> 1;
+      polys.push([...simplify(ring.slice(0, half + 1), 0.8).slice(0, -1), ...simplify(ring.slice(half), 0.8)]);
+    }
+    return polys;
+  }
+  const mtns = [...out].filter(([, d]) => d.mountain).map(([s]) => s);
+  const facets = mtns.length ? await mountainFaces(mtns) : [];
+  function mountain(s) {
+    // The faces are in screen px; a clip is read in the mountain's own space.
+    const el = s.el, inv = el.getScreenCTM().inverse(), cp = document.createElementNS(NS, 'clipPath');
+    cp.id = `faces${n++}`;
     cp.setAttribute('clipPathUnits', 'userSpaceOnUse');
-    // The polygons are in screen px; the clip is read in the mountain's own space.
-    const inv = el.getScreenCTM().inverse();
-    for (const p of polys) {
+    for (const p of facets) {
       const poly = document.createElementNS(NS, 'polygon');
-      poly.setAttribute('points', p.split(' ').map(t => { const [x, y] = t.split(',').map(Number); const q = new DOMPoint(x, y).matrixTransform(inv); return `${q.x.toFixed(1)},${q.y.toFixed(1)}`; }).join(' '));
+      poly.setAttribute('points', p.map(([x, y]) => { const q = new DOMPoint(x + 0.5, y + 0.5).matrixTransform(inv); return `${+q.x.toFixed(1)},${+q.y.toFixed(1)}`; }).join(' '));
       cp.appendChild(poly);
     }
     defs.appendChild(cp);
