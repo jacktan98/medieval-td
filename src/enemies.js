@@ -1,5 +1,5 @@
 import { level, remaining } from './level.js';
-import { at as pointOn, laneOf, randomLane, nearestOn } from './route.js';
+import { at as pointOn, laneOf, randomLane, nearestOn, LANE } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { dropBomb } from './bombs.js';
@@ -1242,8 +1242,17 @@ export function updateEnemies(state, dt) {
     // thrower stops whenever there is someone he could shoot — the same nearestUnit
     // the shot itself aims with, so he stands exactly when he is shooting — wherever
     // they stand, not only when they are ahead of him on the road.
+    const was = e.halted;
     e.halted = !!now.ranged && (screened(state, e, road) ||
       !!nearestUnit(state, e.x, e.y, now.ranged.range));
+    // ROOM TO STAND, at the owner's word, from a player's report: every thrower on a
+    // lane halts at the same spot — where the same soldier first comes into range —
+    // so a second archer stopped exactly on top of the first, and when the front one
+    // died the one under him looked like the same man back at full health. So a
+    // thrower does not plant himself on another who is already standing there: he
+    // walks on past him and stops a gap further down the road, still in range. Of
+    // two already standing on one spot, the later one moves.
+    if (e.halted && crowded(state, e, was)) e.halted = false;
     if (e.halted) continue;
 
     // One number forward along the road, then the position is looked up. The
@@ -1716,6 +1725,22 @@ const BLOCK_REACH = 45;
 // polyline: how far off it a man is standing, and how far along it. That is the
 // only comparison that means the same thing on all three maps — see the note at
 // the call site about roads that merge and roads that never meet.
+// How far apart two throwers stand on one lane, in px along it: the lanes' own
+// spacing, so a column of archers stands as far apart as the lanes do.
+const STAND_GAP = LANE;
+
+// Another thrower already standing on this one's lane within STAND_GAP of him.
+// `was` is whether he was standing last frame: a newcomer gives way to anyone
+// standing, and of two who were both standing, the one later in the list does.
+function crowded(state, e, was) {
+  for (const o of state.enemies) {
+    if (o === e) { if (was) return false; continue; }
+    if (!o.halted || o.route !== e.route || o.lane !== e.lane || o.hp <= 0) continue;
+    if (Math.abs(o.s - e.s) < STAND_GAP) return true;
+  }
+  return false;
+}
+
 function screened(state, e, road) {
   for (const u of state.units) {
     if (u.respawn > 0 || u.hp <= 0 || fixture(u)) continue;
