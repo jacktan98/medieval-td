@@ -754,8 +754,8 @@ building's SVG, shades it and writes it over the PNG, so it can be run again at
 any time and gives the same PNG. Which face is which was picked by hand for most
 towers (by the order of the `<path>` tags; see TOWERS in the tool) and read off
 the shapes for the barracks, the Paladin Keep and the Assassin Guild. The Abbey's
-roof cross is kept as drawn. The catapults, the tent and the weapon frames are not
-shaded.
+roof cross is kept as drawn. The tent's right-hand end is dark. The catapults and
+the weapon frames are not shaded.
 
 ## After a redraw
 

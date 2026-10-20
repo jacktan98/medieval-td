@@ -315,6 +315,9 @@ const TOWERS = {
   'archery/Crossbow_Sentry': { top: [1, 60, 79, 77, 63, 57], side: [3, 61, 80, 78, 64] },
   'artillery/Ballista_Turret_Tower': { top: [40, 41, 73, 81, 76, 79], side: [2, 43, 74, 82, 77, 80] },
   'artillery/Cannon_Outpost_Tower': { top: [40, 41, 73, 81, 76, 79], side: [2, 43, 74, 82, 77, 80] },
+  // The tent: its right-hand end, and the door flap rolled back on it, dark.
+  // No stones to vary: its grey is the spearheads' steel.
+  'barracks/Barracks_Tower_T1': { top: [], side: [4, 6, 7], stone: false },
   'barracks/Barracks_Tower_T2': 'auto',
   'barracks/Barracks_Tower_T3': 'auto',
   'barracks/Paladin_Keep': { auto: true, top: [69], side: [] },
@@ -349,7 +352,9 @@ async function shadeTower(page, f, job) {
       const up = job.top.includes(i), down = job.side.includes(i);
       if (!up && !down) return tag;
       const to = up ? BY_HAND.top : BY_HAND.side;
-      return tag.replace(/fill="(#[0-9a-f]{6})"/, (m, c) => `fill="${to[c] || tone(c, up ? TOP : SIDE)}"`);
+      const recolour = (m, a, c) => `${a}="${to[c] || tone(c, up ? TOP : SIDE)}"`;
+      // A shape drawn as a wide line and no fill (the tent's door flaps) is its line.
+      return /fill="#[0-9a-f]{6}"/.test(tag) ? tag.replace(/(fill)="(#[0-9a-f]{6})"/, recolour) : tag.replace(/(stroke)="(#[0-9a-f]{6})"/, recolour);
     });
   };
   if (job === 'auto' || job.auto) {
@@ -359,7 +364,7 @@ async function shadeTower(page, f, job) {
     svg = (await page.evaluate(shadeInPage, [1e6, 1e6, FACE, ROUND, ROCK, DEADWOOD, TOP, SIDE, BAND, MARK, null, false])).svg;
   } else svg = byHand(src);
   const png = readFileSync(`assets/towers/${f}.png`).toString('base64');
-  const r = await page.evaluate(stoneInPage, [svg, png, PNG_PX, KEEP]);
+  const r = await page.evaluate(stoneInPage, [svg, png, PNG_PX, KEEP, job.stone !== false]);
   // The PNG must be the SVG drawn, or the swap would move the tower.
   if (r.mismatch > 0.02) { console.log(`  ${f}: SVG and PNG differ by ${(r.mismatch * 100).toFixed(1)}% — not written`); return; }
   writeFileSync(`assets/towers/${f}.png`, Buffer.from(r.png.split(',')[1], 'base64'));
@@ -369,7 +374,7 @@ async function shadeTower(page, f, job) {
 // EVERY STONE ITS OWN SHADE: each patch of wall grey between the lines is made a
 // little lighter or darker, and the lowest quarter of the walls darker still, some of
 // it green with moss. Seeded, so the same tower comes out the same every time.
-async function stoneInPage([svg, png, N, KEEP]) {
+async function stoneInPage([svg, png, N, KEEP, stone]) {
   const load = async t => { const im = new Image(); im.src = t; await im.decode(); return im; };
   const draw = im => { const c = document.createElement('canvas'); c.width = c.height = N; c.getContext('2d').drawImage(im, 0, 0, N, N); return c; };
   const shipped = draw(await load(`data:image/png;base64,${png}`)).getContext('2d').getImageData(0, 0, N, N).data;
@@ -378,7 +383,7 @@ async function stoneInPage([svg, png, N, KEEP]) {
   let diff = 0, on = 0;
   for (let k = 3; k < d.length; k += 4) { if (d[k] > 128 || shipped[k] > 128) on++; if ((d[k] > 128) !== (shipped[k] > 128)) diff++; }
   const greys = [0x96, 0x7d, 0xb6];
-  const wall = k => { const r = d[k], gg = d[k + 1], bb = d[k + 2]; return d[k + 3] > 250 && Math.abs(r - gg) < 3 && Math.abs(gg - bb) < 3 && greys.some(v => Math.abs(r - v) < 4); };
+  const wall = k => { if (!stone) return false; const r = d[k], gg = d[k + 1], bb = d[k + 2]; return d[k + 3] > 250 && Math.abs(r - gg) < 3 && Math.abs(gg - bb) < 3 && greys.some(v => Math.abs(r - v) < 4); };
   const seen = new Uint8Array(N * N); let seed = 7, stones = 0;
   const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   let ymin = N, ymax = 0;

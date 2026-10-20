@@ -146,7 +146,7 @@ const QUARREL_TRIM = [209, 250, 94, 12];
 // the drawings.
 const XBOW_TRIM = [194, 197, 124, 118];
 const XBOW_ATK_TRIM = [207, 197, 111, 118];
-const CAMP_TRIM = [207, 249, 610, 526];
+const CAMP_TRIM = [206, 249, 612, 526];
 const CAMP2_TRIM = [200, 196, 624, 632];
 const CAMP3_TRIM = [200, 201, 624, 622];
 const SPEAR_TRIM = [172, 198, 168, 116];
