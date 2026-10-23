@@ -1,5 +1,5 @@
 import { level, remaining } from './level.js';
-import { at as pointOn, laneOf, randomLane, nearestOn, LANES } from './route.js';
+import { at as pointOn, laneOf, randomLane, nearestOn, MIDDLE_LANE } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { dropCorpse } from './corpses.js';
 import { dropBomb } from './bombs.js';
@@ -228,7 +228,6 @@ export function spawn(state, typeId, from = null) {
   if (def.rally) solo(WAR_CRY, true, false, true);
   return state.enemies[state.enemies.length - 1];
 }
-const MIDDLE_LANE = (LANES.length - 1) / 2;
 
 // IS THIS FIGURE PLAYING OUT ITS DEATH? True for the four seconds a boss spends
 // losing, and false for everything else in the game on every frame of its life.

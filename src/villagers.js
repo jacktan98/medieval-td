@@ -22,7 +22,7 @@ import { solo, play, slice, alone, talking, WINGS_RATE, CUE, VILLAGER_RUN, VILLA
          BOSS_ENTERS, BOSS_LEADS, BOSS_BATTLE } from './audio.js';
 import { starsFor } from './score.js';
 import { level } from './level.js';
-import { nearestOn, at as pointOn, laneOf } from './route.js';
+import { nearestOn, at as pointOn, laneOf, MIDDLE_LANE } from './route.js';
 import { enemyTypes } from './data/waves.js';
 import { towerBox } from './towers.js';
 import { makePerched, perchCast, perchTick, glideDist, flapped } from './enemies.js';
@@ -1724,7 +1724,7 @@ function perchRound(state, vp, dt) {
 const TAKE_OFF = 0.4;         // seconds to come up to a road crow's pace off the perch
 const HOP = 45;               // the rise off the perch: about 26px at its highest
 function crowFlight(a, b, j) {
-  const road = laneOf(level.routes[j.route], 1);
+  const road = laneOf(level.routes[j.route], MIDDLE_LANE);
   const t = pointOn(road, j.s);
   const L = Math.min(70, 0.45 * Math.hypot(b[0] - a[0], b[1] - a[1]));
   const c2 = [b[0] - t.tx * L, b[1] - t.ty * L];
@@ -1824,7 +1824,7 @@ function standingAt(state, x, y) {
 // A spot `s` px along route `ri` — on its middle lane, where a creature placed on the
 // road by a script stands (see spawn in src/enemies.js) — as a point with its `s`.
 function joinAt(ri, s) {
-  const q = pointOn(laneOf(level.routes[ri], 1), s);
+  const q = pointOn(laneOf(level.routes[ri], MIDDLE_LANE), s);
   return { x: q.x, y: q.y, s, route: ri };
 }
 
@@ -1992,7 +1992,7 @@ const MERGE = 36;
 // that comes in across the road's line, so it does not dip past the middle and turn
 // back (the Harbinger out of the citadel's door, at the owner's word).
 function mergeOnto(ri, last, ahead = MERGE, skip = 0) {
-  const road = laneOf(level.routes[ri], 1);
+  const road = laneOf(level.routes[ri], MIDDLE_LANE);
   const s0 = nearestOn([road], last[0], last[1]).s + skip;
   const s = Math.max(s0, Math.min(s0 + ahead, road.total - 40));
   const tail = [s0, (s0 + s) / 2, s].map(q => { const p = pointOn(road, q); return [p.x, p.y]; });

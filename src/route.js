@@ -43,6 +43,13 @@ import { rand } from './rng.js';
 // lanes can be told apart. Still inside map 1's 32.
 export const LANE = 20;
 export const LANES = [-LANE, -LANE / 2, 0, LANE / 2, LANE];
+// THE ROAD'S OWN CENTRELINE, as an index into LANES: where a creature placed on the
+// road by a script stands (spawn in src/enemies.js), and so where a figure walking
+// onto the road to become one must arrive (src/villagers.js). One name for both, so
+// the two cannot disagree — they did when the lanes went from three to five, and a
+// tapped thug walked to the old middle, half a lane off, and stepped across at the
+// moment he turned.
+export const MIDDLE_LANE = (LANES.length - 1) / 2;
 // How far off the middle of the road a squad may be posted (src/units.js). It was the
 // outer lane, 16, and stayed 16 when the lanes went to five: where soldiers can stand
 // is a balance of its own and did not move with the enemies.
