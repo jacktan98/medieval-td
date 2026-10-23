@@ -542,7 +542,7 @@ export function tap(state, x, y, restart) {
   return press(state.selected ? `select:${state.selected.kind}` : 'deselect', !!(state.selected || had));
 }
 
-// The three controls a paused game puts on the board, and nothing else answers.
+// The controls a paused game puts on the board, and nothing else answers.
 //
 // TWO OF THEM ASK TWICE. Restart and Quit are the controls that throw away work —
 // a wave 7 board is half an hour — and they sit beside the button a player
@@ -564,6 +564,11 @@ function tapPaused(state, x, y, restart) {
   }
 
   const hit = hitPauseButton(state, x, y);
+
+  // FULL SCREEN AND THE FEEDBACK FORM, asked for here and done as the finger lifts, as
+  // from the settings panel — see letGo above.
+  if (hit === 'fullscreen') { state.armed = null; state.wantFullscreen = true; return press('fullscreen'); }
+  if (hit === 'feedback') { state.armed = null; state.wantFeedback = true; return press('feedback'); }
 
   if (hit === 'restart' || hit === 'quit') {
     const now = performance.now();

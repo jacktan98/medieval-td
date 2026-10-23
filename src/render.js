@@ -8681,7 +8681,8 @@ function bookButton(ctx, b, label, size, font = null, edge = SHEET_EDGE) {
 
 // --- what a paused game puts on the board -------------------------------------
 //
-// Two controls under the "Paused" label, and no dimming veil: the whole point
+// Restart and Quit under the "Paused" label (the sound sliders, Full screen and
+// Send feedback under them), and no dimming veil: the whole point
 // of pausing here is to STUDY the board, and a game that greys out the thing you
 // paused to look at has answered the wrong question. So the row sits in the
 // strip the dashboard already owns rather than over the middle of the map.
@@ -8714,7 +8715,7 @@ export const PAUSE_ROW = {
 const PAUSE_PAD = 13;
 
 export function hitPauseButton(state, x, y) {
-  for (const [id, b] of Object.entries(PAUSE_ROW)) {
+  for (const [id, b] of Object.entries({ ...PAUSE_ROW, ...PAUSE_MORE })) {
     if (x >= b.x - PAUSE_PAD && x <= b.x + b.w + PAUSE_PAD &&
         y >= b.y - PAUSE_PAD && y <= b.y + b.h + PAUSE_PAD) return id;
   }
@@ -8732,6 +8733,8 @@ function drawPauseRow(ctx, state) {
   askButton(ctx, PAUSE_ROW.restart, 'Restart', armed === 'restart');
   askButton(ctx, PAUSE_ROW.quit, 'Quit', armed === 'quit');
   drawSoundPanel(ctx);
+  if (PAUSE_MORE.fullscreen) askButton(ctx, PAUSE_MORE.fullscreen, isFullscreen() ? 'Exit full screen' : 'Full screen', false);
+  askButton(ctx, PAUSE_MORE.feedback, 'Send feedback', false);
 }
 
 // --- THE SOUND SETTINGS, under Restart and Quit -------------------------------
@@ -8743,6 +8746,18 @@ function drawPauseRow(ctx, state) {
 // track it jumps there, and dragged it follows the finger (see input.js). Kept
 // between visits, by audio.js.
 const SOUND_PANEL = { x: 330, y: 150, w: 300, h: 92 };
+
+// FULL SCREEN AND SEND FEEDBACK, under the sliders, at the owner's word: the settings
+// panel's two (src/settings.js), here as well so a player in the middle of a stage need
+// not quit to the map for them. Full screen only where the device has it, as there;
+// Send feedback takes the middle of the row where it does not. 30 apart, as Restart
+// and Quit are, so their padded tap boxes do not touch.
+const PAUSE_MORE_Y = SOUND_PANEL.y + SOUND_PANEL.h + 16;
+const PAUSE_MORE_W = (SOUND_PANEL.w - PAUSE_GAP) / 2;
+export const PAUSE_MORE = FULLSCREEN_OK
+  ? { fullscreen: { x: SOUND_PANEL.x, y: PAUSE_MORE_Y, w: PAUSE_MORE_W, h: PAUSE_H },
+      feedback: { x: SOUND_PANEL.x + PAUSE_MORE_W + PAUSE_GAP, y: PAUSE_MORE_Y, w: PAUSE_MORE_W, h: PAUSE_H } }
+  : { feedback: { x: 380, y: PAUSE_MORE_Y, w: 200, h: PAUSE_H } };
 const SOUND_TRACK_X = SOUND_PANEL.x + 108;
 const SOUND_TRACK_W = SOUND_PANEL.w - 108 - 26;
 const SOUND_ROWS = [

@@ -44,7 +44,7 @@ import {
 // The paused game's own row — the book's second entrance and the Quit beside it
 // — belongs to the HUD rather than to the book, so it is checked from there.
 import { UP_DONE } from '../src/upgradepage.js';
-import { PAUSE_ROW, ENTRY_NAME, ENTRY_SUB, ENTRY_TEXT, ENTRY_LEAD, ENTRY_TEXT_W, ENTRY_ICON_H,
+import { PAUSE_ROW, PAUSE_MORE, ENTRY_NAME, ENTRY_SUB, ENTRY_TEXT, ENTRY_LEAD, ENTRY_TEXT_W, ENTRY_ICON_H,
          ENTRY_TEXT_SMALL, ENTRY_LEAD_SMALL, PARA_GAP } from '../src/render.js';
 import { uiSize } from '../src/data/ui.js';
 import { locked } from '../src/book.js';
@@ -420,7 +420,9 @@ console.log('\nWhat you can hit\n');
     'Stage 1': STAGE_BTN[0], 'Stage 2': STAGE_BTN[1],
     'a picture': { x: 0, y: 0, w: CELL_W - 2 * PAD + 8, h: CELL_H - 2 * PAD + 8 },
     'open (map)': BOOK_ICON_HIT,
-    'restart (paused)': PAUSE_ROW.restart, 'quit (paused)': PAUSE_ROW.quit
+    'restart (paused)': PAUSE_ROW.restart, 'quit (paused)': PAUSE_ROW.quit,
+    'send feedback (paused)': PAUSE_MORE.feedback,
+    ...(PAUSE_MORE.fullscreen ? { 'full screen (paused)': PAUSE_MORE.fullscreen } : {})
   };
 
   for (const [name, b] of Object.entries(targets)) {
@@ -444,6 +446,12 @@ console.log('\nWhat you can hit\n');
               (PAUSE_ROW.restart.x + PAUSE_ROW.restart.w + PAUSE_PAD);
   ok(gap > 0, 'and Quit does not share a pixel with Restart beside it',
     `${gap}px of clear air`);
+  // AND THE ROW UNDER THE SLIDERS: Full screen beside Send feedback, where there is a
+  // Full screen, and neither reaching up into the sliders above.
+  if (PAUSE_MORE.fullscreen) {
+    const g = (PAUSE_MORE.feedback.x - PAUSE_PAD) - (PAUSE_MORE.fullscreen.x + PAUSE_MORE.fullscreen.w + PAUSE_PAD);
+    ok(g > 0, 'and Full screen does not share a pixel with Send feedback', `${g}px of clear air`);
+  }
 
   // THE TWO STAGE BUTTONS SIT CLOSE, so their padded boxes overlap: every point
   // of either drawn button must still go to that button.
