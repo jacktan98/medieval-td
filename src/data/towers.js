@@ -288,6 +288,10 @@ const BULLET_TRIM = [246, 249, 20, 14];
 //   Reload   [291, 350, 442, 324]
 //   Fire     [291, 328, 442, 346]     <- the arm is up, so it reaches higher
 //
+// AND THE THREE FROM BEHIND (`backFrames`, below), which reach further right:
+//
+//   Default  [275, 350, 474, 324]   Reload [298, 350, 451, 324]   Fire [298, 350, 451, 324]
+//
 // All three are on the same 1024 canvas, so drawing the SAME source rect from
 // each of them registers them pixel-for-pixel: the wheels, the frame and the
 // shadow land on exactly the same screen pixels in all three frames and only
@@ -299,7 +303,7 @@ const BULLET_TRIM = [246, 249, 20, 14];
 // So `node tools/trim.mjs` will NOT print this rect for any one of the three
 // files, and that is correct rather than drift. tools/trim.mjs checks the union
 // property directly instead: every frame's own trim must sit inside this box.
-const CATAPULT_TRIM = [267, 328, 466, 346];
+const CATAPULT_TRIM = [267, 328, 482, 346];
 
 // The same union, worked out the same way, for the two machines above it. All
 // six frames are on the 1024 canvas like tier 1's three.
@@ -307,13 +311,20 @@ const CATAPULT_TRIM = [267, 328, 466, 346];
 //   Mangonel   Default [263,344,498,336]  Reload [289,323,472,357]  Fire [285,228,476,452]
 //   Trebuchet  Default [161,334,664,399]  Reload [201,292,612,441]  Fire [201,107,563,626]
 //
+// AND FROM BEHIND. The mangonel's three sit inside its union already; the
+// trebuchet's reach 10 px further right and 4 px lower, and its union grew to hold
+// them:
+//
+//   Mangonel   Default [275,350,485,324]  Reload [293,320,467,354]  Fire [288,244,472,430]
+//   Trebuchet  Default [191,326,644,411]  Reload [232,269,590,468]  Fire [228,130,575,607]
+//
 // The Fire frame drives the height in both, and by a lot: a trebuchet's arm at
 // the top of its swing reaches 227 source px above where the machine rests, so
 // the union is 626 tall against the resting frame's 399. That is not slack — the
 // box has to hold the tallest frame or the machine jumps down the screen every
 // time it looses.
 const MANGONEL_TRIM = [263, 228, 498, 452];
-const TREBUCHET_TRIM = [161, 107, 664, 626];
+const TREBUCHET_TRIM = [161, 107, 674, 630];
 
 // The crewman, on his own 512 canvas. He is NOT drawn on the board — he is part
 // of all three catapult drawings already, which is the whole reason the machine
@@ -1964,7 +1975,7 @@ const catapult = {
   // same tenth of a pixel and Fire is 2.1 source px higher, which is half a game
   // pixel and comes from the raised arm covering a different part of the ellipse.
   // The resting pose is the one that decides.
-  groundFrac: [0.582, 0.766],
+  groundFrac: [0.562, 0.766],
   // Where the rock leaves: the sling bucket at the top of the RAISED arm, source
   // (434.0, 363.5), which only exists in the Fire frame. It is the same dark
   // brown the crewman's shadow is painted in, so it is measured rather than
@@ -1975,8 +1986,28 @@ const catapult = {
   // measure from: on an archery tower the mount is where the man stands and the
   // muzzle is his bow, and here the machine IS the man. So the mount is the
   // release point and the muzzle offset is zero.
-  mountFrac: [0.358, 0.103],
+  mountFrac: [0.347, 0.103],
   muzzle: [0, 0],
+  // THE SAME MACHINE FROM BEHIND, at the owner's word, for a target further up the
+  // board than the machine stands — the front three throw toward the player, and a
+  // rock lobbed over the machine's own back read as wrong. Chosen with the facing,
+  // once a cycle on the LOAD beat (see stepCrew in src/towers.js), and drawn into
+  // the same union box: the artist drew the three on the same canvas with the
+  // shadow on the same pixel, so turning round does not move the machine.
+  // tools/shadow.mjs checks that it does not.
+  //
+  // THEY THROW RIGHT TOO, so `buildingFaces` holds for them unchanged and a target
+  // behind and to the LEFT mirrors the back drawing exactly as one in front and to
+  // the left mirrors the front.
+  backFrames: ['artillery_t1_back', 'artillery_t1_reload_back', 'artillery_t1_fire_back'],
+  // Where the rock leaves the back Fire frame: the bucket at the top of the raised
+  // arm, source (440, 400) — lower than the front's, since the arm leans away.
+  backMountFrac: [0.359, 0.208],
+  // AND ITS OWN SHADOW CENTRE, source (550.4, 596.1): the artist drew the machine
+  // from behind 12 px right of where the front one stands, so the back three are
+  // anchored on their own shadow (towerBox) and the machine turns round on the
+  // spot. Measured by tools/shadow.mjs, on all three back frames.
+  backGroundFrac: [0.588, 0.775],
   // WHICH WAY THE MACHINE IS DRAWN THROWING: up and to the RIGHT. So a target on
   // the right is the UNMIRRORED case and only a target on the left flips it.
   //
@@ -2037,6 +2068,7 @@ const mangonel = {
   ...catapult,
   sprite: 'artillery_t2',
   frames: ['artillery_t2', 'artillery_t2_reload', 'artillery_t2_fire'],
+  backFrames: ['artillery_t2_back', 'artillery_t2_reload_back', 'artillery_t2_fire_back'],
   spriteTrim: MANGONEL_TRIM,
   w: drawnW(MANGONEL_TRIM), h: drawnH(MANGONEL_TRIM),
   // Shadow centre, source (560.9, 598.6). All three frames measure to the same
@@ -2047,6 +2079,10 @@ const mangonel = {
   // of the ink in the top 12% of the Fire frame, which at this tier is the cup
   // and nothing else.
   mountFrac: [0.425, 0.067],
+  // The cup on the back Fire frame, source (457, 280), and the back three's own
+  // shadow centre, source (548.9, 594.3).
+  backMountFrac: [0.390, 0.115],
+  backGroundFrac: [0.574, 0.810],
   ammo: rock2,
   portrait: 'crew_t2',
   portraitTrim: CREW2_TRIM,
@@ -2057,16 +2093,21 @@ const trebuchet = {
   ...catapult,
   sprite: 'artillery_t3',
   frames: ['artillery_t3', 'artillery_t3_reload', 'artillery_t3_fire'],
+  backFrames: ['artillery_t3_back', 'artillery_t3_reload_back', 'artillery_t3_fire_back'],
   spriteTrim: TREBUCHET_TRIM,
   w: drawnW(TREBUCHET_TRIM), h: drawnH(TREBUCHET_TRIM),
   // Shadow centre, source (563.9, 652.4).
-  groundFrac: [0.607, 0.871],
+  groundFrac: [0.598, 0.866],
   // The sling POUCH at release, source (600.9, 136.9). The top band of this
   // frame contains the arm tip on the left AND the pouch on the right — a sling
   // reaches both ways at the top of a swing — so the measurement is taken from
   // the right-hand blob only. A centroid of the whole band lands between the
   // two, on empty air.
-  mountFrac: [0.663, 0.048],
+  mountFrac: [0.653, 0.047],
+  // The pouch on the back Fire frame, source (502, 160), and the back three's own
+  // shadow centre, source (590.7, 656.8).
+  backMountFrac: [0.506, 0.084],
+  backGroundFrac: [0.638, 0.873],
   ammo: rock3,
   portrait: 'crew_t3',
   portraitTrim: CREW3_TRIM,

@@ -69,6 +69,20 @@ export const paths = {
   artillery_t3:        'assets/towers/artillery/Artillery_Default_T3.png',
   artillery_t3_reload: 'assets/towers/artillery/Artillery_Reload_T3.png',
   artillery_t3_fire:   'assets/towers/artillery/Artillery_Fire_T3.png',
+  // AND EACH OF THE THREE FROM BEHIND, at the owner's word: the same machine turned
+  // away from the player, for a target further up the board than the machine
+  // stands. Drawn on the same 1024 canvas, throwing RIGHT like the front three, so
+  // the same mirroring answers a target on the left. See `backFrames` on `catapult`
+  // in data/towers.js.
+  artillery_t1_back:        'assets/towers/artillery/Artillery_Default_T1_Back.png',
+  artillery_t1_reload_back: 'assets/towers/artillery/Artillery_Reload_T1_Back.png',
+  artillery_t1_fire_back:   'assets/towers/artillery/Artillery_Fire_T1_Back.png',
+  artillery_t2_back:        'assets/towers/artillery/Artillery_Default_T2_Back.png',
+  artillery_t2_reload_back: 'assets/towers/artillery/Artillery_Reload_T2_Back.png',
+  artillery_t2_fire_back:   'assets/towers/artillery/Artillery_Fire_T2_Back.png',
+  artillery_t3_back:        'assets/towers/artillery/Artillery_Default_T3_Back.png',
+  artillery_t3_reload_back: 'assets/towers/artillery/Artillery_Reload_T3_Back.png',
+  artillery_t3_fire_back:   'assets/towers/artillery/Artillery_Fire_T3_Back.png',
   // TIER 4, THE BALLISTA TURRET, and it was the first building in the game drawn
   // as TWO SEPARATE PIECES: a stone turret that never moves, and a machine on
   // top of it that animates on the same three beats as the catapults below and

@@ -158,9 +158,11 @@ export function prebuiltOn(level, families) {
 // A bounding box is not where a building is — the shadow is the part that
 // touches the ground, so it is the part that decides.
 export function towerBox(t) {
+  // A machine turned away stands on the shadow of its back drawing (`backGroundFrac`).
+  const g = (t.back && t.def.backGroundFrac) || t.def.groundFrac;
   return {
-    left: t.x - t.def.groundFrac[0] * t.def.w,
-    top: t.y - t.def.groundFrac[1] * t.def.h,
+    left: t.x - g[0] * t.def.w,
+    top: t.y - g[1] * t.def.h,
     w: t.def.w,
     h: t.def.h
   };
@@ -278,7 +280,9 @@ function machineNose(def, box) {
 // the projectile being broken rather than the transform being incomplete.
 export function mountPoint(t, i) {
   const box = towerBox(t);
-  const frac = standFrac(t.def, i === undefined ? (t.turn || 0) : i);
+  // A machine turned away throws from its back Fire frame's bucket.
+  const frac = t.back && t.def.backMountFrac ? t.def.backMountFrac
+    : standFrac(t.def, i === undefined ? (t.turn || 0) : i);
   const x = box.left + box.w * frac[0];
   return {
     x: buildingFlip(t) < 0 ? 2 * t.x - x : x,
@@ -568,6 +572,8 @@ export function frameOf(t) {
 // pictures the tier ships with, which is what those callers are asking about.
 export const framesOf = (def, t) => {
   if (t) for (const a of boughtAbilities(t)) if (a.frames) return a.frames;
+  // TURNED AWAY, toward a target behind it — see `backFrames` in data/towers.js.
+  if (t && t.back && def.backFrames) return def.backFrames;
   return (def.machine ? def.machine.frames : def.frames) || null;
 };
 
@@ -1022,6 +1028,11 @@ function stepCrew(state, t, dt, target) {
   // and loads a machine pointing somewhere; they do not swivel it mid-swing
   // because a better target walked past.
   if (t.beat === LOAD) t.face = target.x >= t.x ? 1 : -1;
+  // AND WHETHER IT TURNS ITS BACK, the same way and on the same beat: a target
+  // further up the board than the machine stands is behind it. Only on a machine
+  // drawn from behind as well (`backFrames`); held, as the facing is, until the
+  // next load — so it rests the way it last threw.
+  if (t.beat === LOAD) t.back = !!t.def.backFrames && target.y < t.y;
 
   if (t.beat === FIRE) {
     // COUNTED HERE, so `shots` means "shots this tower has fired" on every tower

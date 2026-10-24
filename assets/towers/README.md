@@ -20,15 +20,24 @@ in `src/assets.js`.
 | `barracks/Barracks_Tower_T3.png`       | 1024   | 128 x 127 px | Knight's Hall (3)  |
 | `barracks/Paladin_Keep.png`            | 1024   | 107 x 133 px | Paladin Keep (4)   |
 | `barracks/Assassin_Guild.png`          | 1024   | 107 x 133 px | Assassin Guild (4), the other fourth rung |
-| `artillery/Artillery_Default_T1.png`   | 1024   | 96 x 71 px   | Catapult (1), at rest   |
-| `artillery/Artillery_Reload_T1.png`    | 1024   | 96 x 71 px   | Catapult, winding       |
-| `artillery/Artillery_Fire_T1.png`      | 1024   | 96 x 71 px   | Catapult, throwing      |
+| `artillery/Artillery_Default_T1.png`   | 1024   | 99 x 71 px   | Catapult (1), at rest   |
+| `artillery/Artillery_Reload_T1.png`    | 1024   | 99 x 71 px   | Catapult, winding       |
+| `artillery/Artillery_Fire_T1.png`      | 1024   | 99 x 71 px   | Catapult, throwing      |
 | `artillery/Artillery_Default_T2.png`   | 1024   | 102 x 93 px  | Mangonel (2), at rest   |
 | `artillery/Artillery_Reload_T2.png`    | 1024   | 102 x 93 px  | Mangonel, winding       |
 | `artillery/Artillery_Fire_T2.png`      | 1024   | 102 x 93 px  | Mangonel, throwing      |
-| `artillery/Artillery_Default_T3.png`   | 1024   | 136 x 128 px | Trebuchet (3), at rest  |
-| `artillery/Artillery_Reload_T3.png`    | 1024   | 136 x 128 px | Trebuchet, winding      |
-| `artillery/Artillery_Fire_T3.png`      | 1024   | 136 x 128 px | Trebuchet, throwing     |
+| `artillery/Artillery_Default_T3.png`   | 1024   | 138 x 129 px | Trebuchet (3), at rest  |
+| `artillery/Artillery_Reload_T3.png`    | 1024   | 138 x 129 px | Trebuchet, winding      |
+| `artillery/Artillery_Fire_T3.png`      | 1024   | 138 x 129 px | Trebuchet, throwing     |
+| `artillery/Artillery_Default_T1_Back.png`| 1024   | 99 x 71 px   | Catapult, from behind, at rest |
+| `artillery/Artillery_Reload_T1_Back.png` | 1024   | 99 x 71 px   | Catapult, from behind, winding |
+| `artillery/Artillery_Fire_T1_Back.png`   | 1024   | 99 x 71 px   | Catapult, from behind, throwing |
+| `artillery/Artillery_Default_T2_Back.png`| 1024   | 102 x 93 px  | Mangonel, from behind, at rest |
+| `artillery/Artillery_Reload_T2_Back.png` | 1024   | 102 x 93 px  | Mangonel, from behind, winding |
+| `artillery/Artillery_Fire_T2_Back.png`   | 1024   | 102 x 93 px  | Mangonel, from behind, throwing |
+| `artillery/Artillery_Default_T3_Back.png`| 1024   | 138 x 129 px | Trebuchet, from behind, at rest |
+| `artillery/Artillery_Reload_T3_Back.png` | 1024   | 138 x 129 px | Trebuchet, from behind, winding |
+| `artillery/Artillery_Fire_T3_Back.png`   | 1024   | 138 x 129 px | Trebuchet, from behind, throwing |
 | `artillery/Ballista_Turret_Tower.png`  | 1024   | 106 x 127 px | Ballista Turret (4), the stone alone  |
 | `artillery/Ballista_Turret_Default.png`| 1024   | 70 x 47 px   | its machine, at rest                  |
 | `artillery/Ballista_Turret_Reload.png` | 1024   | 62 x 47 px   | its machine, spanning the bow         |

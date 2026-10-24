@@ -244,12 +244,23 @@ const SPRITES = [
   ['assets/towers/artillery/Artillery_Default_T1.png', 'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Reload_T1.png',  'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Fire_T1.png',    'catapult.groundFrac', towers.siege[0].spriteTrim, towers.siege[0].groundFrac, 'whole'],
+  // AND THE SAME THREE FROM BEHIND, against the same box and the same anchor: turning
+  // round must not move the machine on its plot either.
+  ['assets/towers/artillery/Artillery_Default_T1_Back.png', 'catapult.backGroundFrac', towers.siege[0].spriteTrim, towers.siege[0].backGroundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Reload_T1_Back.png', 'catapult.backGroundFrac', towers.siege[0].spriteTrim, towers.siege[0].backGroundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Fire_T1_Back.png', 'catapult.backGroundFrac', towers.siege[0].spriteTrim, towers.siege[0].backGroundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Default_T2.png', 'mangonel.groundFrac',  towers.siege[1].spriteTrim, towers.siege[1].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Reload_T2.png',  'mangonel.groundFrac',  towers.siege[1].spriteTrim, towers.siege[1].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Fire_T2.png',    'mangonel.groundFrac',  towers.siege[1].spriteTrim, towers.siege[1].groundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Default_T2_Back.png', 'mangonel.backGroundFrac', towers.siege[1].spriteTrim, towers.siege[1].backGroundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Reload_T2_Back.png', 'mangonel.backGroundFrac', towers.siege[1].spriteTrim, towers.siege[1].backGroundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Fire_T2_Back.png', 'mangonel.backGroundFrac', towers.siege[1].spriteTrim, towers.siege[1].backGroundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Default_T3.png', 'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Reload_T3.png',  'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
   ['assets/towers/artillery/Artillery_Fire_T3.png',    'trebuchet.groundFrac', towers.siege[2].spriteTrim, towers.siege[2].groundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Default_T3_Back.png', 'trebuchet.backGroundFrac', towers.siege[2].spriteTrim, towers.siege[2].backGroundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Reload_T3_Back.png', 'trebuchet.backGroundFrac', towers.siege[2].spriteTrim, towers.siege[2].backGroundFrac, 'whole'],
+  ['assets/towers/artillery/Artillery_Fire_T3_Back.png', 'trebuchet.backGroundFrac', towers.siege[2].spriteTrim, towers.siege[2].backGroundFrac, 'whole'],
   // BOTH POSES OF EVERY FIGHTING MAN, and the pairs are the check rather than a
   // repetition of it. A figure swaps between his Default and his Attack drawing
   // in place, and each pose carries its OWN trim and its OWN pivot — so what
