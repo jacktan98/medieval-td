@@ -674,6 +674,9 @@ function idleStep(t, dt, target) {
   }
   idle.rest += dt;
   if (idle.rest < IDLE_AFTER) return;
+  // A MACHINE LEFT TURNED AWAY TURNS BACK TO THE FRONT once it is at rest, at the
+  // owner's word, and idles there — where its crew can look about (src/crew.js).
+  t.back = false;
   for (const m of idle.men) {
     m.stance -= dt;
     if (m.stance > 0) continue;
