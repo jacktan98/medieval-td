@@ -130,8 +130,9 @@ export const level07 = {
   // against the world map's fire, and the depth it sorts at — just after the castle
   // whose box the torches are drawn in.
   // THE TORCHES CRACKLING AND THE RIVER RUNNING, both soft, for as long as the board
-  // is played.
-  ambience: [{ clip: 'fire_crackling', level: 1 }, { clip: 'river_flowing', level: 1 }],
+  // is played — and birdsong, at the owner's word, as on stage 1.
+  ambience: [{ clip: 'bird_chirping', level: 0.5 }, { clip: 'fire_crackling', level: 1 },
+             { clip: 'river_flowing', level: 1 }],
   // THE RIVER RUNS, in the world map's style (src/motion.js, drawBoardWater): pale
   // current marks and glints on the water's own colours — the open river and the
   // dark blue of it in the bridge's shadow — in from the right edge, under the bridge
